@@ -61,10 +61,6 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
         type: 'volume',
       },
       priceScaleId: '',
-      scaleMargins: {
-        top: 0.8,
-        bottom: 0,
-      },
     })
 
     chartRef.current = chart
