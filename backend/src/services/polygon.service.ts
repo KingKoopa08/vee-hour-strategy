@@ -248,9 +248,9 @@ export class PolygonService extends EventEmitter {
         this.reconnectAttempts = 0;
         
         // for (const symbol of this.subscribedSymbols) {
-          // TODO: Re-enable when WebSocket is properly integrated
-    // await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
-        }
+        //   // TODO: Re-enable when WebSocket is properly integrated
+        //   // await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
+        // }
         
         logger.info('Successfully reconnected to Polygon WebSocket');
       } catch (error) {
