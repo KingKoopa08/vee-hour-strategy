@@ -127,12 +127,24 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
   }, [priceData])
 
   useEffect(() => {
-    if (indicators && vwapSeriesRef.current && priceData) {
-      const vwapData = priceData.map((d: any) => ({
-        time: d.timestamp as any,
-        value: indicators.vwap,
-      }))
-      vwapSeriesRef.current.setData(vwapData)
+    if (indicators && indicators.vwap && vwapSeriesRef.current && priceData && priceData.length > 0) {
+      try {
+        const vwapData = priceData.map((d: any) => {
+          const timestamp = typeof d.t === 'number' ? Math.floor(d.t / 1000) : 
+                           d.timestamp ? Math.floor(new Date(d.timestamp).getTime() / 1000) : 
+                           Math.floor(Date.now() / 1000)
+          return {
+            time: timestamp,
+            value: indicators.vwap || 0,
+          }
+        }).filter(d => d.value > 0)
+        
+        if (vwapData.length > 0) {
+          vwapSeriesRef.current.setData(vwapData)
+        }
+      } catch (error) {
+        console.error('Error updating VWAP data:', error)
+      }
     }
   }, [indicators, priceData])
 
