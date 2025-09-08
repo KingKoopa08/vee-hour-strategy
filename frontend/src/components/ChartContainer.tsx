@@ -163,19 +163,27 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
       <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
         <div className="bg-trading-gray p-2 rounded">
           <p className="text-gray-400">Volume Ratio</p>
-          <p className="text-lg font-bold">{indicators?.volumeRatio.toFixed(2)}x</p>
+          <p className="text-lg font-bold">{indicators?.volumeRatio?.toFixed(2) || 'N/A'}x</p>
         </div>
         <div className="bg-trading-gray p-2 rounded">
           <p className="text-gray-400">Price vs VWAP</p>
-          <p className={`text-lg font-bold ${priceData?.[priceData.length - 1]?.close > indicators?.vwap ? 'text-trading-green' : 'text-trading-red'}`}>
-            {((priceData?.[priceData.length - 1]?.close - indicators?.vwap) / indicators?.vwap * 100).toFixed(2)}%
+          <p className={`text-lg font-bold ${
+            priceData?.length > 0 && indicators?.vwap && 
+            (priceData[priceData.length - 1]?.close || priceData[priceData.length - 1]?.c) > indicators.vwap 
+            ? 'text-trading-green' : 'text-trading-red'
+          }`}>
+            {priceData?.length > 0 && indicators?.vwap ? 
+              ((((priceData[priceData.length - 1]?.close || priceData[priceData.length - 1]?.c || 0) - indicators.vwap) / indicators.vwap * 100).toFixed(2) + '%') 
+              : 'N/A'}
           </p>
         </div>
         <div className="bg-trading-gray p-2 rounded">
           <p className="text-gray-400">Bollinger Position</p>
           <p className="text-lg font-bold">
-            {priceData?.[priceData.length - 1]?.close > indicators?.bollingerBands.upper ? 'Above Upper' :
-             priceData?.[priceData.length - 1]?.close < indicators?.bollingerBands.lower ? 'Below Lower' : 'Middle'}
+            {priceData?.length > 0 && indicators?.bollingerBands ? 
+              ((priceData[priceData.length - 1]?.close || priceData[priceData.length - 1]?.c || 0) > indicators.bollingerBands.upper ? 'Above Upper' :
+               (priceData[priceData.length - 1]?.close || priceData[priceData.length - 1]?.c || 0) < indicators.bollingerBands.lower ? 'Below Lower' : 'Middle')
+              : 'N/A'}
           </p>
         </div>
       </div>
