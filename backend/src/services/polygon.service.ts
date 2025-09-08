@@ -247,7 +247,7 @@ export class PolygonService extends EventEmitter {
       // await this.websocket.connect();
         this.reconnectAttempts = 0;
         
-        for (const symbol of this.subscribedSymbols) {
+        // for (const symbol of this.subscribedSymbols) {
           // TODO: Re-enable when WebSocket is properly integrated
     // await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
         }
