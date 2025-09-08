@@ -4,6 +4,19 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid'
 
+interface SafeStock {
+  symbol: string
+  metrics: {
+    marketCapScore: number
+    peRatioScore: number
+    volumeScore: number
+    technicalScore: number
+    newsScore: number
+    overallScore: number
+    recommendation: 'SAFE' | 'MODERATE' | 'RISKY'
+  }
+}
+
 interface StockScannerProps {
   topVolume: string[]
   selectedSymbol: string
