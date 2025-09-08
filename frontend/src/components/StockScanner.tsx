@@ -47,9 +47,9 @@ export function StockScanner({ topVolume, selectedSymbol, onSelectSymbol }: Stoc
           >
             <div className="flex justify-between items-center">
               <span className="font-bold">{symbol}</span>
-              {safeStocks?.find((s: any) => s.symbol === symbol) && (
+              {safeStocks?.find((s) => s.symbol === symbol) && (
                 <span className="text-xs px-2 py-1 bg-green-900 text-green-300 rounded">
-                  Safe: {safeStocks.find((s: any) => s.symbol === symbol)?.metrics.overallScore.toFixed(1)}
+                  Safe: {safeStocks.find((s) => s.symbol === symbol)?.metrics.overallScore.toFixed(1)}
                 </span>
               )}
             </div>
