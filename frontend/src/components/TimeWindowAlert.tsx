@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
+import { utcToZonedTime } from 'date-fns-tz'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BellAlertIcon } from '@heroicons/react/24/solid'
 
