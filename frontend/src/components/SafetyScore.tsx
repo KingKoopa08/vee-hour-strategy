@@ -9,13 +9,13 @@ interface SafetyScoreProps {
 }
 
 export function SafetyScore({ symbol }: SafetyScoreProps) {
-  const { data: safety, loading } = useQuery({
+  const { data: safety, isLoading } = useQuery({
     queryKey: ['safety', symbol],
     queryFn: () => api.getSafetyScore(symbol),
     refetchInterval: 300000, // 5 minutes
   })
 
-  if (loading || !safety) {
+  if (isLoading || !safety) {
     return (
       <div className="bg-trading-gray rounded-lg p-6">
         <div className="animate-pulse">
