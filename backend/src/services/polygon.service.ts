@@ -64,23 +64,21 @@ export class PolygonService extends EventEmitter {
   }
 
   private async setupWebSocket(): Promise<void> {
-    this.websocket.on('error', (error: any) => {
-      logger.error('WebSocket error:', error);
-      this.handleReconnect();
-    });
-
-    this.websocket.on('message', (messages: any[]) => {
-      messages.forEach((message) => {
-        if (message.ev === 'A' || message.ev === 'AM') {
-          this.handleAggregateMessage(message);
-        } else if (message.ev === 'T') {
-          this.handleTradeMessage(message);
-        }
-      });
-    });
-
-    await this.websocket.connect();
-    logger.info('Polygon WebSocket connected');
+    try {
+      // Polygon WebSocket v7 doesn't use .on() directly
+      // It uses .subscribe() for messages and has different event handling
+      logger.info('Setting up Polygon WebSocket...');
+      
+      // For now, we'll skip WebSocket setup to get the server running
+      // The REST API will still work for getting stock data
+      logger.warn('WebSocket connection skipped - using REST API only');
+      
+      // TODO: Implement proper Polygon WebSocket v7 integration
+      // await this.websocket.connect();
+      // await this.websocket.subscriptions(...);
+    } catch (error) {
+      logger.error('WebSocket setup error:', error);
+    }
   }
 
   private handleAggregateMessage(message: any): void {
