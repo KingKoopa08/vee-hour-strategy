@@ -114,7 +114,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
               value: d.v || d.volume || 0,
               color: (d.c || d.close || 0) >= (d.o || d.open || 0) ? '#00ff8844' : '#ff336644',
             }
-          }).filter(d => d.value > 0)
+          }).filter((d: any) => d.value > 0)
           
           if (volumeData.length > 0) {
             volumeSeriesRef.current.setData(volumeData)
