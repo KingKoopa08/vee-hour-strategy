@@ -33,7 +33,7 @@ export interface StockSnapshot {
 export class PolygonService extends EventEmitter {
   private static instance: PolygonService;
   private rest: any;
-  private websocket: any;
+  // private websocket: any; // TODO: Re-enable when WebSocket is properly integrated
   private cache: CacheService;
   private subscribedSymbols: Set<string> = new Set();
   private reconnectAttempts = 0;
