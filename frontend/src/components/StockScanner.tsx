@@ -60,7 +60,7 @@ export function StockScanner({ topVolume, selectedSymbol, onSelectSymbol }: Stoc
       <div className="mt-6">
         <h4 className="text-sm font-semibold text-gray-400 mb-2">Safety Leaders</h4>
         <div className="space-y-1">
-          {safeStocks?.slice(0, 3).map((stock) => (
+          {safeStocks?.slice(0, 3).map((stock: SafeStock) => (
             <div
               key={stock.symbol}
               className="text-xs p-2 bg-trading-dark rounded flex justify-between"
