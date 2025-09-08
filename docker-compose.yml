@@ -81,10 +81,6 @@ services:
       - backend
     networks:
       - trading-network
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
