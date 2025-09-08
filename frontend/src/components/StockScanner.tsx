@@ -24,7 +24,7 @@ interface StockScannerProps {
 }
 
 export function StockScanner({ topVolume, selectedSymbol, onSelectSymbol }: StockScannerProps) {
-  const { data: safeStocks } = useQuery({
+  const { data: safeStocks } = useQuery<SafeStock[]>({
     queryKey: ['safeStocks'],
     queryFn: () => api.getSafeStocks(5),
     refetchInterval: 60000,
