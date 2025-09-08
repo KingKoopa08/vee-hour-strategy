@@ -26,7 +26,7 @@ export function TimeWindowAlert() {
 
   useEffect(() => {
     const checkTimeWindows = () => {
-      const now = toZonedTime(new Date(), 'America/Denver')
+      const now = utcToZonedTime(new Date(), 'America/Denver')
       const currentTime = format(now, 'HH:mm')
       
       const active = criticalTimeWindows.find(window => {
