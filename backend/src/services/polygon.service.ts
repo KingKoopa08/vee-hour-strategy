@@ -128,7 +128,8 @@ export class PolygonService extends EventEmitter {
       return;
     }
 
-    await this.websocket.unsubscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
+    // TODO: Re-enable when WebSocket is properly integrated
+    // await this.websocket.unsubscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
     this.subscribedSymbols.delete(symbol);
     logger.info(`Unsubscribed from ${symbol}`);
   }
