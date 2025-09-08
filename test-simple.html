@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Platform - Quick Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a; 
+            color: #fff; 
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            background: #1a1a1a; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status { 
+            display: flex; 
+            gap: 20px; 
+            align-items: center;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .online { background: #00ff88; }
+        .offline { background: #ff3366; }
+        .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 3fr; 
+            gap: 20px;
+        }
+        .panel {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .stock-list button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            background: #0a0a0a;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .stock-list button:hover { background: #2a2a2a; }
+        .stock-list button.active { 
+            background: #00ff88; 
+            color: #000;
+        }
+        .chart-container {
+            background: #000;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        .indicators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .indicator {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .indicator-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .indicator-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .time-window {
+            background: #ff3366;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .time-window.active { display: block; }
+        #log {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Trading Analysis Platform</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">VEE/HOUR/ISPC Strategy</p>
+            </div>
+            <div class="status">
+                <div>
+                    <span class="status-indicator offline" id="api-status"></span>
+                    <span>API</span>
+                </div>
+                <div>
+                    <span class="status-indicator offline" id="ws-status"></span>
+                    <span>WebSocket</span>
+                </div>
+                <div id="time">--:--:-- MT</div>
+            </div>
+        </div>
+
+        <div class="time-window" id="time-window">
+            <strong>⚠️ CRITICAL TIME WINDOW</strong>
+            <p id="window-message"></p>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h3>Top Volume Stocks</h3>
+                <div class="stock-list" id="stock-list">
+                    <button class="active" data-symbol="AAPL">AAPL</button>
+                    <button data-symbol="TSLA">TSLA</button>
+                    <button data-symbol="NVDA">NVDA</button>
+                    <button data-symbol="AMD">AMD</button>
+                    <button data-symbol="SPY">SPY</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="panel">
+                    <h3 id="current-symbol">AAPL - Live Chart</h3>
+                    <div class="chart-container" id="chart">
+                        Chart will load here when backend is connected
+                    </div>
+                    
+                    <div class="indicators">
+                        <div class="indicator">
+                            <div class="indicator-label">VWAP</div>
+                            <div class="indicator-value" id="vwap">--</div>
+                        </div>
+                        <div class="indicator">
+                            <div class="indicator-label">RSI(14)</div>
+                            <div class="indicator-value" id="rsi">--</div>
+                        </div>
+                        <div class="indicator">
+                            <div class="indicator-label">Volume Ratio</div>
+                            <div class="indicator-value" id="volume-ratio">--</div>
+                        </div>
+                        <div class="indicator">
+                            <div class="indicator-label">Price Change</div>
+                            <div class="indicator-value" id="price-change">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSymbol = 'AAPL';
+        let ws = null;
+        const API_URL = 'http://localhost:3001';
+        const WS_URL = 'ws://localhost:3003';
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const mtTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Denver"}));
+            document.getElementById('time').textContent = 
+                mtTime.toLocaleTimeString('en-US', { hour12: false }) + ' MT';
+            
+            // Check time windows
+            const hours = mtTime.getHours();
+            const minutes = mtTime.getMinutes();
+            const currentTime = hours * 60 + minutes;
+            
+            const windows = [
+                { start: 6 * 60 + 3, end: 6 * 60 + 7, message: "PRIMARY ENTRY WINDOW (6:05 AM)" },
+                { start: 6 * 60 + 33, end: 6 * 60 + 37, message: "DIRECTIONAL BIAS (6:35 AM)" },
+                { start: 7 * 60 + 53, end: 7 * 60 + 57, message: "BREAKOUT WINDOW (7:55 AM)" }
+            ];
+            
+            const activeWindow = windows.find(w => currentTime >= w.start && currentTime <= w.end);
+            const windowEl = document.getElementById('time-window');
+            
+            if (activeWindow) {
+                windowEl.classList.add('active');
+                document.getElementById('window-message').textContent = activeWindow.message;
+            } else {
+                windowEl.classList.remove('active');
+            }
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Log function
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff3366' : type === 'success' ? '#00ff88' : '#fff';
+            logEl.innerHTML = `<div style="color: ${color}">[${time}] ${message}</div>` + logEl.innerHTML;
+            if (logEl.children.length > 10) {
+                logEl.removeChild(logEl.lastChild);
+            }
+        }
+
+        // Test API connection
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('api-status').classList.remove('offline');
+                    document.getElementById('api-status').classList.add('online');
+                    log('API connected', 'success');
+                    return true;
+                }
+            } catch (error) {
+                document.getElementById('api-status').classList.remove('online');
+                document.getElementById('api-status').classList.add('offline');
+                log('API not available - start backend first', 'error');
+                return false;
+            }
+        }
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = () => {
+                    document.getElementById('ws-status').classList.remove('offline');
+                    document.getElementById('ws-status').classList.add('online');
+                    log('WebSocket connected', 'success');
+                    
+                    // Subscribe to current symbol
+                    ws.send(JSON.stringify({
+                        type: 'subscribe',
+                        payload: { symbols: [currentSymbol] }
+                    }));
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'priceUpdate') {
+                        updateIndicators(data.data);
+                    }
+                };
+                
+                ws.onerror = () => {
+                    document.getElementById('ws-status').classList.remove('online');
+                    document.getElementById('ws-status').classList.add('offline');
+                    log('WebSocket error', 'error');
+                };
+                
+                ws.onclose = () => {
+                    document.getElementById('ws-status').classList.remove('online');
+                    document.getElementById('ws-status').classList.add('offline');
+                    log('WebSocket disconnected', 'error');
+                    setTimeout(connectWebSocket, 5000);
+                };
+            } catch (error) {
+                log('WebSocket not available', 'error');
+            }
+        }
+
+        // Update indicators
+        function updateIndicators(data) {
+            if (data.indicators) {
+                document.getElementById('vwap').textContent = '$' + data.indicators.vwap.toFixed(2);
+                document.getElementById('rsi').textContent = data.indicators.rsi.toFixed(2);
+                document.getElementById('volume-ratio').textContent = data.indicators.volumeRatio.toFixed(2) + 'x';
+                document.getElementById('price-change').textContent = 
+                    (data.indicators.priceChangePercent > 0 ? '+' : '') + 
+                    data.indicators.priceChangePercent.toFixed(2) + '%';
+            }
+        }
+
+        // Stock selection
+        document.querySelectorAll('.stock-list button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.stock-list button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentSymbol = e.target.dataset.symbol;
+                document.getElementById('current-symbol').textContent = currentSymbol + ' - Live Chart';
+                
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'subscribe',
+                        payload: { symbols: [currentSymbol] }
+                    }));
+                }
+                
+                log(`Switched to ${currentSymbol}`);
+            });
+        });
+
+        // Initialize
+        async function init() {
+            log('Initializing Trading Platform...');
+            const apiConnected = await testAPI();
+            if (apiConnected) {
+                connectWebSocket();
+            } else {
+                log('Waiting for backend services...', 'error');
+                setTimeout(init, 5000);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 10 10 10;
+    --foreground: 255 255 255;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-trading-green to-trading-blue;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-trading-gray to-trading-dark;
+  }
+
+  .signal-buy {
+    @apply text-trading-green border-trading-green;
+  }
+
+  .signal-sell {
+    @apply text-trading-red border-trading-red;
+  }
+
+  .signal-warning {
+    @apply text-trading-yellow border-trading-yellow;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
