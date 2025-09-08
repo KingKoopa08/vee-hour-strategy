@@ -117,7 +117,8 @@ export class PolygonService extends EventEmitter {
       return;
     }
 
-    await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
+    // TODO: Re-enable when WebSocket is properly integrated
+    // await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
     this.subscribedSymbols.add(symbol);
     logger.info(`Subscribed to ${symbol}`);
   }
@@ -245,7 +246,8 @@ export class PolygonService extends EventEmitter {
         this.reconnectAttempts = 0;
         
         for (const symbol of this.subscribedSymbols) {
-          await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
+          // TODO: Re-enable when WebSocket is properly integrated
+    // await this.websocket.subscribe(`A.${symbol}`, `AM.${symbol}`, `T.${symbol}`);
         }
         
         logger.info('Successfully reconnected to Polygon WebSocket');
