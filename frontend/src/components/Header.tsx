@@ -20,7 +20,7 @@ export function Header({ marketStatus, isConnected }: HeaderProps) {
     return () => clearInterval(timer)
   }, [])
 
-  const mountainTime = toZonedTime(currentTime, 'America/Denver')
+  const mountainTime = utcToZonedTime(currentTime, 'America/Denver')
 
   return (
     <header className="bg-trading-gray border-b border-gray-800">
