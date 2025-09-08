@@ -82,7 +82,8 @@ export class PolygonService extends EventEmitter {
   }
 
   // TODO: Re-enable when WebSocket is properly integrated
-  // private handleAggregateMessage(message: any): void {
+  /*
+  private handleAggregateMessage(message: any): void {
     const priceData: PriceData = {
       symbol: message.sym,
       price: message.c,
@@ -98,17 +99,18 @@ export class PolygonService extends EventEmitter {
     this.emit('priceUpdate', priceData);
     this.cache.set(`price:${message.sym}`, JSON.stringify(priceData), 5);
   }
+  */
 
-  private handleTradeMessage(message: any): void {
-    const tradeData = {
-      symbol: message.sym,
-      price: message.p,
-      size: message.s,
-      timestamp: new Date(message.t)
-    };
-
-    this.emit('trade', tradeData);
-  }
+  // private handleTradeMessage(message: any): void {
+  //   const tradeData = {
+  //     symbol: message.sym,
+  //     price: message.p,
+  //     size: message.s,
+  //     timestamp: new Date(message.t)
+  //   };
+  //
+  //   this.emit('trade', tradeData);
+  // }
 
   async subscribeToSymbol(symbol: string): Promise<void> {
     if (this.subscribedSymbols.has(symbol)) {
