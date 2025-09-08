@@ -81,7 +81,8 @@ export class PolygonService extends EventEmitter {
     }
   }
 
-  private handleAggregateMessage(message: any): void {
+  // TODO: Re-enable when WebSocket is properly integrated
+  // private handleAggregateMessage(message: any): void {
     const priceData: PriceData = {
       symbol: message.sym,
       price: message.c,
