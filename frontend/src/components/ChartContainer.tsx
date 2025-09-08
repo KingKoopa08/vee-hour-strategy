@@ -98,7 +98,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
             low: d.l || d.low || 0,
             close: d.c || d.close || 0,
           }
-        }).filter(d => d.open > 0 && d.high > 0 && d.low > 0 && d.close > 0)
+        }).filter((d: any) => d.open > 0 && d.high > 0 && d.low > 0 && d.close > 0)
         
         if (candleData.length > 0) {
           candlestickSeriesRef.current.setData(candleData)
