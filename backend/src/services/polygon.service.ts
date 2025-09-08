@@ -1,4 +1,5 @@
-import { restClient, websocketClient } from '@polygon.io/client-js';
+import { restClient } from '@polygon.io/client-js';
+// import { websocketClient } from '@polygon.io/client-js'; // TODO: Re-enable when WebSocket is properly integrated
 import { EventEmitter } from 'events';
 import { logger } from '../utils/logger';
 import { CacheService } from './cache.service';
