@@ -86,7 +86,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
   useEffect(() => {
     if (priceData && candlestickSeriesRef.current) {
-      const candleData = priceData.map(d => ({
+      const candleData = priceData.map((d: any) => ({
         time: d.timestamp as any,
         open: d.open,
         high: d.high,
@@ -96,7 +96,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
       candlestickSeriesRef.current.setData(candleData)
 
       if (volumeSeriesRef.current) {
-        const volumeData = priceData.map(d => ({
+        const volumeData = priceData.map((d: any) => ({
           time: d.timestamp as any,
           value: d.volume,
           color: d.close >= d.open ? '#00ff8844' : '#ff336644',
@@ -108,7 +108,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
 
   useEffect(() => {
     if (indicators && vwapSeriesRef.current && priceData) {
-      const vwapData = priceData.map(d => ({
+      const vwapData = priceData.map((d: any) => ({
         time: d.timestamp as any,
         value: indicators.vwap,
       }))
