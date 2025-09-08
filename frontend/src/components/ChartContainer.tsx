@@ -137,7 +137,7 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
             time: timestamp,
             value: indicators.vwap || 0,
           }
-        }).filter(d => d.value > 0)
+        }).filter((d: any) => d.value > 0)
         
         if (vwapData.length > 0) {
           vwapSeriesRef.current.setData(vwapData)
