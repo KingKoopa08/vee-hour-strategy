@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { toZonedTime } from 'date-fns-tz'
+import { toZonedTimeToUtc, utcToZonedTime } from 'date-fns-tz'
 
 interface HeaderProps {
   marketStatus: string
