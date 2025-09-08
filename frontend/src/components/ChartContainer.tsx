@@ -153,9 +153,9 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold">{symbol} - Live Chart</h3>
         <div className="flex space-x-4 text-sm">
-          <span className="text-trading-green">VWAP: ${indicators?.vwap.toFixed(2)}</span>
+          <span className="text-trading-green">VWAP: ${indicators?.vwap?.toFixed(2) || 'N/A'}</span>
           <span className={indicators?.rsi > 70 ? 'text-trading-red' : indicators?.rsi < 30 ? 'text-trading-green' : 'text-white'}>
-            RSI: {indicators?.rsi.toFixed(2)}
+            RSI: {indicators?.rsi?.toFixed(2) || 'N/A'}
           </span>
         </div>
       </div>
