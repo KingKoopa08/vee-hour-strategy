@@ -85,23 +85,43 @@ export function ChartContainer({ symbol }: ChartContainerProps) {
   }, [])
 
   useEffect(() => {
-    if (priceData && candlestickSeriesRef.current) {
-      const candleData = priceData.map((d: any) => ({
-        time: d.timestamp as any,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-      }))
-      candlestickSeriesRef.current.setData(candleData)
+    if (priceData && priceData.length > 0 && candlestickSeriesRef.current) {
+      try {
+        const candleData = priceData.map((d: any) => {
+          const timestamp = typeof d.t === 'number' ? Math.floor(d.t / 1000) : 
+                           d.timestamp ? Math.floor(new Date(d.timestamp).getTime() / 1000) : 
+                           Math.floor(Date.now() / 1000)
+          return {
+            time: timestamp,
+            open: d.o || d.open || 0,
+            high: d.h || d.high || 0,
+            low: d.l || d.low || 0,
+            close: d.c || d.close || 0,
+          }
+        }).filter(d => d.open > 0 && d.high > 0 && d.low > 0 && d.close > 0)
+        
+        if (candleData.length > 0) {
+          candlestickSeriesRef.current.setData(candleData)
+        }
 
-      if (volumeSeriesRef.current) {
-        const volumeData = priceData.map((d: any) => ({
-          time: d.timestamp as any,
-          value: d.volume,
-          color: d.close >= d.open ? '#00ff8844' : '#ff336644',
-        }))
-        volumeSeriesRef.current.setData(volumeData)
+        if (volumeSeriesRef.current) {
+          const volumeData = priceData.map((d: any) => {
+            const timestamp = typeof d.t === 'number' ? Math.floor(d.t / 1000) : 
+                             d.timestamp ? Math.floor(new Date(d.timestamp).getTime() / 1000) : 
+                             Math.floor(Date.now() / 1000)
+            return {
+              time: timestamp,
+              value: d.v || d.volume || 0,
+              color: (d.c || d.close || 0) >= (d.o || d.open || 0) ? '#00ff8844' : '#ff336644',
+            }
+          }).filter(d => d.value > 0)
+          
+          if (volumeData.length > 0) {
+            volumeSeriesRef.current.setData(volumeData)
+          }
+        }
+      } catch (error) {
+        console.error('Error updating chart data:', error)
       }
     }
   }, [priceData])
