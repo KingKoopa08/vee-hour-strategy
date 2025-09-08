@@ -47,7 +47,7 @@ export class PolygonService extends EventEmitter {
     }
     
     this.rest = restClient(apiKey);
-    this.websocket = websocketClient(apiKey);
+    // this.websocket = websocketClient(apiKey); // TODO: Re-enable when WebSocket is properly integrated
     this.cache = CacheService.getInstance();
   }
 
