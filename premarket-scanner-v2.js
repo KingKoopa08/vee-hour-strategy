@@ -371,7 +371,9 @@ async function fetchTop20PremarketStocks() {
         console.log(`🌅 Fetching top 20 highest volume stocks (${timeLabel})...`);
         
         // Get tickers sorted by volume - this is what matters for day trading
-        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=100`;
+        // Fetch more tickers to ensure we catch all pre-market movers
+        // The API sorts by previous day volume, not current pre-market volume
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&limit=1000`;
         const response = await axios.get(url);
         
         if (response.data && response.data.tickers) {
