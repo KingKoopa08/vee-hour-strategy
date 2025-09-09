@@ -728,16 +728,20 @@
             return (num >= 0 ? '+' : '') + formatted + '%';
         }
         
-        function formatNews(news) {
+        function formatNews(news, symbol) {
             if (!news || news.count === 0) {
                 return '<span class="news-count no-news">0</span><span style="color: rgba(255,255,255,0.4)">No news</span>';
             }
             
             const timeStr = news.hoursAgo ? `${news.hoursAgo}h ago` : '';
+            // Store news data for modal
+            const newsData = JSON.stringify(news).replace(/"/g, '&quot;');
             return `
-                <span class="news-count has-news">${news.count}</span>
-                <span class="news-title" title="${news.latestTitle}">${news.latestTitle.substring(0, 50)}${news.latestTitle.length > 50 ? '...' : ''}</span>
-                ${timeStr ? `<span class="news-time">${timeStr}</span>` : ''}
+                <div onclick="showNewsModal('${symbol}', this)" data-news="${newsData}">
+                    <span class="news-count has-news">${news.count}</span>
+                    <span class="news-title" title="${news.latestTitle}">${news.latestTitle.substring(0, 50)}${news.latestTitle.length > 50 ? '...' : ''}</span>
+                    ${timeStr ? `<span class="news-time">${timeStr}</span>` : ''}
+                </div>
             `;
         }
         
