@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Market Dashboard - Top 20 Volume Leaders</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(26, 26, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .market-info {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.closed {
+            background: #ff4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .time {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .last-update {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+        }
+        
+        .refresh-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .table-container {
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom: 2px solid rgba(74, 158, 255, 0.3);
+        }
+        
+        th.number {
+            text-align: right;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: rgba(74, 158, 255, 0.05);
+        }
+        
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+        }
+        
+        td.number {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        
+        .rank {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
+        }
+        
+        .symbol {
+            font-weight: 700;
+            font-size: 16px;
+            color: #4a9eff;
+        }
+        
+        .price {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .change {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .positive {
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .negative {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        .neutral {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .volume {
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        
+        .vwap {
+            color: #ffa500;
+        }
+        
+        .rsi {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .rsi.overbought {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        .rsi.oversold {
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .rsi.neutral {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .mnav-score {
+            font-weight: 700;
+            font-size: 16px;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(74, 158, 255, 0.2), rgba(0, 212, 255, 0.2));
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+        
+        .tax-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: help;
+        }
+        
+        .tax-info:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .footer {
+            margin-top: 24px;
+            padding: 16px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard {
+                padding: 10px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            td, th {
+                padding: 10px;
+            }
+            
+            .hide-mobile {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <div class="header-top">
+                <h1 class="title">Pre-Market Top 20</h1>
+                <div class="market-info">
+                    <div class="status">
+                        <div id="statusDot" class="status-dot closed"></div>
+                        <span id="marketStatus">Market Closed</span>
+                    </div>
+                    <div class="time" id="currentTime">--:--:-- --</div>
+                    <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+                </div>
+            </div>
+            <div class="last-update" id="lastUpdate">Last updated: Never</div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Symbol</th>
+                        <th class="number">Price</th>
+                        <th class="number">Change %</th>
+                        <th class="number">Volume</th>
+                        <th class="number">VWAP</th>
+                        <th class="number">RSI</th>
+                        <th class="number">mNAV Score</th>
+                        <th class="hide-mobile">Tax/Share</th>
+                    </tr>
+                </thead>
+                <tbody id="stocksTable">
+                    <tr>
+                        <td colspan="9" class="loading">Loading pre-market data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            Auto-refreshes every morning at 4:00 AM ET • Updates every 5 minutes during pre-market hours
+        </div>
+    </div>
+    
+    <script>
+        let currentData = [];
+        
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', options) + ' ET';
+            
+            // Check market status
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const minutes = easternTime.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            
+            const statusDot = document.getElementById('statusDot');
+            const marketStatus = document.getElementById('marketStatus');
+            
+            if (totalMinutes >= 240 && totalMinutes < 570) {
+                statusDot.classList.remove('closed');
+                marketStatus.textContent = 'Pre-Market';
+            } else if (totalMinutes >= 570 && totalMinutes < 960) {
+                statusDot.classList.remove('closed');
+                marketStatus.textContent = 'Market Open';
+            } else {
+                statusDot.classList.add('closed');
+                marketStatus.textContent = 'Market Closed';
+            }
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toFixed(0);
+        }
+        
+        function formatPrice(price) {
+            return '$' + price.toFixed(2);
+        }
+        
+        function formatPercent(num) {
+            const formatted = num.toFixed(2);
+            return (num >= 0 ? '+' : '') + formatted + '%';
+        }
+        
+        function getRSIClass(rsi) {
+            if (rsi >= 70) return 'overbought';
+            if (rsi <= 30) return 'oversold';
+            return 'neutral';
+        }
+        
+        function renderTable(stocks) {
+            const tbody = document.getElementById('stocksTable');
+            
+            if (!stocks || stocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="loading">No pre-market data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = stocks.map((stock, index) => {
+                const changeClass = stock.priceChangePercent >= 0 ? 'positive' : 'negative';
+                const rsiClass = getRSIClass(stock.rsi);
+                
+                return `
+                    <tr>
+                        <td class="rank">${index + 1}</td>
+                        <td class="symbol">${stock.symbol}</td>
+                        <td class="price number">${formatPrice(stock.price)}</td>
+                        <td class="number">
+                            <span class="change ${changeClass}">${formatPercent(stock.priceChangePercent)}</span>
+                        </td>
+                        <td class="volume number">${formatNumber(stock.volume)}</td>
+                        <td class="vwap number">${formatPrice(stock.vwap)}</td>
+                        <td class="number">
+                            <span class="rsi ${rsiClass}">${stock.rsi}</span>
+                        </td>
+                        <td class="number">
+                            <span class="mnav-score">${stock.mnavScore.toFixed(2)}</span>
+                        </td>
+                        <td class="tax-info hide-mobile" title="${stock.taxImplications.note}">
+                            $${stock.taxImplications.estimatedTaxPerShare}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        async function loadData() {
+            try {
+                const response = await fetch('/api/premarket/top20');
+                const data = await response.json();
+                
+                if (data.success && data.stocks) {
+                    currentData = data.stocks;
+                    renderTable(currentData);
+                    
+                    // Update last update time
+                    document.getElementById('lastUpdate').textContent = 
+                        `Last updated: ${data.updateTime || new Date().toLocaleTimeString('en-US')} ET`;
+                } else {
+                    throw new Error(data.error || 'Failed to load data');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('stocksTable').innerHTML = 
+                    `<tr><td colspan="9" class="error">Error loading data: ${error.message}</td></tr>`;
+            }
+        }
+        
+        function refreshData() {
+            document.getElementById('stocksTable').innerHTML = 
+                '<tr><td colspan="9" class="loading">Refreshing data...</td></tr>';
+            loadData();
+        }
+        
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+        loadData();
+        
+        // Auto-refresh every 5 minutes during market hours
+        setInterval(() => {
+            const now = new Date();
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const totalMinutes = hours * 60 + easternTime.getMinutes();
+            
+            // Refresh during pre-market and market hours
+            if (totalMinutes >= 240 && totalMinutes < 960) {
+                loadData();
+            }
+        }, 300000); // Every 5 minutes
+    </script>
+</body>
+</html>
