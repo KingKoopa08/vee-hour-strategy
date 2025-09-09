@@ -319,6 +319,7 @@ async function fetchTop20PremarketStocks() {
             console.log(`📊 Returning ${result.length} stocks with average mNAV: ${(result.reduce((sum, s) => sum + s.mnavScore, 0) / result.length).toFixed(2)}`);
             
             return result;
+        }
     } catch (error) {
         console.error('Error fetching pre-market stocks:', error.message);
     }
