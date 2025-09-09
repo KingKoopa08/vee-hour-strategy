@@ -77,39 +77,57 @@ function calculateRSI(prices, period = 14) {
 }
 
 // Calculate mNAV Score (Market-Normalized Asset Value)
-// This proprietary score factors in volume, volatility, momentum, and market conditions
+// Enhanced scoring to identify exceptional pre-market opportunities
 function calculatemNAVScore(stock) {
     let score = 0;
     
-    // Volume component (0.3 weight)
-    const volumeScore = Math.min(stock.volumeRatio / 5, 1) * 0.3;
+    // Volume component (0.35 weight) - increased weight for liquidity
+    // More aggressive scaling for high volume stocks
+    const volumeScore = Math.min(stock.volumeRatio / 2, 1) * 0.35; // Changed from /5 to /2
     
-    // Momentum component (0.25 weight)
+    // Momentum component (0.30 weight) - increased weight
+    // Rewards stronger price movements
     const momentumAbs = Math.abs(stock.priceChangePercent || 0);
-    const momentumScore = Math.min(momentumAbs / 20, 1) * 0.25;
+    const momentumScore = Math.min(momentumAbs / 10, 1) * 0.30; // Changed from /20 to /10
     
-    // Volatility component (0.2 weight) - prefer moderate volatility
+    // Volatility component (0.15 weight) - reduced weight
+    // Prefer 2-5% range for pre-market
     const volatility = stock.rangePercent || 0;
-    const optimalVolatility = 3; // 3% is optimal
-    const volatilityDiff = Math.abs(volatility - optimalVolatility);
-    const volatilityScore = Math.max(0, 1 - (volatilityDiff / 10)) * 0.2;
+    let volatilityScore = 0;
+    if (volatility >= 2 && volatility <= 5) {
+        volatilityScore = 1 * 0.15; // Perfect range
+    } else if (volatility > 5 && volatility <= 10) {
+        volatilityScore = 0.8 * 0.15; // Good range
+    } else if (volatility > 10) {
+        volatilityScore = 0.6 * 0.15; // High but tradeable
+    } else {
+        volatilityScore = (volatility / 2) * 0.15; // Low volatility
+    }
     
-    // Liquidity component (0.15 weight)
-    const liquidityScore = Math.min(stock.volume / 10000000, 1) * 0.15;
+    // Liquidity component (0.10 weight)
+    // Exponential scaling for very liquid stocks
+    const liquidityScore = Math.min(Math.pow(stock.volume / 5000000, 0.7), 1) * 0.10;
     
-    // Price efficiency (0.1 weight) - how close to VWAP
+    // Price efficiency (0.10 weight) - proximity to VWAP
     const vwapDiff = Math.abs(((stock.price - stock.vwap) / stock.vwap) * 100);
-    const efficiencyScore = Math.max(0, 1 - (vwapDiff / 10)) * 0.1;
+    const efficiencyScore = Math.max(0, 1 - (vwapDiff / 20)) * 0.10; // More forgiving
     
     score = volumeScore + momentumScore + volatilityScore + liquidityScore + efficiencyScore;
     
-    // Apply RSI adjustment
+    // Enhanced RSI adjustment
     if (stock.rsi) {
         if (stock.rsi > 70 || stock.rsi < 30) {
-            score *= 1.1; // Boost for overbought/oversold
-        } else if (stock.rsi >= 45 && stock.rsi <= 55) {
-            score *= 0.9; // Reduce for neutral RSI
+            score *= 1.2; // 20% boost for extreme RSI
+        } else if (stock.rsi > 60 || stock.rsi < 40) {
+            score *= 1.1; // 10% boost for trending
+        } else if (stock.rsi >= 48 && stock.rsi <= 52) {
+            score *= 0.95; // Small penalty for very neutral
         }
+    }
+    
+    // Bonus for exceptional conditions
+    if (stock.volumeRatio > 5 && Math.abs(stock.priceChangePercent) > 5) {
+        score *= 1.15; // 15% bonus for high volume + high movement
     }
     
     return Math.min(1, score); // Cap at 1.0
