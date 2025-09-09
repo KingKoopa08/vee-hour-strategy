@@ -273,6 +273,54 @@ async function fetchEnhancedPremarketData(symbol) {
             const volumeRatio = (prevDay.v && prevDay.v > 0) ? volume / prevDay.v : 1;
             const rangePercent = ((highPrice - lowPrice) / currentPrice) * 100;
             
+            // Calculate buy/sell indicators
+            const priceVsVwap = vwap > 0 ? ((currentPrice - vwap) / vwap) * 100 : 0;
+            const isAboveVwap = currentPrice > vwap;
+            
+            // Position in range (0 = at low, 100 = at high)
+            const positionInRange = highPrice > lowPrice ? 
+                ((currentPrice - lowPrice) / (highPrice - lowPrice)) * 100 : 50;
+            
+            // Momentum indicator based on price change
+            let momentum = 'NEUTRAL';
+            let momentumScore = 0;
+            if (priceChangePercent > 2) {
+                momentum = 'STRONG_UP';
+                momentumScore = 2;
+            } else if (priceChangePercent > 0.5) {
+                momentum = 'UP';
+                momentumScore = 1;
+            } else if (priceChangePercent < -2) {
+                momentum = 'STRONG_DOWN';
+                momentumScore = -2;
+            } else if (priceChangePercent < -0.5) {
+                momentum = 'DOWN';
+                momentumScore = -1;
+            }
+            
+            // Volume surge indicator
+            let volumeSurge = 'NORMAL';
+            if (volumeRatio > 3) {
+                volumeSurge = 'EXTREME';
+            } else if (volumeRatio > 2) {
+                volumeSurge = 'HIGH';
+            } else if (volumeRatio > 1.5) {
+                volumeSurge = 'ELEVATED';
+            }
+            
+            // Calculate composite buy/sell signal
+            let signalScore = 0;
+            signalScore += momentumScore * 2; // Weight momentum heavily
+            signalScore += isAboveVwap ? 1 : -1; // VWAP position
+            signalScore += positionInRange > 70 ? 1 : positionInRange < 30 ? -1 : 0; // Range position
+            signalScore += volumeSurge === 'EXTREME' ? 2 : volumeSurge === 'HIGH' ? 1 : 0; // Volume
+            
+            let signal = 'HOLD';
+            if (signalScore >= 4) signal = 'STRONG_BUY';
+            else if (signalScore >= 2) signal = 'BUY';
+            else if (signalScore <= -4) signal = 'STRONG_SELL';
+            else if (signalScore <= -2) signal = 'SELL';
+            
             // Fetch recent news instead of RSI
             const newsData = await fetchRecentNews(symbol);
             
@@ -289,6 +337,14 @@ async function fetchEnhancedPremarketData(symbol) {
                 priceChangePercent: priceChangePercent,
                 volumeRatio: volumeRatio,
                 rangePercent: rangePercent,
+                priceVsVwap: priceVsVwap,
+                isAboveVwap: isAboveVwap,
+                positionInRange: positionInRange,
+                momentum: momentum,
+                momentumScore: momentumScore,
+                volumeSurge: volumeSurge,
+                signal: signal,
+                signalScore: signalScore,
                 rsi: 50, // Default RSI for mNAV calculation
                 news: newsData,
                 timestamp: new Date()
