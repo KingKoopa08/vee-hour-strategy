@@ -236,20 +236,22 @@ async function fetchEnhancedPremarketData(symbol) {
             const day = ticker.day || {};
             const prevDay = ticker.prevDay || {};
             
-            // PRIORITIZE pre-market data during pre-market hours
+            // During pre-market hours, Polygon puts pre-market data in the 'day' field
             let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
             
-            if (isPremarketHours() && preMarket.v && preMarket.v > 0) {
-                // Use ONLY pre-market data during pre-market hours
-                currentPrice = preMarket.c || preMarket.l || prevDay.c || 0;
-                openPrice = preMarket.o || prevDay.c || 0;
-                highPrice = preMarket.h || currentPrice;
-                lowPrice = preMarket.l || currentPrice;
-                volume = preMarket.v;
-                vwap = preMarket.vw || currentPrice;
-                console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
+            if (isPremarketHours()) {
+                // During pre-market hours, 'day' field contains pre-market data
+                currentPrice = day.c || day.l || prevDay.c || 0;
+                openPrice = day.o || prevDay.c || 0;
+                highPrice = day.h || currentPrice;
+                lowPrice = day.l || currentPrice;
+                volume = day.v || 0;
+                vwap = day.vw || currentPrice;
+                if (volume > 0) {
+                    console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
+                }
             } else {
-                // Use day data when not in pre-market or no pre-market data
+                // Outside pre-market hours, use regular market data
                 currentPrice = day.c || preMarket.c || prevDay.c || 0;
                 openPrice = day.o || preMarket.o || prevDay.c || 0;
                 highPrice = day.h || preMarket.h || currentPrice;
