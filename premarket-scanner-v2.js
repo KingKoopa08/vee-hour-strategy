@@ -269,8 +269,8 @@ async function fetchTop20PremarketStocks() {
                     // Fetch enhanced data for this stock
                     const enhancedData = await fetchEnhancedPremarketData(ticker.ticker);
                     
-                    // Only include if mNAV score is above 0.88
-                    if (enhancedData && enhancedData.mnavScore > 0.88) {
+                    // Only include if mNAV score is above 0.6
+                    if (enhancedData && enhancedData.mnavScore > 0.6) {
                         highMnavStocks.push(enhancedData);
                         console.log(`✓ ${ticker.ticker}: mNAV ${enhancedData.mnavScore.toFixed(2)}`);
                         
