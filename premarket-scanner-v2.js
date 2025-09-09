@@ -313,6 +313,18 @@ async function fetchTop20PremarketStocks() {
             const topVolumeStocks = [];
             let processed = 0;
             
+            // Debug first few tickers to see structure
+            if (response.data.tickers.length > 0 && isPremarketHours()) {
+                console.log(`📋 Debug first 3 tickers during PRE-MARKET:`);
+                for (let i = 0; i < Math.min(3, response.data.tickers.length); i++) {
+                    const t = response.data.tickers[i];
+                    console.log(`   ${t.ticker}:`);
+                    console.log(`     preMarket exists: ${!!t.preMarket}, has volume: ${t.preMarket?.v > 0}`);
+                    console.log(`     day.v: ${t.day?.v || 0}, day.c: ${t.day?.c || 0}`);
+                    console.log(`     prevDay.v: ${t.prevDay?.v || 0}`);
+                }
+            }
+            
             // Process top volume stocks - PRIORITIZE PRE-MARKET DATA
             for (const ticker of response.data.tickers) {
                 if (topVolumeStocks.length >= 20) break;
