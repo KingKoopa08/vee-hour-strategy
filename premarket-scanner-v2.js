@@ -392,10 +392,10 @@ async function fetchTop20PremarketStocks() {
                 }
             }
             
-            // Process top volume stocks - PRIORITIZE PRE-MARKET DATA
+            // First pass: collect ALL stocks with pre-market volume
+            const allPremarketStocks = [];
+            
             for (const ticker of response.data.tickers) {
-                if (topVolumeStocks.length >= 20) break;
-                
                 const preMarket = ticker.preMarket || {};
                 const day = ticker.day || {};
                 const prevDay = ticker.prevDay || {};
@@ -425,16 +425,32 @@ async function fetchTop20PremarketStocks() {
                 // Basic filters for tradeable stocks
                 // Min volume 100K for liquidity, price between $1-100 for accessibility
                 if (volume > 100000 && price >= 1 && price <= 100) {
-                    processed++;
-                    console.log(`Processing ${ticker.ticker}: ${dataSource} Volume ${(volume/1000000).toFixed(2)}M`);
-                    
-                    // Fetch enhanced data including news
-                    const enhancedData = await fetchEnhancedPremarketData(ticker.ticker);
-                    
-                    if (enhancedData) {
-                        topVolumeStocks.push(enhancedData);
-                        console.log(`✓ ${ticker.ticker}: Volume ${(volume/1000000).toFixed(2)}M, mNAV ${enhancedData.mnavScore.toFixed(2)}`);
-                    }
+                    allPremarketStocks.push({
+                        ticker: ticker.ticker,
+                        volume: volume,
+                        price: price,
+                        dataSource: dataSource
+                    });
+                }
+            }
+            
+            // Sort ALL stocks by volume first
+            allPremarketStocks.sort((a, b) => b.volume - a.volume);
+            
+            console.log(`📊 Found ${allPremarketStocks.length} stocks with pre-market activity`);
+            console.log(`🔝 Top 5 by volume: ${allPremarketStocks.slice(0, 5).map(s => `${s.ticker} (${(s.volume/1e6).toFixed(1)}M)`).join(', ')}`);
+            
+            // Now process only the top 20 by volume
+            for (const stock of allPremarketStocks.slice(0, 20)) {
+                processed++;
+                console.log(`Processing ${stock.ticker}: ${stock.dataSource} Volume ${(stock.volume/1000000).toFixed(2)}M`);
+                
+                // Fetch enhanced data including news
+                const enhancedData = await fetchEnhancedPremarketData(stock.ticker);
+                
+                if (enhancedData) {
+                    topVolumeStocks.push(enhancedData);
+                    console.log(`✓ ${stock.ticker}: Volume ${(stock.volume/1000000).toFixed(2)}M, mNAV ${enhancedData.mnavScore.toFixed(2)}`);
                 }
             }
             
