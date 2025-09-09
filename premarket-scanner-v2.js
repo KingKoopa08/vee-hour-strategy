@@ -235,29 +235,36 @@ async function fetchEnhancedPremarketData(symbol) {
             const preMarket = ticker.preMarket || {};
             const day = ticker.day || {};
             const prevDay = ticker.prevDay || {};
+            const min = ticker.min || {}; // Latest minute bar - contains pre-market data
             
-            // During pre-market hours, Polygon puts pre-market data in the 'day' field
+            // During pre-market hours, use 'min' field for latest data
             let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
             
-            if (isPremarketHours()) {
-                // During pre-market hours, 'day' field contains pre-market data
-                currentPrice = day.c || day.l || prevDay.c || 0;
+            if (isPremarketHours() && min.v && min.v > 0) {
+                // During pre-market hours, 'min' field contains latest pre-market data
+                currentPrice = min.c || min.l || prevDay.c || 0;
+                openPrice = min.o || prevDay.c || 0;
+                highPrice = min.h || currentPrice;
+                lowPrice = min.l || currentPrice;
+                volume = min.av || min.v || 0; // Use accumulated volume if available
+                vwap = min.vw || currentPrice;
+                console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
+            } else if (day.v && day.v > 0) {
+                // Use regular day data when available
+                currentPrice = day.c || prevDay.c || 0;
                 openPrice = day.o || prevDay.c || 0;
                 highPrice = day.h || currentPrice;
                 lowPrice = day.l || currentPrice;
                 volume = day.v || 0;
                 vwap = day.vw || currentPrice;
-                if (volume > 0) {
-                    console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
-                }
             } else {
-                // Outside pre-market hours, use regular market data
-                currentPrice = day.c || preMarket.c || prevDay.c || 0;
-                openPrice = day.o || preMarket.o || prevDay.c || 0;
-                highPrice = day.h || preMarket.h || currentPrice;
-                lowPrice = day.l || preMarket.l || currentPrice;
-                volume = day.v || preMarket.v || 0;
-                vwap = day.vw || preMarket.vw || currentPrice;
+                // Fallback to previous day
+                currentPrice = prevDay.c || 0;
+                openPrice = prevDay.c || 0;
+                highPrice = prevDay.h || currentPrice;
+                lowPrice = prevDay.l || currentPrice;
+                volume = 0;
+                vwap = currentPrice;
             }
             
             // Calculate basic metrics
@@ -321,7 +328,7 @@ async function fetchTop20PremarketStocks() {
                 for (let i = 0; i < Math.min(3, response.data.tickers.length); i++) {
                     const t = response.data.tickers[i];
                     console.log(`   ${t.ticker}:`);
-                    console.log(`     preMarket exists: ${!!t.preMarket}, has volume: ${t.preMarket?.v > 0}`);
+                    console.log(`     min.v: ${t.min?.v || 0}, min.av: ${t.min?.av || 0}, min.c: ${t.min?.c || 0}`);
                     console.log(`     day.v: ${t.day?.v || 0}, day.c: ${t.day?.c || 0}`);
                     console.log(`     prevDay.v: ${t.prevDay?.v || 0}`);
                 }
@@ -334,26 +341,26 @@ async function fetchTop20PremarketStocks() {
                 const preMarket = ticker.preMarket || {};
                 const day = ticker.day || {};
                 const prevDay = ticker.prevDay || {};
+                const min = ticker.min || {}; // Latest minute bar
                 
-                // IMPORTANT: During pre-market hours, Polygon puts pre-market data in the 'day' field
-                // The 'preMarket' field is typically only populated AFTER pre-market closes
+                // IMPORTANT: During pre-market hours, use 'min' field for latest data
                 let volume = 0;
                 let price = 0;
                 let dataSource = 'UNKNOWN';
                 
                 if (isPremarketHours()) {
-                    // During pre-market hours, the 'day' field contains pre-market data
-                    // Skip stocks with no volume during pre-market
-                    if (!day.v || day.v === 0) {
-                        continue;
+                    // During pre-market hours, use min field which has latest pre-market data
+                    // av = accumulated volume for the day, v = volume in that minute
+                    volume = min.av || min.v || 0;
+                    if (volume === 0) {
+                        continue; // Skip stocks with no pre-market volume
                     }
-                    volume = day.v;
-                    price = day.c || day.l || prevDay.c || 0;
+                    price = min.c || min.l || prevDay.c || 0;
                     dataSource = 'PRE-MARKET';
                 } else {
                     // Outside pre-market hours, use regular market data
-                    volume = day.v || preMarket.v || 0;
-                    price = day.c || preMarket.c || prevDay.c || 0;
+                    volume = day.v || min.av || min.v || 0;
+                    price = day.c || min.c || prevDay.c || 0;
                     dataSource = 'REGULAR';
                 }
                 
