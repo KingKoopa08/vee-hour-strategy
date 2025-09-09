@@ -304,8 +304,8 @@ async function fetchTop20PremarketStocks() {
                 const price = preMarket.c || day.c || prevDay.c || 0;
                 
                 // Basic filters for tradeable stocks
-                // Min volume 100K for liquidity, price between $1-1000 for accessibility
-                if (volume > 100000 && price >= 1 && price <= 1000) {
+                // Min volume 100K for liquidity, price between $1-100 for accessibility
+                if (volume > 100000 && price >= 1 && price <= 100) {
                     processed++;
                     console.log(`Processing ${ticker.ticker}: Volume ${(volume/1000000).toFixed(2)}M`);
                     
