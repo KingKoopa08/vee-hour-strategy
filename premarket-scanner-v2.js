@@ -282,7 +282,7 @@ async function fetchEnhancedPremarketData(symbol) {
 // Fetch top 20 pre-market movers with mNAV > 0.88
 async function fetchTop20PremarketStocks() {
     try {
-        console.log('🌅 Fetching top 20 pre-market stocks with mNAV > 0.88...');
+        console.log('🌅 Fetching top 20 pre-market stocks with mNAV > 0.6...');
         
         // Get more tickers to ensure we find 20 with high mNAV
         const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=500`;
