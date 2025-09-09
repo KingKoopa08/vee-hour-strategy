@@ -767,7 +767,7 @@
                         <td class="volume number">${formatNumber(stock.volume)}</td>
                         <td class="vwap number">${formatPrice(stock.vwap)}</td>
                         <td class="news-cell">
-                            ${formatNews(stock.news)}
+                            ${formatNews(stock.news, stock.symbol)}
                         </td>
                         <td class="number">
                             <span class="mnav-score">${stock.mnavScore.toFixed(2)}</span>
