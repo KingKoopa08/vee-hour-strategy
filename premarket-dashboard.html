@@ -207,24 +207,43 @@
             color: #ffa500;
         }
         
-        .rsi {
+        .news-cell {
+            max-width: 250px;
+            font-size: 12px;
+        }
+        
+        .news-count {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
+            margin-right: 8px;
         }
         
-        .rsi.overbought {
-            color: #ff4444;
-            background: rgba(255, 68, 68, 0.1);
+        .news-count.has-news {
+            background: rgba(74, 158, 255, 0.2);
+            color: #4a9eff;
         }
         
-        .rsi.oversold {
-            color: #00ff88;
-            background: rgba(0, 255, 136, 0.1);
+        .news-count.no-news {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
         }
         
-        .rsi.neutral {
-            color: rgba(255, 255, 255, 0.6);
+        .news-title {
+            color: rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            max-width: 180px;
+            vertical-align: middle;
+        }
+        
+        .news-time {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-left: 5px;
         }
         
         .mnav-score {
