@@ -2,10 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const { WebSocketServer } = require('ws');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve the live-dashboard.html file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'live-dashboard.html'));
+});
 
 // Polygon.io configuration
 const POLYGON_API_KEY = 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
