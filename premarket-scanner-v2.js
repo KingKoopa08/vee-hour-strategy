@@ -350,8 +350,8 @@ async function fetchTop20PremarketStocks() {
                 
                 if (isPremarketHours()) {
                     // During pre-market hours, use min field which has latest pre-market data
-                    // av = accumulated volume for the day, v = volume in that minute
-                    volume = min.av || min.v || 0;
+                    // IMPORTANT: Use av (accumulated volume) not v (single minute volume)!
+                    volume = min.av || 0;
                     if (volume === 0) {
                         continue; // Skip stocks with no pre-market volume
                     }
