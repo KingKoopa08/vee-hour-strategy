@@ -333,24 +333,26 @@ async function fetchTop20PremarketStocks() {
                 const day = ticker.day || {};
                 const prevDay = ticker.prevDay || {};
                 
-                // IMPORTANT: Use pre-market volume if available, only fall back to day if no pre-market
-                // During pre-market hours, we want ONLY stocks with pre-market activity
+                // IMPORTANT: During pre-market hours, Polygon puts pre-market data in the 'day' field
+                // The 'preMarket' field is typically only populated AFTER pre-market closes
                 let volume = 0;
                 let price = 0;
-                let usingPremarket = false;
+                let dataSource = 'UNKNOWN';
                 
-                if (isPremarketHours() && preMarket.v && preMarket.v > 0) {
-                    // During pre-market, only use pre-market data
-                    volume = preMarket.v;
-                    price = preMarket.c || preMarket.l || 0;
-                    usingPremarket = true;
-                } else if (!isPremarketHours()) {
-                    // Outside pre-market, use day or pre-market data
+                if (isPremarketHours()) {
+                    // During pre-market hours, the 'day' field contains pre-market data
+                    // Skip stocks with no volume during pre-market
+                    if (!day.v || day.v === 0) {
+                        continue;
+                    }
+                    volume = day.v;
+                    price = day.c || day.l || prevDay.c || 0;
+                    dataSource = 'PRE-MARKET';
+                } else {
+                    // Outside pre-market hours, use regular market data
                     volume = day.v || preMarket.v || 0;
                     price = day.c || preMarket.c || prevDay.c || 0;
-                } else {
-                    // Skip stocks with no pre-market activity during pre-market hours
-                    continue;
+                    dataSource = 'REGULAR';
                 }
                 
                 // Basic filters for tradeable stocks
