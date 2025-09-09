@@ -219,20 +219,24 @@ async function fetchEnhancedPremarketData(symbol) {
     return null;
 }
 
-// Fetch top 20 pre-market movers by volume
+// Fetch top 20 pre-market movers with mNAV > 0.88
 async function fetchTop20PremarketStocks() {
     try {
-        console.log('🌅 Fetching top 20 pre-market stocks by volume...');
+        console.log('🌅 Fetching top 20 pre-market stocks with mNAV > 0.88...');
         
-        // Get all tickers snapshot
-        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=200`;
+        // Get more tickers to ensure we find 20 with high mNAV
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=500`;
         const response = await axios.get(url);
         
         if (response.data && response.data.tickers) {
-            const premarketStocks = [];
+            const highMnavStocks = [];
+            let processed = 0;
+            const maxToProcess = Math.min(response.data.tickers.length, 200); // Process up to 200 stocks
             
-            // Process tickers and filter for pre-market criteria
-            for (const ticker of response.data.tickers.slice(0, 50)) { // Check top 50 to ensure we get 20 good ones
+            // Process tickers to find high mNAV stocks
+            for (const ticker of response.data.tickers) {
+                if (processed >= maxToProcess) break;
+                
                 const preMarket = ticker.preMarket || {};
                 const day = ticker.day || {};
                 const prevDay = ticker.prevDay || {};
@@ -240,24 +244,63 @@ async function fetchTop20PremarketStocks() {
                 const volume = preMarket.v || day.v || 0;
                 const price = preMarket.c || day.c || prevDay.c || 0;
                 
-                // Filter criteria
-                if (volume > 100000 && price > 0.5 && price < 10000) {
+                // Basic filter criteria
+                if (volume > 50000 && price > 0.5 && price < 10000) {
+                    processed++;
+                    
                     // Fetch enhanced data for this stock
                     const enhancedData = await fetchEnhancedPremarketData(ticker.ticker);
-                    if (enhancedData) {
-                        premarketStocks.push(enhancedData);
-                    }
                     
-                    // Stop once we have 20 stocks
-                    if (premarketStocks.length >= 20) break;
+                    // Only include if mNAV score is above 0.88
+                    if (enhancedData && enhancedData.mnavScore > 0.88) {
+                        highMnavStocks.push(enhancedData);
+                        console.log(`✓ ${ticker.ticker}: mNAV ${enhancedData.mnavScore.toFixed(2)}`);
+                        
+                        // Stop once we have 20 high mNAV stocks
+                        if (highMnavStocks.length >= 20) break;
+                    }
                 }
             }
             
-            // Sort by volume (highest first)
-            premarketStocks.sort((a, b) => b.volume - a.volume);
+            // If we don't have 20 stocks with mNAV > 0.88, lower threshold slightly
+            if (highMnavStocks.length < 20) {
+                console.log(`⚠️ Only found ${highMnavStocks.length} stocks with mNAV > 0.88, searching for more...`);
+                
+                // Process more stocks with slightly lower threshold
+                for (const ticker of response.data.tickers.slice(processed)) {
+                    if (highMnavStocks.length >= 20) break;
+                    
+                    const preMarket = ticker.preMarket || {};
+                    const day = ticker.day || {};
+                    const prevDay = ticker.prevDay || {};
+                    
+                    const volume = preMarket.v || day.v || 0;
+                    const price = preMarket.c || day.c || prevDay.c || 0;
+                    
+                    if (volume > 25000 && price > 0.5 && price < 10000) {
+                        const enhancedData = await fetchEnhancedPremarketData(ticker.ticker);
+                        
+                        // Use slightly lower threshold if needed (0.85)
+                        if (enhancedData && enhancedData.mnavScore > 0.85) {
+                            highMnavStocks.push(enhancedData);
+                            console.log(`✓ ${ticker.ticker}: mNAV ${enhancedData.mnavScore.toFixed(2)} (backup)`);
+                        }
+                    }
+                }
+            }
             
-            return premarketStocks.slice(0, 20); // Ensure exactly 20
-        }
+            // Sort by mNAV score (highest first), then by volume
+            highMnavStocks.sort((a, b) => {
+                if (Math.abs(b.mnavScore - a.mnavScore) > 0.01) {
+                    return b.mnavScore - a.mnavScore;
+                }
+                return b.volume - a.volume;
+            });
+            
+            const result = highMnavStocks.slice(0, 20);
+            console.log(`📊 Returning ${result.length} stocks with average mNAV: ${(result.reduce((sum, s) => sum + s.mnavScore, 0) / result.length).toFixed(2)}`);
+            
+            return result;
     } catch (error) {
         console.error('Error fetching pre-market stocks:', error.message);
     }
