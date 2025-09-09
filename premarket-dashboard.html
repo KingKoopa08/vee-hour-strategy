@@ -453,6 +453,100 @@
         </div>
     </div>
     
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHelp()">&times;</span>
+            <h2 class="help-title">📊 Understanding Pre-Market Metrics</h2>
+            
+            <div class="help-section">
+                <h3>Core Metrics</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">Price & Change %</div>
+                        <div class="metric-desc">Current pre-market price and percentage change from previous close. Green indicates gains, red indicates losses.</div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">Volume</div>
+                        <div class="metric-desc">Total shares traded during pre-market session. Higher volume indicates stronger interest and better liquidity for trading.</div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">VWAP (Volume Weighted Average Price)</div>
+                        <div class="metric-desc">The average price weighted by volume. Trading above VWAP suggests bullish sentiment, below suggests bearish.</div>
+                        <span class="formula">VWAP = Σ(Price × Volume) / Σ(Volume)</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Technical Indicators</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">RSI (Relative Strength Index)</div>
+                        <div class="metric-desc">Momentum indicator measuring overbought/oversold conditions on a 0-100 scale:</div>
+                        <div style="margin-top: 8px; font-size: 13px;">
+                            • <span style="color: #ff4444;">Above 70</span>: Overbought (potential reversal down)<br>
+                            • <span style="color: #00ff88;">Below 30</span>: Oversold (potential reversal up)<br>
+                            • <span style="color: rgba(255,255,255,0.6);">30-70</span>: Neutral range
+                        </div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">mNAV Score (Market-Normalized Asset Value)</div>
+                        <div class="metric-desc">Proprietary composite score (0-1.0) combining multiple factors to identify strong pre-market opportunities:</div>
+                        <div style="margin-top: 8px; font-size: 13px;">
+                            • <strong>30%</strong> - Volume momentum (current vs average)<br>
+                            • <strong>25%</strong> - Price movement strength<br>
+                            • <strong>20%</strong> - Volatility (optimal at 3% range)<br>
+                            • <strong>15%</strong> - Liquidity (ability to trade)<br>
+                            • <strong>10%</strong> - VWAP efficiency (price vs VWAP)
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Score interpretation:</strong><br>
+                            • 0.8-1.0: Exceptional opportunity<br>
+                            • 0.6-0.8: Strong potential<br>
+                            • 0.4-0.6: Moderate interest<br>
+                            • Below 0.4: Lower priority
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Tax Information</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">Tax/Share</div>
+                        <div class="metric-desc">Estimated tax per share for day trading (short-term capital gains at 37% rate). This helps calculate the after-tax profit needed to break even. Hover over the value to see additional notes about wash sale risk.</div>
+                        <span class="formula">Tax = Price Change × 0.37</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>How Stocks Are Selected</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-desc">
+                            1. Scans all US stocks for pre-market activity<br>
+                            2. Filters for minimum 100K volume and price $0.50-$10,000<br>
+                            3. Calculates all technical indicators and scores<br>
+                            4. Sorts by highest volume (most liquid stocks)<br>
+                            5. Displays top 20 for optimal trading opportunities<br>
+                            6. Refreshes every 5 minutes during pre-market (4:00-9:30 AM ET)
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section" style="background: rgba(255, 68, 68, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 68, 68, 0.3);">
+                <h3>⚠️ Important Disclaimer</h3>
+                <div style="color: rgba(255, 255, 255, 0.9); font-size: 13px; line-height: 1.6;">
+                    This tool is for educational and informational purposes only. It is not financial advice. Trading stocks, especially in pre-market hours, involves substantial risk including total loss of capital. Pre-market trading has lower liquidity and higher volatility. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         let currentData = [];
         
