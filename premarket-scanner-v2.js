@@ -359,7 +359,6 @@ async function fetchTop20PremarketStocks() {
                 // Min volume 100K for liquidity, price between $1-100 for accessibility
                 if (volume > 100000 && price >= 1 && price <= 100) {
                     processed++;
-                    const dataSource = usingPremarket ? 'PRE-MARKET' : 'REGULAR';
                     console.log(`Processing ${ticker.ticker}: ${dataSource} Volume ${(volume/1000000).toFixed(2)}M`);
                     
                     // Fetch enhanced data including news
