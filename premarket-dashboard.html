@@ -913,6 +913,38 @@
             }).join('');
         }
         
+        function getMomentumArrow(momentum) {
+            const arrows = {
+                'STRONG_UP': '<span class="momentum-arrow strong-up">⬆</span>',
+                'UP': '<span class="momentum-arrow up">↗</span>',
+                'NEUTRAL': '<span class="momentum-arrow neutral">→</span>',
+                'DOWN': '<span class="momentum-arrow down">↘</span>',
+                'STRONG_DOWN': '<span class="momentum-arrow strong-down">⬇</span>'
+            };
+            return arrows[momentum] || arrows['NEUTRAL'];
+        }
+        
+        function getVolumeSurgeIcon(surge) {
+            const icons = {
+                'EXTREME': '<span class="volume-surge extreme">🔥</span>',
+                'HIGH': '<span class="volume-surge high">⚡</span>',
+                'ELEVATED': '<span class="volume-surge elevated">✨</span>',
+                'NORMAL': ''
+            };
+            return icons[surge] || '';
+        }
+        
+        function getSignalBadge(signal) {
+            const badges = {
+                'STRONG_BUY': '<span class="signal-badge strong-buy">Strong Buy</span>',
+                'BUY': '<span class="signal-badge buy">Buy</span>',
+                'HOLD': '<span class="signal-badge hold">Hold</span>',
+                'SELL': '<span class="signal-badge sell">Sell</span>',
+                'STRONG_SELL': '<span class="signal-badge strong-sell">Strong Sell</span>'
+            };
+            return badges[signal] || badges['HOLD'];
+        }
+        
         async function loadData() {
             try {
                 const response = await fetch('/api/premarket/top20');
