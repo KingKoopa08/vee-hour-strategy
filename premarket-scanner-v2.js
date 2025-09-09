@@ -172,6 +172,49 @@ async function fetchHistoricalPrices(symbol, days = 20) {
     return [];
 }
 
+// Fetch recent news for a stock (last 48 hours)
+async function fetchRecentNews(symbol) {
+    try {
+        // Calculate date 48 hours ago
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+        const fromDate = twoDaysAgo.toISOString().split('T')[0];
+        
+        const url = `${POLYGON_BASE_URL}/v2/reference/news?ticker=${symbol}&published_utc.gte=${fromDate}&limit=5&apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.results && response.data.results.length > 0) {
+            // Get the most recent news items
+            const news = response.data.results.map(article => ({
+                title: article.title,
+                publisher: article.publisher.name,
+                publishedAt: new Date(article.published_utc),
+                url: article.article_url,
+                sentiment: article.sentiment || 'neutral'
+            }));
+            
+            // Return summary of news
+            return {
+                count: news.length,
+                latestTitle: news[0].title,
+                latestPublisher: news[0].publisher,
+                hoursAgo: Math.round((Date.now() - news[0].publishedAt) / (1000 * 60 * 60)),
+                headlines: news.slice(0, 3).map(n => n.title)
+            };
+        }
+    } catch (error) {
+        console.error(`Error fetching news for ${symbol}:`, error.message);
+    }
+    
+    return {
+        count: 0,
+        latestTitle: 'No recent news',
+        latestPublisher: '',
+        hoursAgo: null,
+        headlines: []
+    };
+}
+
 // Fetch pre-market data for a single stock with enhanced metrics
 async function fetchEnhancedPremarketData(symbol) {
     try {
