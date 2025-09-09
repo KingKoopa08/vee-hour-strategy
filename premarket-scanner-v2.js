@@ -244,10 +244,8 @@ async function fetchEnhancedPremarketData(symbol) {
             const volumeRatio = (prevDay.v && prevDay.v > 0) ? volume / prevDay.v : 1;
             const rangePercent = ((highPrice - lowPrice) / currentPrice) * 100;
             
-            // Fetch historical prices for RSI
-            const historicalPrices = await fetchHistoricalPrices(symbol);
-            historicalPrices.push(currentPrice); // Add current price
-            const rsi = calculateRSI(historicalPrices);
+            // Fetch recent news instead of RSI
+            const newsData = await fetchRecentNews(symbol);
             
             const stockData = {
                 symbol: symbol,
@@ -262,7 +260,8 @@ async function fetchEnhancedPremarketData(symbol) {
                 priceChangePercent: priceChangePercent,
                 volumeRatio: volumeRatio,
                 rangePercent: rangePercent,
-                rsi: rsi,
+                rsi: 50, // Default RSI for mNAV calculation
+                news: newsData,
                 timestamp: new Date()
             };
             
