@@ -280,9 +280,9 @@ async function fetchTop20PremarketStocks() {
                 }
             }
             
-            // If we don't have 20 stocks with mNAV > 0.88, lower threshold slightly
+            // If we don't have 20 stocks with mNAV > 0.6, lower threshold slightly
             if (highMnavStocks.length < 20) {
-                console.log(`⚠️ Only found ${highMnavStocks.length} stocks with mNAV > 0.88, searching for more...`);
+                console.log(`⚠️ Only found ${highMnavStocks.length} stocks with mNAV > 0.6, searching for more...`);
                 
                 // Process more stocks with slightly lower threshold
                 for (const ticker of response.data.tickers.slice(processed)) {
@@ -298,8 +298,8 @@ async function fetchTop20PremarketStocks() {
                     if (volume > 25000 && price > 0.5 && price < 10000) {
                         const enhancedData = await fetchEnhancedPremarketData(ticker.ticker);
                         
-                        // Use slightly lower threshold if needed (0.85)
-                        if (enhancedData && enhancedData.mnavScore > 0.85) {
+                        // Use slightly lower threshold if needed (0.5)
+                        if (enhancedData && enhancedData.mnavScore > 0.5) {
                             highMnavStocks.push(enhancedData);
                             console.log(`✓ ${ticker.ticker}: mNAV ${enhancedData.mnavScore.toFixed(2)} (backup)`);
                         }
