@@ -358,7 +358,7 @@ setInterval(async () => {
     }
 }, 60000); // Every minute during pre-market
 
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.PORT || 3011;
 app.listen(PORT, () => {
     console.log(`🌅 Pre-Market Scanner Server running on port ${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}`);
