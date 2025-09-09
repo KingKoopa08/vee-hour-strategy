@@ -302,7 +302,8 @@ async function fetchEnhancedPremarketData(symbol) {
 // Fetch top 20 pre-market stocks by VOLUME (liquidity is key for day trading)
 async function fetchTop20PremarketStocks() {
     try {
-        console.log('🌅 Fetching top 20 highest volume pre-market stocks...');
+        const timeLabel = isPremarketHours() ? 'PRE-MARKET' : 'REGULAR HOURS';
+        console.log(`🌅 Fetching top 20 highest volume stocks (${timeLabel})...`);
         
         // Get tickers sorted by volume - this is what matters for day trading
         const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=100`;
