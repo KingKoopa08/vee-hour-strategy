@@ -816,11 +816,58 @@
             document.getElementById('helpModal').style.display = 'none';
         }
         
-        // Close modal when clicking outside
+        function showNewsModal(symbol, element) {
+            const newsData = JSON.parse(element.getAttribute('data-news').replace(/&quot;/g, '"'));
+            const modal = document.getElementById('newsModal');
+            const modalTitle = document.getElementById('newsModalTitle');
+            const modalBody = document.getElementById('newsModalBody');
+            
+            modalTitle.textContent = `${symbol} - Recent News (${newsData.count} articles)`;
+            
+            if (newsData.headlines && newsData.headlines.length > 0) {
+                modalBody.innerHTML = newsData.headlines.map(article => `
+                    <div class="news-article">
+                        <div class="news-article-title">${article.title}</div>
+                        <div class="news-article-meta">
+                            <span>📰 ${article.publisher}</span>
+                            <span>⏰ ${article.hoursAgo}h ago</span>
+                        </div>
+                        <a href="${article.url}" target="_blank" class="news-article-link">
+                            Read Full Article →
+                        </a>
+                    </div>
+                `).join('');
+            } else {
+                // Fallback for single article
+                modalBody.innerHTML = `
+                    <div class="news-article">
+                        <div class="news-article-title">${newsData.latestTitle}</div>
+                        <div class="news-article-meta">
+                            <span>📰 ${newsData.latestPublisher}</span>
+                            <span>⏰ ${newsData.hoursAgo}h ago</span>
+                        </div>
+                        ${newsData.latestUrl ? `<a href="${newsData.latestUrl}" target="_blank" class="news-article-link">Read Full Article →</a>` : ''}
+                    </div>
+                `;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeNewsModal() {
+            document.getElementById('newsModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('helpModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
+            const helpModal = document.getElementById('helpModal');
+            const newsModal = document.getElementById('newsModal');
+            
+            if (event.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+            if (event.target === newsModal) {
+                newsModal.style.display = 'none';
             }
         }
         
