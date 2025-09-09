@@ -236,13 +236,27 @@ async function fetchEnhancedPremarketData(symbol) {
             const day = ticker.day || {};
             const prevDay = ticker.prevDay || {};
             
-            // Use pre-market data if available, otherwise use regular day data
-            const currentPrice = preMarket.c || day.c || prevDay.c || 0;
-            const openPrice = preMarket.o || day.o || prevDay.c || 0;
-            const highPrice = preMarket.h || day.h || currentPrice;
-            const lowPrice = preMarket.l || day.l || currentPrice;
-            const volume = preMarket.v || day.v || 0;
-            const vwap = preMarket.vw || day.vw || currentPrice;
+            // PRIORITIZE pre-market data during pre-market hours
+            let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
+            
+            if (isPremarketHours() && preMarket.v && preMarket.v > 0) {
+                // Use ONLY pre-market data during pre-market hours
+                currentPrice = preMarket.c || preMarket.l || prevDay.c || 0;
+                openPrice = preMarket.o || prevDay.c || 0;
+                highPrice = preMarket.h || currentPrice;
+                lowPrice = preMarket.l || currentPrice;
+                volume = preMarket.v;
+                vwap = preMarket.vw || currentPrice;
+                console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
+            } else {
+                // Use day data when not in pre-market or no pre-market data
+                currentPrice = day.c || preMarket.c || prevDay.c || 0;
+                openPrice = day.o || preMarket.o || prevDay.c || 0;
+                highPrice = day.h || preMarket.h || currentPrice;
+                lowPrice = day.l || preMarket.l || currentPrice;
+                volume = day.v || preMarket.v || 0;
+                vwap = day.vw || preMarket.vw || currentPrice;
+            }
             
             // Calculate basic metrics
             const priceChange = currentPrice - (prevDay.c || currentPrice);
