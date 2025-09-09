@@ -868,24 +868,45 @@
             tbody.innerHTML = stocks.map((stock, index) => {
                 const changeClass = stock.priceChangePercent >= 0 ? 'positive' : 'negative';
                 
+                // Get momentum arrow
+                const momentumArrow = getMomentumArrow(stock.momentum);
+                
+                // Get volume surge indicator
+                const volumeSurgeIcon = getVolumeSurgeIcon(stock.volumeSurge);
+                
+                // Get VWAP indicator
+                const vwapIndicator = stock.isAboveVwap ? 
+                    '<span class="vwap-indicator above">Above</span>' : 
+                    '<span class="vwap-indicator below">Below</span>';
+                
+                // Get signal badge
+                const signalBadge = getSignalBadge(stock.signal);
+                
                 return `
                     <tr>
                         <td class="rank">${index + 1}</td>
                         <td class="symbol">${stock.symbol}</td>
-                        <td class="price number">${formatPrice(stock.price)}</td>
+                        <td>${signalBadge}</td>
+                        <td class="price number">
+                            ${momentumArrow}
+                            ${formatPrice(stock.price)}
+                        </td>
                         <td class="number">
                             <span class="change ${changeClass}">${formatPercent(stock.priceChangePercent)}</span>
                         </td>
-                        <td class="volume number">${formatNumber(stock.volume)}</td>
-                        <td class="vwap number">${formatPrice(stock.vwap)}</td>
+                        <td class="volume number">
+                            ${formatNumber(stock.volume)}
+                            ${volumeSurgeIcon}
+                        </td>
+                        <td class="vwap number">
+                            ${formatPrice(stock.vwap)}
+                            ${vwapIndicator}
+                        </td>
                         <td class="news-cell">
                             ${formatNews(stock.news, stock.symbol)}
                         </td>
                         <td class="number">
                             <span class="mnav-score">${stock.mnavScore.toFixed(2)}</span>
-                        </td>
-                        <td class="tax-info hide-mobile" title="${stock.taxImplications.note}">
-                            $${stock.taxImplications.estimatedTaxPerShare}
                         </td>
                     </tr>
                 `;
