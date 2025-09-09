@@ -193,13 +193,19 @@ async function fetchRecentNews(symbol) {
                 sentiment: article.sentiment || 'neutral'
             }));
             
-            // Return summary of news
+            // Return summary of news with URLs for clickable links
             return {
                 count: news.length,
                 latestTitle: news[0].title,
                 latestPublisher: news[0].publisher,
+                latestUrl: news[0].url,
                 hoursAgo: Math.round((Date.now() - news[0].publishedAt) / (1000 * 60 * 60)),
-                headlines: news.slice(0, 3).map(n => n.title)
+                headlines: news.slice(0, 3).map(n => ({
+                    title: n.title,
+                    url: n.url,
+                    publisher: n.publisher,
+                    hoursAgo: Math.round((Date.now() - n.publishedAt) / (1000 * 60 * 60))
+                }))
             };
         }
     } catch (error) {
