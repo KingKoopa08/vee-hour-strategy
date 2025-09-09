@@ -240,13 +240,13 @@ async function fetchEnhancedPremarketData(symbol) {
             // During pre-market hours, use 'min' field for latest data
             let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
             
-            if (isPremarketHours() && min.v && min.v > 0) {
+            if (isPremarketHours() && min.av && min.av > 0) {
                 // During pre-market hours, 'min' field contains latest pre-market data
                 currentPrice = min.c || min.l || prevDay.c || 0;
                 openPrice = min.o || prevDay.c || 0;
                 highPrice = min.h || currentPrice;
                 lowPrice = min.l || currentPrice;
-                volume = min.av || min.v || 0; // Use accumulated volume if available
+                volume = min.av || 0; // Use accumulated volume (av), NOT single minute volume (v)
                 vwap = min.vw || currentPrice;
                 console.log(`  └─ Using PRE-MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
             } else if (day.v && day.v > 0) {
