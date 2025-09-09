@@ -12,6 +12,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'premarket-dashboard.html'));
 });
 
+// Also serve at /top20 route
+app.get('/top20', (req, res) => {
+    res.sendFile(path.join(__dirname, 'premarket-dashboard.html'));
+});
+
 // Polygon.io configuration
 const POLYGON_API_KEY = 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
 const POLYGON_BASE_URL = 'https://api.polygon.io';
