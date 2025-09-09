@@ -298,7 +298,7 @@ async function fetchTop20PremarketStocks() {
             const topVolumeStocks = [];
             let processed = 0;
             
-            // Process top volume stocks
+            // Process top volume stocks - PRIORITIZE PRE-MARKET DATA
             for (const ticker of response.data.tickers) {
                 if (topVolumeStocks.length >= 20) break;
                 
@@ -306,8 +306,25 @@ async function fetchTop20PremarketStocks() {
                 const day = ticker.day || {};
                 const prevDay = ticker.prevDay || {};
                 
-                const volume = preMarket.v || day.v || 0;
-                const price = preMarket.c || day.c || prevDay.c || 0;
+                // IMPORTANT: Use pre-market volume if available, only fall back to day if no pre-market
+                // During pre-market hours, we want ONLY stocks with pre-market activity
+                let volume = 0;
+                let price = 0;
+                let usingPremarket = false;
+                
+                if (isPremarketHours() && preMarket.v && preMarket.v > 0) {
+                    // During pre-market, only use pre-market data
+                    volume = preMarket.v;
+                    price = preMarket.c || preMarket.l || 0;
+                    usingPremarket = true;
+                } else if (!isPremarketHours()) {
+                    // Outside pre-market, use day or pre-market data
+                    volume = day.v || preMarket.v || 0;
+                    price = day.c || preMarket.c || prevDay.c || 0;
+                } else {
+                    // Skip stocks with no pre-market activity during pre-market hours
+                    continue;
+                }
                 
                 // Basic filters for tradeable stocks
                 // Min volume 100K for liquidity, price between $1-100 for accessibility
