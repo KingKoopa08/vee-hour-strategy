@@ -619,10 +619,17 @@
             return (num >= 0 ? '+' : '') + formatted + '%';
         }
         
-        function getRSIClass(rsi) {
-            if (rsi >= 70) return 'overbought';
-            if (rsi <= 30) return 'oversold';
-            return 'neutral';
+        function formatNews(news) {
+            if (!news || news.count === 0) {
+                return '<span class="news-count no-news">0</span><span style="color: rgba(255,255,255,0.4)">No news</span>';
+            }
+            
+            const timeStr = news.hoursAgo ? `${news.hoursAgo}h ago` : '';
+            return `
+                <span class="news-count has-news">${news.count}</span>
+                <span class="news-title" title="${news.latestTitle}">${news.latestTitle.substring(0, 50)}${news.latestTitle.length > 50 ? '...' : ''}</span>
+                ${timeStr ? `<span class="news-time">${timeStr}</span>` : ''}
+            `;
         }
         
         function renderTable(stocks) {
@@ -635,7 +642,6 @@
             
             tbody.innerHTML = stocks.map((stock, index) => {
                 const changeClass = stock.priceChangePercent >= 0 ? 'positive' : 'negative';
-                const rsiClass = getRSIClass(stock.rsi);
                 
                 return `
                     <tr>
@@ -647,8 +653,8 @@
                         </td>
                         <td class="volume number">${formatNumber(stock.volume)}</td>
                         <td class="vwap number">${formatPrice(stock.vwap)}</td>
-                        <td class="number">
-                            <span class="rsi ${rsiClass}">${stock.rsi}</span>
+                        <td class="news-cell">
+                            ${formatNews(stock.news)}
                         </td>
                         <td class="number">
                             <span class="mnav-score">${stock.mnavScore.toFixed(2)}</span>
