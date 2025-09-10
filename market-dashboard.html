@@ -1059,8 +1059,8 @@
             const hours = easternTime.getHours();
             const totalMinutes = hours * 60 + easternTime.getMinutes();
             
-            // Pre-market hours: 9:30 AM - 4:00 PM ET (570 and totalMinutes < 960 minutes)
-            if (totalMinutes >= 570 and totalMinutes < 960) {
+            // Market hours: 9:30 AM - 4:00 PM ET (570-960 minutes)
+            if (totalMinutes >= 570 && totalMinutes < 960) {
                 console.log('Auto-refreshing market data...');
                 loadData();
             }
