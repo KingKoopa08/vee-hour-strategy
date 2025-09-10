@@ -1041,18 +1041,32 @@
         setInterval(updateTime, 1000);
         loadData();
         
-        // Auto-refresh every 5 minutes during market hours
+        // Auto-refresh more frequently during pre-market for live data
         setInterval(() => {
             const now = new Date();
             const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
             const hours = easternTime.getHours();
             const totalMinutes = hours * 60 + easternTime.getMinutes();
             
-            // Refresh during pre-market and market hours
-            if (totalMinutes >= 240 && totalMinutes < 960) {
+            // Pre-market hours: 4:00 AM - 9:30 AM ET (240-570 minutes)
+            if (totalMinutes >= 240 && totalMinutes < 570) {
+                console.log('Auto-refreshing pre-market data...');
                 loadData();
             }
-        }, 300000); // Every 5 minutes
+        }, 30000); // Every 30 seconds during pre-market
+        
+        // Regular market hours refresh less frequently
+        setInterval(() => {
+            const now = new Date();
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const totalMinutes = hours * 60 + easternTime.getMinutes();
+            
+            // Market hours: 9:30 AM - 4:00 PM ET (570-960 minutes)
+            if (totalMinutes >= 570 && totalMinutes < 960) {
+                loadData();
+            }
+        }, 120000); // Every 2 minutes during regular market
     </script>
 </body>
 </html>
