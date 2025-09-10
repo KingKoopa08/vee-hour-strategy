@@ -1050,10 +1050,30 @@
             }
         }
         
+        // Check if it's pre-market hours (4 AM - 9:30 AM ET)
+        function isPremarketTime() {
+            const now = new Date();
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const minutes = easternTime.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            
+            // Pre-market: 4:00 AM (240) to 9:30 AM (570) ET
+            return totalMinutes >= 240 && totalMinutes < 570;
+        }
+        
         // Initialize
         updateTime();
         setInterval(updateTime, 1000);
-        loadData();
+        
+        // Only load data during pre-market hours
+        if (isPremarketTime()) {
+            loadData();
+        } else {
+            document.getElementById('stocksTable').innerHTML = 
+                '<tr><td colspan="11" class="no-data">Pre-market data is only available from 4:00 AM to 9:30 AM ET.<br>Current time: ' + 
+                new Date().toLocaleTimeString('en-US', {timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: true}) + ' ET</td></tr>';
+        }
         
         // Auto-refresh more frequently during pre-market for live data
         setInterval(() => {
