@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Scanner Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #8892b0;
+            margin-bottom: 30px;
+        }
+
+        .market-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: #4ade80;
+        }
+
+        .status-indicator.closed {
+            background: #f87171;
+        }
+
+        .status-indicator.pre-market {
+            background: #fbbf24;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 currentColor;
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+
+        .scanner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .scanner-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanner-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .scanner-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .scanner-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            color: #8892b0;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .card-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .feature-tag {
+            padding: 5px 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: #a5b4fc;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+        }
+
+        .info-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+
+        .info-list {
+            list-style: none;
+            color: #8892b0;
+            line-height: 1.8;
+        }
+
+        .info-list li::before {
+            content: "→";
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .current-time {
+            text-align: center;
+            margin-top: 30px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .scanner-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Trading Scanner Hub</h1>
+            <p class="subtitle">Real-time market analysis and volume tracking</p>
+            <div class="market-status">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="marketStatus">Checking market status...</span>
+            </div>
+        </div>
+
+        <div class="scanner-grid">
+            <a href="/premarket" class="scanner-card">
+                <div class="card-icon">📊</div>
+                <h2 class="card-title">Pre-Market Scanner</h2>
+                <p class="card-description">
+                    Track the top 20 highest volume stocks during pre-market hours. 
+                    Get real-time data on price movements, volume, and trading signals 
+                    to identify potential opportunities before the market opens.
+                </p>
+                <div class="card-time">
+                    <span>🕐</span>
+                    <span>4:00 AM - 9:30 AM ET</span>
+                </div>
+                <div class="features">
+                    <span class="feature-tag">Live Volume</span>
+                    <span class="feature-tag">VWAP</span>
+                    <span class="feature-tag">Buy/Sell Signals</span>
+                    <span class="feature-tag">Recent News</span>
+                </div>
+            </a>
+
+            <a href="/market" class="scanner-card">
+                <div class="card-icon">📈</div>
+                <h2 class="card-title">Market Hours Scanner</h2>
+                <p class="card-description">
+                    Monitor the top 20 highest volume stocks during regular market hours. 
+                    Track intraday movements with real-time updates on volume, price changes, 
+                    and technical indicators for active trading.
+                </p>
+                <div class="card-time">
+                    <span>🕐</span>
+                    <span>9:30 AM - 4:00 PM ET</span>
+                </div>
+                <div class="features">
+                    <span class="feature-tag">Day Volume</span>
+                    <span class="feature-tag">Price Action</span>
+                    <span class="feature-tag">Trading Signals</span>
+                    <span class="feature-tag">10s Refresh</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="info-section">
+            <h3 class="info-title">Key Features</h3>
+            <ul class="info-list">
+                <li>Real-time data updates every 10 seconds</li>
+                <li>Stocks filtered under $100 for accessibility</li>
+                <li>Volume-based sorting for maximum liquidity</li>
+                <li>Composite buy/sell signals based on multiple indicators</li>
+                <li>Recent news integration with clickable headlines</li>
+                <li>Clean, responsive interface optimized for trading</li>
+            </ul>
+        </div>
+
+        <div class="current-time">
+            <span id="currentTime"></span>
+        </div>
+    </div>
+
+    <script>
+        function updateMarketStatus() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const time = hours * 100 + minutes;
+            
+            const statusIndicator = document.getElementById('statusIndicator');
+            const marketStatus = document.getElementById('marketStatus');
+            
+            // Convert to ET (assuming server is in ET)
+            if (time >= 400 && time < 930) {
+                statusIndicator.className = 'status-indicator pre-market';
+                marketStatus.textContent = 'Pre-Market Active';
+            } else if (time >= 930 && time < 1600) {
+                statusIndicator.className = 'status-indicator active';
+                marketStatus.textContent = 'Market Open';
+            } else {
+                statusIndicator.className = 'status-indicator closed';
+                marketStatus.textContent = 'Market Closed';
+            }
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            const timeString = now.toLocaleTimeString('en-US', options);
+            const dateString = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'America/New_York'
+            });
+            
+            document.getElementById('currentTime').textContent = `${dateString} • ${timeString} ET`;
+        }
+
+        // Update on load and every second
+        updateMarketStatus();
+        updateCurrentTime();
+        setInterval(updateMarketStatus, 1000);
+        setInterval(updateCurrentTime, 1000);
+    </script>
+</body>
+</html>
