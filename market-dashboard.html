@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Hours Dashboard - Top 20 Volume Leaders</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(26, 26, 46, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .market-info {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.closed {
+            background: #ff4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .time {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .last-update {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+        }
+        
+        .refresh-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .table-container {
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom: 2px solid rgba(74, 158, 255, 0.3);
+        }
+        
+        th.number {
+            text-align: right;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: rgba(74, 158, 255, 0.05);
+        }
+        
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+        }
+        
+        td.number {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        
+        .rank {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
+        }
+        
+        .symbol {
+            font-weight: 700;
+            font-size: 16px;
+            color: #4a9eff;
+        }
+        
+        .price {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .change {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .positive {
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .negative {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        .neutral {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .volume {
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        
+        .vwap {
+            color: #ffa500;
+        }
+        
+        .news-cell {
+            max-width: 250px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .news-cell:hover {
+            text-decoration: underline;
+        }
+        
+        .news-count {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .news-count.has-news {
+            background: rgba(74, 158, 255, 0.2);
+            color: #4a9eff;
+        }
+        
+        .news-count.no-news {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .news-title {
+            color: rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            max-width: 180px;
+            vertical-align: middle;
+        }
+        
+        .news-time {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            margin-left: 5px;
+        }
+        
+        .news-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .news-modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            margin: 100px auto;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 16px;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .news-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .news-modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4a9eff;
+        }
+        
+        .close-news-modal {
+            font-size: 28px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .close-news-modal:hover {
+            color: #ff4444;
+        }
+        
+        .news-article {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid #4a9eff;
+        }
+        
+        .news-article-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        
+        .news-article-meta {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .news-article-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.4);
+            border-radius: 6px;
+            color: #4a9eff;
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .news-article-link:hover {
+            background: rgba(74, 158, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .mnav-score {
+            font-weight: 700;
+            font-size: 16px;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(74, 158, 255, 0.2), rgba(0, 212, 255, 0.2));
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+        
+        .tax-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: help;
+        }
+        
+        .tax-info:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid #ff4444;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .footer {
+            margin-top: 24px;
+            padding: 16px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+        }
+        
+        .help-btn {
+            padding: 8px 16px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 8px;
+            color: #4a9eff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 10px;
+        }
+        
+        .help-btn:hover {
+            background: rgba(74, 158, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            margin: 50px auto;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 16px;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            transition: color 0.2s;
+        }
+        
+        .close-modal:hover {
+            color: #ff4444;
+        }
+        
+        .help-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .help-section {
+            margin-bottom: 25px;
+        }
+        
+        .help-section h3 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .metric-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .metric-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid #4a9eff;
+        }
+        
+        .metric-name {
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .metric-desc {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .formula {
+            font-family: 'SF Mono', monospace;
+            background: rgba(74, 158, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #4a9eff;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 1200px) {
+            .dashboard {
+                padding: 10px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            td, th {
+                padding: 10px;
+            }
+            
+            .hide-mobile {
+                display: none;
+            }
+        }
+        
+        /* Buy/Sell Signal Styles */
+        .signal-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+        
+        .signal-badge.strong-buy {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        
+        .signal-badge.buy {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+        
+        .signal-badge.hold {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border: 1px solid #ffc107;
+        }
+        
+        .signal-badge.sell {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+        
+        .signal-badge.strong-sell {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+        }
+        
+        /* Momentum Arrows */
+        .momentum-arrow {
+            font-size: 18px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .momentum-arrow.strong-up {
+            color: #00ff88;
+        }
+        
+        .momentum-arrow.up {
+            color: #66ffaa;
+        }
+        
+        .momentum-arrow.neutral {
+            color: #ffc107;
+        }
+        
+        .momentum-arrow.down {
+            color: #ff9999;
+        }
+        
+        .momentum-arrow.strong-down {
+            color: #ff4444;
+        }
+        
+        /* Volume Surge Indicator */
+        .volume-surge {
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        
+        .volume-surge.extreme {
+            color: #ff00ff;
+            animation: pulse 1s infinite;
+        }
+        
+        .volume-surge.high {
+            color: #ffa500;
+        }
+        
+        .volume-surge.elevated {
+            color: #ffff00;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* VWAP Indicator */
+        .vwap-indicator {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+            display: inline-block;
+        }
+        
+        .vwap-indicator.above {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+        
+        .vwap-indicator.below {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <div class="header-top">
+                <h1 class="title">Market Hours Top 20</h1>
+                <div class="market-info">
+                    <div class="status">
+                        <div id="statusDot" class="status-dot closed"></div>
+                        <span id="marketStatus">Market Closed</span>
+                    </div>
+                    <div class="time" id="currentTime">--:--:-- --</div>
+                    <button class="help-btn" onclick="showHelp()">? Help</button>
+                    <button class="refresh-btn" onclick="refreshData()">Refresh</button>
+                </div>
+            </div>
+            <div class="last-update" id="lastUpdate">Last updated: Never</div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Symbol</th>
+                        <th>Signal</th>
+                        <th class="number">Price</th>
+                        <th class="number">Change %</th>
+                        <th class="number">Volume</th>
+                        <th class="number">VWAP</th>
+                        <th>News</th>
+                        <th class="number">mNAV</th>
+                    </tr>
+                </thead>
+                <tbody id="stocksTable">
+                    <tr>
+                        <td colspan="9" class="loading">Loading market data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            Auto-refreshes every 30 seconds during market • Live data updates
+        </div>
+    </div>
+    
+    <!-- News Modal -->
+    <div id="newsModal" class="news-modal">
+        <div class="news-modal-content">
+            <div class="news-modal-header">
+                <div class="news-modal-title" id="newsModalTitle">Recent News</div>
+                <span class="close-news-modal" onclick="closeNewsModal()">&times;</span>
+            </div>
+            <div id="newsModalBody">
+                <!-- News articles will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHelp()">&times;</span>
+            <h2 class="help-title">📊 Understanding Market Hours Metrics</h2>
+            
+            <div class="help-section">
+                <h3>Core Metrics</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">Price & Change %</div>
+                        <div class="metric-desc">Current market price and percentage change from previous close. Green indicates gains, red indicates losses.</div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">Volume</div>
+                        <div class="metric-desc">Total shares traded during market session. Higher volume indicates stronger interest and better liquidity for trading.</div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">VWAP (Volume Weighted Average Price)</div>
+                        <div class="metric-desc">The average price weighted by volume. Trading above VWAP suggests bullish sentiment, below suggests bearish.</div>
+                        <span class="formula">VWAP = Σ(Price × Volume) / Σ(Volume)</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Technical Indicators</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">RSI (Relative Strength Index)</div>
+                        <div class="metric-desc">Momentum indicator measuring overbought/oversold conditions on a 0-100 scale:</div>
+                        <div style="margin-top: 8px; font-size: 13px;">
+                            • <span style="color: #ff4444;">Above 70</span>: Overbought (potential reversal down)<br>
+                            • <span style="color: #00ff88;">Below 30</span>: Oversold (potential reversal up)<br>
+                            • <span style="color: rgba(255,255,255,0.6);">30-70</span>: Neutral range
+                        </div>
+                    </li>
+                    <li class="metric-item">
+                        <div class="metric-name">mNAV Score (Market-Normalized Asset Value)</div>
+                        <div class="metric-desc">Proprietary composite score (0-1.0) combining multiple factors to identify strong market opportunities:</div>
+                        <div style="margin-top: 8px; font-size: 13px;">
+                            • <strong>30%</strong> - Volume momentum (current vs average)<br>
+                            • <strong>25%</strong> - Price movement strength<br>
+                            • <strong>20%</strong> - Volatility (optimal at 3% range)<br>
+                            • <strong>15%</strong> - Liquidity (ability to trade)<br>
+                            • <strong>10%</strong> - VWAP efficiency (price vs VWAP)
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <strong>Score interpretation:</strong><br>
+                            • 0.8-1.0: Exceptional opportunity<br>
+                            • 0.6-0.8: Strong potential<br>
+                            • 0.4-0.6: Moderate interest<br>
+                            • Below 0.4: Lower priority
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>Tax Information</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-name">Tax/Share</div>
+                        <div class="metric-desc">Estimated tax per share for day trading (short-term capital gains at 37% rate). This helps calculate the after-tax profit needed to break even. Hover over the value to see additional notes about wash sale risk.</div>
+                        <span class="formula">Tax = Price Change × 0.37</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h3>How Stocks Are Selected</h3>
+                <ul class="metric-list">
+                    <li class="metric-item">
+                        <div class="metric-desc">
+                            1. Scans all US stocks for market activity<br>
+                            2. Filters for minimum 100K volume and price $0.50-$10,000<br>
+                            3. Calculates all technical indicators and scores<br>
+                            4. Sorts by highest volume (most liquid stocks)<br>
+                            5. Displays top 20 for optimal trading opportunities<br>
+                            6. Refreshes every 5 minutes during market (4:00-9:30 AM ET)
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="help-section" style="background: rgba(255, 68, 68, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(255, 68, 68, 0.3);">
+                <h3>⚠️ Important Disclaimer</h3>
+                <div style="color: rgba(255, 255, 255, 0.9); font-size: 13px; line-height: 1.6;">
+                    This tool is for educational and informational purposes only. It is not financial advice. Trading stocks, especially in market hours, involves substantial risk including total loss of capital. Pre-market trading has lower liquidity and higher volatility. Always conduct your own research and consult with a qualified financial advisor before making investment decisions.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentData = [];
+        
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', options) + ' ET';
+            
+            // Check market status
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const minutes = easternTime.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            
+            const statusDot = document.getElementById('statusDot');
+            const marketStatus = document.getElementById('marketStatus');
+            
+            if (totalMinutes >= 570 and totalMinutes < 960) {
+                statusDot.classList.remove('closed');
+                marketStatus.textContent = 'Market Hours';
+            } else if (totalMinutes >= 570 && totalMinutes < 960) {
+                statusDot.classList.remove('closed');
+                marketStatus.textContent = 'Market Open';
+            } else {
+                statusDot.classList.add('closed');
+                marketStatus.textContent = 'Market Closed';
+            }
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toFixed(0);
+        }
+        
+        function formatPrice(price) {
+            return '$' + price.toFixed(2);
+        }
+        
+        function formatPercent(num) {
+            const formatted = num.toFixed(2);
+            return (num >= 0 ? '+' : '') + formatted + '%';
+        }
+        
+        function formatNews(news, symbol) {
+            if (!news || news.count === 0) {
+                return '<span class="news-count no-news">0</span><span style="color: rgba(255,255,255,0.4)">No news</span>';
+            }
+            
+            const timeStr = news.hoursAgo ? `${news.hoursAgo}h ago` : '';
+            // Store news data for modal
+            const newsData = JSON.stringify(news).replace(/"/g, '&quot;');
+            return `
+                <div onclick="showNewsModal('${symbol}', this)" data-news="${newsData}">
+                    <span class="news-count has-news">${news.count}</span>
+                    <span class="news-title" title="${news.latestTitle}">${news.latestTitle.substring(0, 50)}${news.latestTitle.length > 50 ? '...' : ''}</span>
+                    ${timeStr ? `<span class="news-time">${timeStr}</span>` : ''}
+                </div>
+            `;
+        }
+        
+        function renderTable(stocks) {
+            const tbody = document.getElementById('stocksTable');
+            
+            if (!stocks || stocks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="loading">No market data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = stocks.map((stock, index) => {
+                const changeClass = stock.priceChangePercent >= 0 ? 'positive' : 'negative';
+                
+                // Get momentum arrow
+                const momentumArrow = getMomentumArrow(stock.momentum);
+                
+                // Get volume surge indicator
+                const volumeSurgeIcon = getVolumeSurgeIcon(stock.volumeSurge);
+                
+                // Get VWAP indicator
+                const vwapIndicator = stock.isAboveVwap ? 
+                    '<span class="vwap-indicator above">Above</span>' : 
+                    '<span class="vwap-indicator below">Below</span>';
+                
+                // Get signal badge
+                const signalBadge = getSignalBadge(stock.signal);
+                
+                return `
+                    <tr>
+                        <td class="rank">${index + 1}</td>
+                        <td class="symbol">${stock.symbol}</td>
+                        <td>${signalBadge}</td>
+                        <td class="price number">
+                            ${momentumArrow}
+                            ${formatPrice(stock.price)}
+                        </td>
+                        <td class="number">
+                            <span class="change ${changeClass}">${formatPercent(stock.priceChangePercent)}</span>
+                        </td>
+                        <td class="volume number">
+                            ${formatNumber(stock.volume)}
+                            ${volumeSurgeIcon}
+                        </td>
+                        <td class="vwap number">
+                            ${formatPrice(stock.vwap)}
+                            ${vwapIndicator}
+                        </td>
+                        <td class="news-cell">
+                            ${formatNews(stock.news, stock.symbol)}
+                        </td>
+                        <td class="number">
+                            <span class="mnav-score">${stock.mnavScore.toFixed(2)}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function getMomentumArrow(momentum) {
+            const arrows = {
+                'STRONG_UP': '<span class="momentum-arrow strong-up">⬆</span>',
+                'UP': '<span class="momentum-arrow up">↗</span>',
+                'NEUTRAL': '<span class="momentum-arrow neutral">→</span>',
+                'DOWN': '<span class="momentum-arrow down">↘</span>',
+                'STRONG_DOWN': '<span class="momentum-arrow strong-down">⬇</span>'
+            };
+            return arrows[momentum] || arrows['NEUTRAL'];
+        }
+        
+        function getVolumeSurgeIcon(surge) {
+            const icons = {
+                'EXTREME': '<span class="volume-surge extreme">🔥</span>',
+                'HIGH': '<span class="volume-surge high">⚡</span>',
+                'ELEVATED': '<span class="volume-surge elevated">✨</span>',
+                'NORMAL': ''
+            };
+            return icons[surge] || '';
+        }
+        
+        function getSignalBadge(signal) {
+            const badges = {
+                'STRONG_BUY': '<span class="signal-badge strong-buy">Strong Buy</span>',
+                'BUY': '<span class="signal-badge buy">Buy</span>',
+                'HOLD': '<span class="signal-badge hold">Hold</span>',
+                'SELL': '<span class="signal-badge sell">Sell</span>',
+                'STRONG_SELL': '<span class="signal-badge strong-sell">Strong Sell</span>'
+            };
+            return badges[signal] || badges['HOLD'];
+        }
+        
+        async function loadData() {
+            try {
+                // Show loading indicator
+                const refreshBtn = document.querySelector('.refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.textContent = 'Refreshing...';
+                    refreshBtn.disabled = true;
+                }
+                
+                const response = await fetch('/api/market/top20');
+                const data = await response.json();
+                
+                if (data.success && data.stocks) {
+                    currentData = data.stocks;
+                    renderTable(currentData);
+                    
+                    // Update last update time
+                    document.getElementById('lastUpdate').textContent = 
+                        `Last updated: ${data.updateTime || new Date().toLocaleTimeString('en-US')} ET`;
+                } else {
+                    throw new Error(data.error || 'Failed to load data');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('stocksTable').innerHTML = 
+                    `<tr><td colspan="9" class="error">Error loading data: ${error.message}</td></tr>`;
+            } finally {
+                // Reset refresh button
+                const refreshBtn = document.querySelector('.refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.textContent = 'Refresh';
+                    refreshBtn.disabled = false;
+                }
+            }
+        }
+        
+        function refreshData() {
+            document.getElementById('stocksTable').innerHTML = 
+                '<tr><td colspan="9" class="loading">Refreshing data...</td></tr>';
+            loadData();
+        }
+        
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'block';
+        }
+        
+        function closeHelp() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+        
+        function showNewsModal(symbol, element) {
+            const newsData = JSON.parse(element.getAttribute('data-news').replace(/&quot;/g, '"'));
+            const modal = document.getElementById('newsModal');
+            const modalTitle = document.getElementById('newsModalTitle');
+            const modalBody = document.getElementById('newsModalBody');
+            
+            modalTitle.textContent = `${symbol} - Recent News (${newsData.count} articles)`;
+            
+            if (newsData.headlines && newsData.headlines.length > 0) {
+                modalBody.innerHTML = newsData.headlines.map(article => `
+                    <div class="news-article">
+                        <div class="news-article-title">${article.title}</div>
+                        <div class="news-article-meta">
+                            <span>📰 ${article.publisher}</span>
+                            <span>⏰ ${article.hoursAgo}h ago</span>
+                        </div>
+                        <a href="${article.url}" target="_blank" class="news-article-link">
+                            Read Full Article →
+                        </a>
+                    </div>
+                `).join('');
+            } else {
+                // Fallback for single article
+                modalBody.innerHTML = `
+                    <div class="news-article">
+                        <div class="news-article-title">${newsData.latestTitle}</div>
+                        <div class="news-article-meta">
+                            <span>📰 ${newsData.latestPublisher}</span>
+                            <span>⏰ ${newsData.hoursAgo}h ago</span>
+                        </div>
+                        ${newsData.latestUrl ? `<a href="${newsData.latestUrl}" target="_blank" class="news-article-link">Read Full Article →</a>` : ''}
+                    </div>
+                `;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeNewsModal() {
+            document.getElementById('newsModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const helpModal = document.getElementById('helpModal');
+            const newsModal = document.getElementById('newsModal');
+            
+            if (event.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+            if (event.target === newsModal) {
+                newsModal.style.display = 'none';
+            }
+        }
+        
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+        loadData();
+        
+        // Auto-refresh more frequently during market for live data
+        setInterval(() => {
+            const now = new Date();
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const totalMinutes = hours * 60 + easternTime.getMinutes();
+            
+            // Pre-market hours: 9:30 AM - 4:00 PM ET (570 and totalMinutes < 960 minutes)
+            if (totalMinutes >= 570 and totalMinutes < 960) {
+                console.log('Auto-refreshing market data...');
+                loadData();
+            }
+        }, 10000); // Every 10 seconds for live data during market
+        
+        // Regular market hours refresh less frequently
+        setInterval(() => {
+            const now = new Date();
+            const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+            const hours = easternTime.getHours();
+            const totalMinutes = hours * 60 + easternTime.getMinutes();
+            
+            // Market hours: 9:30 AM - 4:00 PM ET (570-960 minutes)
+            if (totalMinutes >= 570 && totalMinutes < 960) {
+                loadData();
+            }
+        }, 120000); // Every 2 minutes during regular market
+    </script>
+</body>
+</html>
