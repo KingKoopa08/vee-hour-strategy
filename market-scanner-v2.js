@@ -244,16 +244,8 @@ async function fetchEnhancedMarketData(symbol) {
             // During market hours, use 'min' field for latest data
             let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
             
-            if (isMarketHours() && min.av && min.av > 0) {
-                // During market hours, 'min' field contains latest market data
-                currentPrice = min.c || min.l || prevDay.c || 0;
-                openPrice = min.o || prevDay.c || 0;
-                highPrice = min.h || currentPrice;
-                lowPrice = min.l || currentPrice;
-                volume = min.av || 0; // Use accumulated volume (av), NOT single minute volume (v)
-                vwap = min.vw || currentPrice;
-                console.log(`  └─ Using MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
-            } else if (day.v && day.v > 0) {
+            // During market hours, use day field for market data
+            if (day.v && day.v > 0) {
                 // Use regular day data when available
                 currentPrice = day.c || prevDay.c || 0;
                 openPrice = day.o || prevDay.c || 0;
@@ -410,21 +402,13 @@ async function fetchTop20MarketStocks() {
                 let price = 0;
                 let dataSource = 'UNKNOWN';
                 
-                if (isMarketHours()) {
-                    // During market hours, use min field which has latest market data
-                    // IMPORTANT: Use av (accumulated volume) not v (single minute volume)!
-                    volume = min.av || 0;
-                    if (volume === 0) {
-                        continue; // Skip stocks with no market volume
-                    }
-                    price = min.c || min.l || prevDay.c || 0;
-                    dataSource = 'MARKET';
-                } else {
-                    // Outside market hours, use regular market data
-                    volume = day.v || min.av || min.v || 0;
-                    price = day.c || min.c || prevDay.c || 0;
-                    dataSource = 'REGULAR';
+                // Use day field for market hours volume
+                volume = day.v || 0;
+                if (volume === 0) {
+                    continue; // Skip stocks with no market volume
                 }
+                price = day.c || prevDay.c || 0;
+                dataSource = 'MARKET';
                 
                 // Basic filters for tradeable stocks
                 // Min volume 100K for liquidity, price between $1-100 for accessibility
@@ -494,7 +478,7 @@ app.get('/api/market/top20', async (req, res) => {
         
         res.json({
             success: true,
-            isMarket: isMarketHours(),
+            isMarketOpen: isMarketHours(),
             lastUpdate: lastUpdateTime,
             updateTime: new Date(lastUpdateTime).toLocaleTimeString('en-US', {
                 timeZone: 'America/New_York',
@@ -532,9 +516,9 @@ function scheduleMarketRefresh() {
         const hours = easternTime.getHours();
         const minutes = easternTime.getMinutes();
         
-        // Refresh at 4:00 AM ET (start of market)
-        if (hours === 4 && minutes === 0) {
-            console.log('📅 4:00 AM ET - Starting morning market scan...');
+        // Refresh at 9:30 AM ET (market open)
+        if (hours === 9 && minutes === 30) {
+            console.log('🔔 9:30 AM ET - Market Open! Starting market scan...');
             fetchTop20MarketStocks().then(stocks => {
                 topMarketStocks = stocks;
                 lastUpdateTime = Date.now();
@@ -542,9 +526,9 @@ function scheduleMarketRefresh() {
             });
         }
         
-        // Also refresh every 5 minutes during market hours
-        if (isMarketHours() && minutes % 5 === 0) {
-            console.log('⏰ Pre-market auto-refresh...');
+        // Also refresh every 2 minutes during market hours
+        if (isMarketHours() && minutes % 2 === 0) {
+            console.log('⏰ Market hours auto-refresh...');
             fetchTop20MarketStocks().then(stocks => {
                 topMarketStocks = stocks;
                 lastUpdateTime = Date.now();
@@ -562,7 +546,7 @@ app.listen(PORT, () => {
     console.log(`📈 Market Hours Scanner V2 running on port ${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}`);
     console.log(`🔌 API: http://localhost:${PORT}/api/market/top20`);
-    console.log(`⏰ Auto-refresh scheduled for 4:00 AM ET daily`);
+    console.log(`⏰ Auto-refresh every 2 minutes during market hours`);
     
     // Initial fetch
     fetchTop20MarketStocks().then(stocks => {
