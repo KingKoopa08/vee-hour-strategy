@@ -1,0 +1,576 @@
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const path = require('path');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Serve the market scanner dashboard
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'market-dashboard.html'));
+});
+
+// Also serve at /top20 route
+app.get('/top20', (req, res) => {
+    res.sendFile(path.join(__dirname, 'market-dashboard.html'));
+});
+
+// Polygon.io configuration
+const POLYGON_API_KEY = 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
+const POLYGON_BASE_URL = 'https://api.polygon.io';
+
+// Cache for market data
+let marketCache = new Map();
+let lastUpdateTime = null;
+let topMarketStocks = [];
+
+// Helper to check if market is in regular trading hours (9:30 AM - 4:00 PM ET)
+function isMarketHours() {
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const hours = easternTime.getHours();
+    const minutes = easternTime.getMinutes();
+    const totalMinutes = hours * 60 + minutes;
+    const dayOfWeek = easternTime.getDay();
+    
+    // Skip weekends
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+    
+    // Market hours: 9:30 AM (570) to 4:00 PM (960) ET
+    return totalMinutes >= 570 && totalMinutes < 960;
+}
+
+// Calculate RSI (Relative Strength Index)
+function calculateRSI(prices, period = 14) {
+    if (!prices || prices.length < period + 1) return 50; // Default neutral RSI
+    
+    let gains = 0;
+    let losses = 0;
+    
+    // Calculate initial average gain/loss
+    for (let i = 1; i <= period; i++) {
+        const change = prices[i] - prices[i - 1];
+        if (change > 0) {
+            gains += change;
+        } else {
+            losses -= change;
+        }
+    }
+    
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+    
+    // Calculate subsequent values using Wilder's smoothing
+    for (let i = period + 1; i < prices.length; i++) {
+        const change = prices[i] - prices[i - 1];
+        if (change > 0) {
+            avgGain = (avgGain * (period - 1) + change) / period;
+            avgLoss = (avgLoss * (period - 1)) / period;
+        } else {
+            avgGain = (avgGain * (period - 1)) / period;
+            avgLoss = (avgLoss * (period - 1) - change) / period;
+        }
+    }
+    
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+    const rsi = 100 - (100 / (1 + rs));
+    
+    return Math.round(rsi);
+}
+
+// Calculate mNAV Score (Market-Normalized Asset Value)
+// Enhanced scoring to identify exceptional market opportunities
+function calculatemNAVScore(stock) {
+    let score = 0;
+    
+    // Volume component (0.35 weight) - increased weight for liquidity
+    // More aggressive scaling for high volume stocks
+    const volumeScore = Math.min(stock.volumeRatio / 2, 1) * 0.35; // Changed from /5 to /2
+    
+    // Momentum component (0.30 weight) - increased weight
+    // Rewards stronger price movements
+    const momentumAbs = Math.abs(stock.priceChangePercent || 0);
+    const momentumScore = Math.min(momentumAbs / 10, 1) * 0.30; // Changed from /20 to /10
+    
+    // Volatility component (0.15 weight) - reduced weight
+    // Prefer 2-5% range for market
+    const volatility = stock.rangePercent || 0;
+    let volatilityScore = 0;
+    if (volatility >= 2 && volatility <= 5) {
+        volatilityScore = 1 * 0.15; // Perfect range
+    } else if (volatility > 5 && volatility <= 10) {
+        volatilityScore = 0.8 * 0.15; // Good range
+    } else if (volatility > 10) {
+        volatilityScore = 0.6 * 0.15; // High but tradeable
+    } else {
+        volatilityScore = (volatility / 2) * 0.15; // Low volatility
+    }
+    
+    // Liquidity component (0.10 weight)
+    // Exponential scaling for very liquid stocks
+    const liquidityScore = Math.min(Math.pow(stock.volume / 5000000, 0.7), 1) * 0.10;
+    
+    // Price efficiency (0.10 weight) - proximity to VWAP
+    const vwapDiff = Math.abs(((stock.price - stock.vwap) / stock.vwap) * 100);
+    const efficiencyScore = Math.max(0, 1 - (vwapDiff / 20)) * 0.10; // More forgiving
+    
+    score = volumeScore + momentumScore + volatilityScore + liquidityScore + efficiencyScore;
+    
+    // Enhanced RSI adjustment
+    if (stock.rsi) {
+        if (stock.rsi > 70 || stock.rsi < 30) {
+            score *= 1.2; // 20% boost for extreme RSI
+        } else if (stock.rsi > 60 || stock.rsi < 40) {
+            score *= 1.1; // 10% boost for trending
+        } else if (stock.rsi >= 48 && stock.rsi <= 52) {
+            score *= 0.95; // Small penalty for very neutral
+        }
+    }
+    
+    // Bonus for exceptional conditions
+    if (stock.volumeRatio > 5 && Math.abs(stock.priceChangePercent) > 5) {
+        score *= 1.15; // 15% bonus for high volume + high movement
+    }
+    
+    return Math.min(1, score); // Cap at 1.0
+}
+
+// Calculate tax implications
+function calculateTaxImplications(priceChange, volume, price) {
+    // Estimate based on typical retail vs institutional trading patterns
+    const estimatedDollarVolume = volume * price;
+    const isHighVolume = volume > 5000000;
+    
+    // Short-term capital gains apply to day trading
+    const shortTermRate = 0.37; // Assume highest bracket for safety
+    const estimatedGain = Math.abs(priceChange) * (volume * 0.001); // Assume 0.1% participation
+    const estimatedTax = estimatedGain * shortTermRate;
+    
+    return {
+        type: 'SHORT_TERM',
+        rate: shortTermRate,
+        estimatedTaxPerShare: (Math.abs(priceChange) * shortTermRate).toFixed(3),
+        washSaleRisk: isHighVolume ? 'HIGH' : 'MODERATE',
+        note: priceChange > 0 ? 'Gains taxable at ordinary income rates' : 'Losses may offset gains'
+    };
+}
+
+// Fetch historical data for RSI calculation
+async function fetchHistoricalPrices(symbol, days = 20) {
+    try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        
+        const url = `${POLYGON_BASE_URL}/v2/aggs/ticker/${symbol}/range/1/day/${startDate.toISOString().split('T')[0]}/${endDate.toISOString().split('T')[0]}?apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.results) {
+            return response.data.results.map(r => r.c); // Return closing prices
+        }
+    } catch (error) {
+        console.error(`Error fetching historical for ${symbol}:`, error.message);
+    }
+    return [];
+}
+
+// Fetch recent news for a stock (last 48 hours)
+async function fetchRecentNews(symbol) {
+    try {
+        // Calculate date 48 hours ago
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setHours(twoDaysAgo.getHours() - 48);
+        const fromDate = twoDaysAgo.toISOString().split('T')[0];
+        
+        const url = `${POLYGON_BASE_URL}/v2/reference/news?ticker=${symbol}&published_utc.gte=${fromDate}&limit=5&apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.results && response.data.results.length > 0) {
+            // Get the most recent news items
+            const news = response.data.results.map(article => ({
+                title: article.title,
+                publisher: article.publisher.name,
+                publishedAt: new Date(article.published_utc),
+                url: article.article_url,
+                sentiment: article.sentiment || 'neutral'
+            }));
+            
+            // Return summary of news with URLs for clickable links
+            return {
+                count: news.length,
+                latestTitle: news[0].title,
+                latestPublisher: news[0].publisher,
+                latestUrl: news[0].url,
+                hoursAgo: Math.round((Date.now() - news[0].publishedAt) / (1000 * 60 * 60)),
+                headlines: news.slice(0, 3).map(n => ({
+                    title: n.title,
+                    url: n.url,
+                    publisher: n.publisher,
+                    hoursAgo: Math.round((Date.now() - n.publishedAt) / (1000 * 60 * 60))
+                }))
+            };
+        }
+    } catch (error) {
+        console.error(`Error fetching news for ${symbol}:`, error.message);
+    }
+    
+    return {
+        count: 0,
+        latestTitle: 'No recent news',
+        latestPublisher: '',
+        hoursAgo: null,
+        headlines: []
+    };
+}
+
+// Fetch market data for a single stock with enhanced metrics
+async function fetchEnhancedMarketData(symbol) {
+    try {
+        // Get snapshot data
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.ticker) {
+            const ticker = response.data.ticker;
+            
+            // Get market specific data
+            const preMarket = ticker.preMarket || {};
+            const day = ticker.day || {};
+            const prevDay = ticker.prevDay || {};
+            const min = ticker.min || {}; // Latest minute bar - contains market data
+            
+            // During market hours, use 'min' field for latest data
+            let currentPrice, openPrice, highPrice, lowPrice, volume, vwap;
+            
+            if (isMarketHours() && min.av && min.av > 0) {
+                // During market hours, 'min' field contains latest market data
+                currentPrice = min.c || min.l || prevDay.c || 0;
+                openPrice = min.o || prevDay.c || 0;
+                highPrice = min.h || currentPrice;
+                lowPrice = min.l || currentPrice;
+                volume = min.av || 0; // Use accumulated volume (av), NOT single minute volume (v)
+                vwap = min.vw || currentPrice;
+                console.log(`  └─ Using MARKET data for ${symbol}: Vol ${(volume/1000000).toFixed(2)}M`);
+            } else if (day.v && day.v > 0) {
+                // Use regular day data when available
+                currentPrice = day.c || prevDay.c || 0;
+                openPrice = day.o || prevDay.c || 0;
+                highPrice = day.h || currentPrice;
+                lowPrice = day.l || currentPrice;
+                volume = day.v || 0;
+                vwap = day.vw || currentPrice;
+            } else {
+                // Fallback to previous day
+                currentPrice = prevDay.c || 0;
+                openPrice = prevDay.c || 0;
+                highPrice = prevDay.h || currentPrice;
+                lowPrice = prevDay.l || currentPrice;
+                volume = 0;
+                vwap = currentPrice;
+            }
+            
+            // Calculate basic metrics
+            const priceChange = currentPrice - (prevDay.c || currentPrice);
+            const priceChangePercent = ((priceChange / (prevDay.c || 1)) * 100);
+            const volumeRatio = (prevDay.v && prevDay.v > 0) ? volume / prevDay.v : 1;
+            const rangePercent = ((highPrice - lowPrice) / currentPrice) * 100;
+            
+            // Calculate buy/sell indicators
+            const priceVsVwap = vwap > 0 ? ((currentPrice - vwap) / vwap) * 100 : 0;
+            const isAboveVwap = currentPrice > vwap;
+            
+            // Position in range (0 = at low, 100 = at high)
+            const positionInRange = highPrice > lowPrice ? 
+                ((currentPrice - lowPrice) / (highPrice - lowPrice)) * 100 : 50;
+            
+            // Momentum indicator based on price change
+            let momentum = 'NEUTRAL';
+            let momentumScore = 0;
+            if (priceChangePercent > 2) {
+                momentum = 'STRONG_UP';
+                momentumScore = 2;
+            } else if (priceChangePercent > 0.5) {
+                momentum = 'UP';
+                momentumScore = 1;
+            } else if (priceChangePercent < -2) {
+                momentum = 'STRONG_DOWN';
+                momentumScore = -2;
+            } else if (priceChangePercent < -0.5) {
+                momentum = 'DOWN';
+                momentumScore = -1;
+            }
+            
+            // Volume surge indicator
+            let volumeSurge = 'NORMAL';
+            if (volumeRatio > 3) {
+                volumeSurge = 'EXTREME';
+            } else if (volumeRatio > 2) {
+                volumeSurge = 'HIGH';
+            } else if (volumeRatio > 1.5) {
+                volumeSurge = 'ELEVATED';
+            }
+            
+            // Calculate composite buy/sell signal
+            let signalScore = 0;
+            signalScore += momentumScore * 2; // Weight momentum heavily
+            signalScore += isAboveVwap ? 1 : -1; // VWAP position
+            signalScore += positionInRange > 70 ? 1 : positionInRange < 30 ? -1 : 0; // Range position
+            signalScore += volumeSurge === 'EXTREME' ? 2 : volumeSurge === 'HIGH' ? 1 : 0; // Volume
+            
+            let signal = 'HOLD';
+            if (signalScore >= 4) signal = 'STRONG_BUY';
+            else if (signalScore >= 2) signal = 'BUY';
+            else if (signalScore <= -4) signal = 'STRONG_SELL';
+            else if (signalScore <= -2) signal = 'SELL';
+            
+            // Fetch recent news instead of RSI
+            const newsData = await fetchRecentNews(symbol);
+            
+            const stockData = {
+                symbol: symbol,
+                price: currentPrice,
+                open: openPrice,
+                high: highPrice,
+                low: lowPrice,
+                volume: volume,
+                vwap: vwap,
+                prevClose: prevDay.c || 0,
+                priceChange: priceChange,
+                priceChangePercent: priceChangePercent,
+                volumeRatio: volumeRatio,
+                rangePercent: rangePercent,
+                priceVsVwap: priceVsVwap,
+                isAboveVwap: isAboveVwap,
+                positionInRange: positionInRange,
+                momentum: momentum,
+                momentumScore: momentumScore,
+                volumeSurge: volumeSurge,
+                signal: signal,
+                signalScore: signalScore,
+                rsi: 50, // Default RSI for mNAV calculation
+                news: newsData,
+                timestamp: new Date()
+            };
+            
+            // Calculate mNAV score
+            stockData.mnavScore = calculatemNAVScore(stockData);
+            
+            // Calculate tax implications
+            stockData.taxImplications = calculateTaxImplications(priceChange, volume, currentPrice);
+            
+            return stockData;
+        }
+    } catch (error) {
+        console.error(`Error fetching ${symbol}:`, error.message);
+    }
+    return null;
+}
+
+// Fetch top 20 market stocks by VOLUME (liquidity is key for day trading)
+async function fetchTop20MarketStocks() {
+    try {
+        const timeLabel = isMarketHours() ? 'MARKET' : 'REGULAR HOURS';
+        console.log(`📈 Fetching top 20 highest volume stocks (${timeLabel})...`);
+        
+        // Get tickers sorted by volume - this is what matters for day trading
+        // Fetch more tickers to ensure we catch all market movers
+        // The API sorts by previous day volume, not current market volume
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&limit=1000`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.tickers) {
+            const topVolumeStocks = [];
+            let processed = 0;
+            
+            // Debug first few tickers to see structure
+            if (response.data.tickers.length > 0 && isMarketHours()) {
+                console.log(`📋 Debug first 3 tickers during MARKET:`);
+                for (let i = 0; i < Math.min(3, response.data.tickers.length); i++) {
+                    const t = response.data.tickers[i];
+                    console.log(`   ${t.ticker}:`);
+                    console.log(`     min.v: ${t.min?.v || 0}, min.av: ${t.min?.av || 0}, min.c: ${t.min?.c || 0}`);
+                    console.log(`     day.v: ${t.day?.v || 0}, day.c: ${t.day?.c || 0}`);
+                    console.log(`     prevDay.v: ${t.prevDay?.v || 0}`);
+                }
+            }
+            
+            // First pass: collect ALL stocks with market volume
+            const allMarketStocks = [];
+            
+            for (const ticker of response.data.tickers) {
+                const preMarket = ticker.preMarket || {};
+                const day = ticker.day || {};
+                const prevDay = ticker.prevDay || {};
+                const min = ticker.min || {}; // Latest minute bar
+                
+                // IMPORTANT: During market hours, use 'min' field for latest data
+                let volume = 0;
+                let price = 0;
+                let dataSource = 'UNKNOWN';
+                
+                if (isMarketHours()) {
+                    // During market hours, use min field which has latest market data
+                    // IMPORTANT: Use av (accumulated volume) not v (single minute volume)!
+                    volume = min.av || 0;
+                    if (volume === 0) {
+                        continue; // Skip stocks with no market volume
+                    }
+                    price = min.c || min.l || prevDay.c || 0;
+                    dataSource = 'MARKET';
+                } else {
+                    // Outside market hours, use regular market data
+                    volume = day.v || min.av || min.v || 0;
+                    price = day.c || min.c || prevDay.c || 0;
+                    dataSource = 'REGULAR';
+                }
+                
+                // Basic filters for tradeable stocks
+                // Min volume 100K for liquidity, price between $1-100 for accessibility
+                if (volume > 100000 && price >= 1 && price <= 100) {
+                    allMarketStocks.push({
+                        ticker: ticker.ticker,
+                        volume: volume,
+                        price: price,
+                        dataSource: dataSource
+                    });
+                }
+            }
+            
+            // Sort ALL stocks by volume first
+            allMarketStocks.sort((a, b) => b.volume - a.volume);
+            
+            console.log(`📊 Found ${allMarketStocks.length} stocks with market activity`);
+            console.log(`🔝 Top 5 by volume: ${allMarketStocks.slice(0, 5).map(s => `${s.ticker} (${(s.volume/1e6).toFixed(1)}M)`).join(', ')}`);
+            
+            // Now process only the top 20 by volume
+            for (const stock of allMarketStocks.slice(0, 20)) {
+                processed++;
+                console.log(`Processing ${stock.ticker}: ${stock.dataSource} Volume ${(stock.volume/1000000).toFixed(2)}M`);
+                
+                // Fetch enhanced data including news
+                const enhancedData = await fetchEnhancedMarketData(stock.ticker);
+                
+                if (enhancedData) {
+                    topVolumeStocks.push(enhancedData);
+                    console.log(`✓ ${stock.ticker}: Volume ${(stock.volume/1000000).toFixed(2)}M, mNAV ${enhancedData.mnavScore.toFixed(2)}`);
+                }
+            }
+            
+            // Sort by volume ONLY - highest volume first for best liquidity
+            topVolumeStocks.sort((a, b) => b.volume - a.volume);
+            
+            const result = topVolumeStocks.slice(0, 20);
+            const avgVolume = result.reduce((sum, s) => sum + s.volume, 0) / result.length;
+            const avgMnav = result.reduce((sum, s) => sum + s.mnavScore, 0) / result.length;
+            
+            console.log(`📊 Returning ${result.length} stocks:`);
+            console.log(`   Average Volume: ${(avgVolume/1000000).toFixed(2)}M shares`);
+            console.log(`   Average mNAV: ${avgMnav.toFixed(2)} (informational only)`);
+            console.log(`   Top stock: ${result[0]?.symbol} with ${(result[0]?.volume/1000000).toFixed(2)}M volume`);
+            
+            return result;
+        }
+    } catch (error) {
+        console.error('Error fetching market stocks:', error.message);
+    }
+    
+    return [];
+}
+
+// API endpoint for top 20 market stocks
+app.get('/api/market/top20', async (req, res) => {
+    try {
+        // Check if we need to refresh (every 60 seconds during market)
+        const now = Date.now();
+        const needsRefresh = !lastUpdateTime || (now - lastUpdateTime) > 10000; // Refresh every 10 seconds for live data
+        
+        if (needsRefresh || topMarketStocks.length === 0) {
+            console.log('Refreshing top 20 market data...');
+            topMarketStocks = await fetchTop20MarketStocks();
+            lastUpdateTime = now;
+        }
+        
+        res.json({
+            success: true,
+            isMarket: isMarketHours(),
+            lastUpdate: lastUpdateTime,
+            updateTime: new Date(lastUpdateTime).toLocaleTimeString('en-US', {
+                timeZone: 'America/New_York',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }) + ' ET',
+            count: topMarketStocks.length,
+            stocks: topMarketStocks
+        });
+    } catch (error) {
+        console.error('Scanner error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        isMarket: isMarketHours(),
+        lastUpdate: lastUpdateTime,
+        stocksInCache: topMarketStocks.length
+    });
+});
+
+// Auto-refresh at 4:00 AM ET every morning
+function scheduleMarketRefresh() {
+    const checkTime = () => {
+        const now = new Date();
+        const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        const hours = easternTime.getHours();
+        const minutes = easternTime.getMinutes();
+        
+        // Refresh at 4:00 AM ET (start of market)
+        if (hours === 4 && minutes === 0) {
+            console.log('📅 4:00 AM ET - Starting morning market scan...');
+            fetchTop20MarketStocks().then(stocks => {
+                topMarketStocks = stocks;
+                lastUpdateTime = Date.now();
+                console.log(`✅ Morning scan complete: ${stocks.length} stocks loaded`);
+            });
+        }
+        
+        // Also refresh every 5 minutes during market hours
+        if (isMarketHours() && minutes % 5 === 0) {
+            console.log('⏰ Pre-market auto-refresh...');
+            fetchTop20MarketStocks().then(stocks => {
+                topMarketStocks = stocks;
+                lastUpdateTime = Date.now();
+            });
+        }
+    };
+    
+    // Check every minute
+    setInterval(checkTime, 60000);
+    checkTime(); // Initial check
+}
+
+const PORT = process.env.PORT || 3012;
+app.listen(PORT, () => {
+    console.log(`📈 Market Hours Scanner V2 running on port ${PORT}`);
+    console.log(`📊 Dashboard: http://localhost:${PORT}`);
+    console.log(`🔌 API: http://localhost:${PORT}/api/market/top20`);
+    console.log(`⏰ Auto-refresh scheduled for 4:00 AM ET daily`);
+    
+    // Initial fetch
+    fetchTop20MarketStocks().then(stocks => {
+        topMarketStocks = stocks;
+        lastUpdateTime = Date.now();
+        console.log(`✅ Loaded ${stocks.length} market stocks`);
+    });
+    
+    // Schedule daily refresh
+    scheduleMarketRefresh();
+});
