@@ -947,6 +947,13 @@
         
         async function loadData() {
             try {
+                // Show loading indicator
+                const refreshBtn = document.querySelector('.refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.textContent = 'Refreshing...';
+                    refreshBtn.disabled = true;
+                }
+                
                 const response = await fetch('/api/premarket/top20');
                 const data = await response.json();
                 
