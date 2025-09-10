@@ -480,7 +480,7 @@ app.get('/api/premarket/top20', async (req, res) => {
     try {
         // Check if we need to refresh (every 60 seconds during pre-market)
         const now = Date.now();
-        const needsRefresh = !lastUpdateTime || (now - lastUpdateTime) > 60000;
+        const needsRefresh = !lastUpdateTime || (now - lastUpdateTime) > 10000; // Refresh every 10 seconds for live data
         
         if (needsRefresh || topPremarketStocks.length === 0) {
             console.log('Refreshing top 20 pre-market data...');
