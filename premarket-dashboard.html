@@ -1085,7 +1085,23 @@
             // Pre-market hours: 4:00 AM - 9:30 AM ET (240-570 minutes)
             if (totalMinutes >= 240 && totalMinutes < 570) {
                 console.log('Auto-refreshing pre-market data...');
-                loadData();
+                // Check if we need to load for the first time after pre-market opens
+                const firstRow = document.querySelector('#stocksTable tr:first-child');
+                if (firstRow && firstRow.querySelector('.no-data')) {
+                    // Clear the no-data message and load
+                    loadData();
+                } else {
+                    // Regular refresh
+                    loadData();
+                }
+            } else {
+                // Outside pre-market hours, show message if data is currently displayed
+                const firstRow = document.querySelector('#stocksTable tr:first-child');
+                if (!firstRow || !firstRow.querySelector('.no-data')) {
+                    document.getElementById('stocksTable').innerHTML = 
+                        '<tr><td colspan="11" class="no-data">Pre-market data is only available from 4:00 AM to 9:30 AM ET.<br>Current time: ' + 
+                        new Date().toLocaleTimeString('en-US', {timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: true}) + ' ET</td></tr>';
+                }
             }
         }, 10000); // Every 10 seconds for live data during pre-market
         
