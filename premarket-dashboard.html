@@ -971,6 +971,13 @@
                 console.error('Error loading data:', error);
                 document.getElementById('stocksTable').innerHTML = 
                     `<tr><td colspan="9" class="error">Error loading data: ${error.message}</td></tr>`;
+            } finally {
+                // Reset refresh button
+                const refreshBtn = document.querySelector('.refresh-btn');
+                if (refreshBtn) {
+                    refreshBtn.textContent = 'Refresh';
+                    refreshBtn.disabled = false;
+                }
             }
         }
         
