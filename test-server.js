@@ -40,7 +40,7 @@ app.get('/api/stocks/top-volume', (req, res) => {
       signal: Math.random() > 0.5 ? 'BUY' : Math.random() > 0.5 ? 'SELL' : 'HOLD',
       news: Math.random() > 0.5 ? 'Recent news available' : null,
       updateTime: new Date().toLocaleTimeString('en-US'),
-      companyName: testData[symbol].name
+      mnavScore: 50 + Math.random() * 50  // Random score between 50-100
     };
   });
   res.json({ 
