@@ -8,11 +8,11 @@ app.use(express.json());
 
 // Test data
 let testData = {
-  AAPL: { price: 175.50, volume: 75000000, change: 2.5 },
-  TSLA: { price: 245.30, volume: 95000000, change: -1.2 },
-  NVDA: { price: 455.60, volume: 45000000, change: 3.8 },
-  AMD: { price: 105.20, volume: 55000000, change: -0.5 },
-  SPY: { price: 445.80, volume: 85000000, change: 0.8 }
+  AAPL: { price: 175.50, volume: 75000000, change: 2.5, name: 'Apple Inc.' },
+  TSLA: { price: 245.30, volume: 95000000, change: -1.2, name: 'Tesla Inc.' },
+  NVDA: { price: 455.60, volume: 45000000, change: 3.8, name: 'NVIDIA Corporation' },
+  AMD: { price: 105.20, volume: 55000000, change: -0.5, name: 'Advanced Micro Devices' },
+  SPY: { price: 445.80, volume: 85000000, change: 0.8, name: 'SPDR S&P 500 ETF' }
 };
 
 // Health check
