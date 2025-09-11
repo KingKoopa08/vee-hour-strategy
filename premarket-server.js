@@ -88,32 +88,24 @@ async function fetchTopStocks() {
             // Filter and sort by volume using live snapshot data
             const stocks = response.data.tickers
                 .filter(t => {
-                    // For pre-market, check preMarket data first, then regular hours
-                    const preMarketPrice = t.preMarket?.c || 0;
-                    const regularPrice = t.day?.c || t.prevDay?.c || 0;
-                    const price = preMarketPrice || regularPrice;
+                    // During pre-market hours, t.day contains pre-market data
+                    // During regular hours, t.day contains regular market data
+                    const currentPrice = t.day?.c || t.prevDay?.c || 0;
+                    const currentVolume = t.day?.v || 0;
                     
-                    // Get pre-market volume or regular volume
-                    const preMarketVolume = t.preMarket?.v || 0;
-                    const regularVolume = t.day?.v || t.prevDay?.v || 0;
-                    const volume = preMarketVolume || regularVolume;
-                    
-                    return volume > 100000 && // Lower threshold for pre-market (100k)
-                           price > 0.5 &&       // Price > $0.50 
-                           price < 2000;        // Price < $2000
+                    return currentVolume > 100000 && // Lower threshold for pre-market (100k)
+                           currentPrice > 0.5 &&       // Price > $0.50 
+                           currentPrice < 2000;        // Price < $2000
                 })
                 .map(t => {
-                    // Get pre-market data if available, otherwise use regular hours
-                    const preMarketPrice = t.preMarket?.c || 0;
-                    const preMarketVolume = t.preMarket?.v || 0;
-                    const preMarketHigh = t.preMarket?.h || 0;
-                    const preMarketLow = t.preMarket?.l || 0;
-                    const preMarketVWAP = t.preMarket?.vw || 0;
-                    
-                    // Use pre-market data if available, otherwise regular hours
-                    const currentPrice = preMarketPrice || t.day?.c || t.prevDay?.c || 0;
+                    // During pre-market, t.day has the current pre-market data
+                    // t.prevDay has the previous day's closing data
+                    const currentPrice = t.day?.c || t.prevDay?.c || 0;
                     const previousClose = t.prevDay?.c || 0;
-                    const volume = preMarketVolume || t.day?.v || t.prevDay?.v || 0;
+                    const currentVolume = t.day?.v || 0;
+                    const currentHigh = t.day?.h || 0;
+                    const currentLow = t.day?.l || 0;
+                    const currentVWAP = t.day?.vw || currentPrice;
                     
                     // Calculate price change from previous close
                     let priceChange = 0;
@@ -124,16 +116,22 @@ async function fetchTopStocks() {
                         changePercent = (priceChange / previousClose) * 100;
                     }
                     
+                    // Check if we're in pre-market hours
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const isPreMarketTime = hour >= 4 && hour < 9.5; // 4:00 AM - 9:30 AM ET
+                    
                     return {
                         symbol: t.ticker,
                         price: currentPrice,
-                        volume: volume,
+                        volume: currentVolume,
                         change: priceChange,
                         changePercent: changePercent,
-                        high: preMarketHigh || t.day?.h || t.prevDay?.h || 0,
-                        low: preMarketLow || t.day?.l || t.prevDay?.l || 0,
-                        vwap: preMarketVWAP || t.day?.vw || t.prevDay?.vw || currentPrice,
-                        isPreMarket: preMarketVolume > 0
+                        high: currentHigh,
+                        low: currentLow,
+                        vwap: currentVWAP,
+                        previousClose: previousClose,
+                        isPreMarket: isPreMarketTime
                     };
                 })
                 .sort((a, b) => b.volume - a.volume) // Sort by highest volume
