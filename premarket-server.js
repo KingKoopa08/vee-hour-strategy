@@ -425,15 +425,21 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                 const priceChange = stock.change || 0;
                 const priceChangePercent = isFinite(stock.changePercent) ? stock.changePercent : 0;
                 
-                // Determine signal based on actual data
+                // Determine signal based on pre-market activity
                 let signal = 'HOLD';
-                if (priceChangePercent > 3) signal = 'BUY';
-                else if (priceChangePercent < -3) signal = 'SELL';
+                // For pre-market: Look for volume surge and price movement
+                if (stock.volume > 1000000 && priceChangePercent > 2) {
+                    signal = 'BUY';
+                } else if (stock.volume > 1000000 && priceChangePercent < -2) {
+                    signal = 'SELL';
+                } else if (stock.volume > 500000 && Math.abs(priceChangePercent) > 1) {
+                    signal = priceChangePercent > 0 ? 'WATCH_BUY' : 'WATCH_SELL';
+                }
                 
-                // Determine momentum
+                // Determine momentum based on pre-market activity
                 let momentum = 'neutral';
-                if (priceChangePercent > 1) momentum = 'bullish';
-                else if (priceChangePercent < -1) momentum = 'bearish';
+                if (priceChangePercent > 0.5) momentum = 'bullish';
+                else if (priceChangePercent < -0.5) momentum = 'bearish';
                 
                 return {
                     rank: index + 1,
