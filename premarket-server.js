@@ -78,6 +78,9 @@ async function fetchSnapshot(symbol) {
 // Pre-market watchlist - stocks that often have high pre-market volume
 const PREMARKET_WATCHLIST = ['SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD'];
 
+// After-hours watchlist - add stocks that are active after hours
+const AFTERHOURS_WATCHLIST = ['HCWB', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT', 'OPEN', 'TLRY', 'CMPO', 'YAAS', 'NXTT'];
+
 // Get top gainers/most active stocks using live snapshots
 async function fetchTopStocks() {
     try {
