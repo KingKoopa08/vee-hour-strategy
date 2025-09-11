@@ -90,8 +90,9 @@ async function fetchTopStocks() {
                 .filter(t => {
                     // During pre-market hours, t.day contains pre-market data
                     // During regular hours, t.day contains regular market data
+                    // Outside market hours, use previous day data
                     const currentPrice = t.day?.c || t.prevDay?.c || 0;
-                    const currentVolume = t.day?.v || 0;
+                    const currentVolume = t.day?.v || t.prevDay?.v || 0;
                     
                     return currentVolume > 100000 && // Lower threshold for pre-market (100k)
                            currentPrice > 0.5 &&       // Price > $0.50 
