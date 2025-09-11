@@ -17,7 +17,7 @@ let topStocks = [];
 let stockCache = new Map();
 
 // After-hours watchlist - stocks that often have high after-hours volume
-const AFTERHOURS_WATCHLIST = ['SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT'];
+const AFTERHOURS_WATCHLIST = ['HCWB', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT'];
 
 // Get top after-hours movers
 async function fetchAfterHoursStocks() {
