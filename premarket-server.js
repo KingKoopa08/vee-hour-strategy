@@ -75,10 +75,29 @@ async function fetchSnapshot(symbol) {
     return null;
 }
 
+// Pre-market watchlist - stocks that often have high pre-market volume
+const PREMARKET_WATCHLIST = ['SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD'];
+
 // Get top gainers/most active stocks using live snapshots
 async function fetchTopStocks() {
     try {
         console.log('📊 Fetching live most active stocks from market...');
+        
+        // Fetch specific watchlist stocks first
+        const watchlistPromises = PREMARKET_WATCHLIST.map(async (symbol) => {
+            try {
+                const tickerUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+                const tickerResponse = await axios.get(tickerUrl);
+                return tickerResponse.data?.ticker;
+            } catch (err) {
+                console.log(`⚠️ Could not fetch ${symbol}: ${err.message}`);
+                return null;
+            }
+        });
+        
+        const watchlistTickers = await Promise.all(watchlistPromises);
+        const validWatchlistTickers = watchlistTickers.filter(t => t !== null);
+        console.log(`📋 Fetched ${validWatchlistTickers.length} watchlist stocks`);
         
         // Use the snapshot endpoint to get live data for all tickers - fetch max to analyze
         const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=1000`;
