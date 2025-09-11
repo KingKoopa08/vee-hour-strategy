@@ -421,6 +421,85 @@ app.get('/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// After-hours endpoint
+app.get('/api/afterhours/top-movers', async (req, res) => {
+    try {
+        const stocks = await fetchTopStocks();
+        
+        const formattedStocks = stocks.slice(0, 50).map((stock, index) => {
+            const ahChangePercent = stock.changePercent || 0;
+            const ahVolume = stock.volume || 0;
+            
+            let signal = 'HOLD';
+            if (ahVolume > 100000) {
+                if (ahChangePercent > 2) signal = 'BUY';
+                else if (ahChangePercent < -2) signal = 'SELL';
+                else if (ahChangePercent > 1) signal = 'WATCH_BUY';
+                else if (ahChangePercent < -1) signal = 'WATCH_SELL';
+            }
+            
+            let momentum = 'neutral';
+            if (ahChangePercent > 0.5) momentum = 'bullish';
+            else if (ahChangePercent < -0.5) momentum = 'bearish';
+            
+            return {
+                rank: index + 1,
+                symbol: stock.symbol,
+                afterHoursPrice: stock.price,
+                afterHoursChange: stock.change,
+                afterHoursChangePercent: ahChangePercent,
+                afterHoursVolume: ahVolume,
+                afterHoursHigh: stock.high,
+                afterHoursLow: stock.low,
+                regularClose: stock.previousClose,
+                dayChange: stock.change,
+                dayChangePercent: stock.changePercent,
+                regularVolume: stock.volume,
+                momentum: momentum,
+                signal: signal,
+                volumeSurge: ahVolume > 500000,
+                unusualActivity: Math.abs(ahChangePercent) > 3,
+                updateTime: new Date().toLocaleTimeString('en-US')
+            };
+        });
+        
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const time = hour * 100 + minute;
+        const day = now.getDay();
+        
+        let status = 'closed';
+        let message = '';
+        
+        if (day === 0 || day === 6) {
+            message = 'Market closed - Weekend';
+        } else if (time >= 400 && time < 930) {
+            status = 'pre-market';
+            message = 'Pre-market trading';
+        } else if (time >= 930 && time < 1600) {
+            status = 'open';
+            message = 'Regular trading hours';
+        } else if (time >= 1600 && time < 2000) {
+            status = 'after-hours';
+            message = 'After-hours trading';
+        } else {
+            message = 'Market closed';
+        }
+        
+        res.json({ 
+            success: true, 
+            stocks: formattedStocks,
+            marketStatus: { status, message, currentTime: now.toLocaleTimeString('en-US') },
+            updateTime: new Date().toLocaleTimeString('en-US')
+        });
+        
+    } catch (error) {
+        console.error('Error in /api/afterhours/top-movers:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.get('/api/stocks/top-volume', async (req, res) => {
     try {
         const stocks = await fetchTopStocks();
