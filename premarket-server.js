@@ -88,22 +88,34 @@ async function fetchTopStocks() {
             // Filter and sort by volume using live snapshot data
             const stocks = response.data.tickers
                 .filter(t => {
-                    const price = t.day?.c || t.prevDay?.c || 0;
-                    const volume = t.day?.v || t.prevDay?.v || 0;
-                    return volume > 1000000 && // Min 1M volume (lowered to catch more stocks)
+                    // For pre-market, check preMarket data first, then regular hours
+                    const preMarketPrice = t.preMarket?.c || 0;
+                    const regularPrice = t.day?.c || t.prevDay?.c || 0;
+                    const price = preMarketPrice || regularPrice;
+                    
+                    // Get pre-market volume or regular volume
+                    const preMarketVolume = t.preMarket?.v || 0;
+                    const regularVolume = t.day?.v || t.prevDay?.v || 0;
+                    const volume = preMarketVolume || regularVolume;
+                    
+                    return volume > 100000 && // Lower threshold for pre-market (100k)
                            price > 0.5 &&       // Price > $0.50 
                            price < 2000;        // Price < $2000
                 })
-                .sort((a, b) => (b.day?.v || 0) - (a.day?.v || 0)) // Sort by volume
-                .slice(0, 500) // Analyze top 500 stocks by volume
                 .map(t => {
-                    // Get current and previous prices properly
-                    const currentPrice = t.day?.c || t.prevDay?.c || 0;
-                    const previousClose = t.prevDay?.c || 0;
-                    const todayVolume = t.day?.v || 0;
-                    const prevVolume = t.prevDay?.v || 0;
+                    // Get pre-market data if available, otherwise use regular hours
+                    const preMarketPrice = t.preMarket?.c || 0;
+                    const preMarketVolume = t.preMarket?.v || 0;
+                    const preMarketHigh = t.preMarket?.h || 0;
+                    const preMarketLow = t.preMarket?.l || 0;
+                    const preMarketVWAP = t.preMarket?.vw || 0;
                     
-                    // Calculate price change correctly
+                    // Use pre-market data if available, otherwise regular hours
+                    const currentPrice = preMarketPrice || t.day?.c || t.prevDay?.c || 0;
+                    const previousClose = t.prevDay?.c || 0;
+                    const volume = preMarketVolume || t.day?.v || t.prevDay?.v || 0;
+                    
+                    // Calculate price change from previous close
                     let priceChange = 0;
                     let changePercent = 0;
                     
@@ -115,14 +127,17 @@ async function fetchTopStocks() {
                     return {
                         symbol: t.ticker,
                         price: currentPrice,
-                        volume: todayVolume || prevVolume,
+                        volume: volume,
                         change: priceChange,
                         changePercent: changePercent,
-                        high: t.day?.h || t.prevDay?.h || 0,
-                        low: t.day?.l || t.prevDay?.l || 0,
-                        vwap: t.day?.vw || t.prevDay?.vw || currentPrice
+                        high: preMarketHigh || t.day?.h || t.prevDay?.h || 0,
+                        low: preMarketLow || t.day?.l || t.prevDay?.l || 0,
+                        vwap: preMarketVWAP || t.day?.vw || t.prevDay?.vw || currentPrice,
+                        isPreMarket: preMarketVolume > 0
                     };
-                });
+                })
+                .sort((a, b) => b.volume - a.volume) // Sort by highest volume
+                .slice(0, 500); // Get top 500 by volume
             
             topStocks = stocks.map(s => s.symbol);
             console.log(`✅ Found ${stocks.length} active stocks with live data`);
