@@ -360,10 +360,50 @@ app.get('/health', (req, res) => {
 
 app.get('/api/stocks/top-volume', async (req, res) => {
     try {
-        if (topStocks.length === 0) {
-            await fetchTopStocks();
-        }
-        res.json({ success: true, data: topStocks });
+        const stocks = await fetchTopStocks();
+        // Return in the format the dashboard expects
+        const formattedStocks = stocks.map((stock, index) => {
+            if (typeof stock === 'string') {
+                // If we only have symbols, return minimal data
+                const cachedData = stockCache.get(stock);
+                return {
+                    rank: index + 1,
+                    symbol: stock,
+                    companyName: stock,
+                    price: cachedData?.price || 0,
+                    priceChange: cachedData?.change || 0,
+                    priceChangePercent: cachedData?.changePercent || 0,
+                    volume: cachedData?.volume || 0,
+                    volumeRatio: 1.0,
+                    vwap: cachedData?.vwap || 0,
+                    momentum: 'neutral',
+                    volumeSurge: false,
+                    signal: 'HOLD',
+                    news: null,
+                    mnavScore: 50,
+                    updateTime: new Date().toLocaleTimeString('en-US')
+                };
+            }
+            // If we have full stock objects, format them properly
+            return {
+                rank: index + 1,
+                symbol: stock.symbol,
+                companyName: stock.symbol,
+                price: stock.price || 0,
+                priceChange: stock.change || 0,
+                priceChangePercent: stock.changePercent || 0,
+                volume: stock.volume || 0,
+                volumeRatio: 1.0,
+                vwap: stock.vwap || stock.price || 0,
+                momentum: stock.changePercent > 0 ? 'bullish' : 'bearish',
+                volumeSurge: stock.volume > 10000000,
+                signal: stock.changePercent > 2 ? 'BUY' : stock.changePercent < -2 ? 'SELL' : 'HOLD',
+                news: null,
+                mnavScore: 50 + Math.min(50, stock.volume / 1000000),
+                updateTime: new Date().toLocaleTimeString('en-US')
+            };
+        });
+        res.json({ success: true, stocks: formattedStocks });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
