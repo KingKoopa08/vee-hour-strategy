@@ -103,10 +103,10 @@ async function fetchTopStocks() {
                     // t.prevDay has the previous day's closing data
                     const currentPrice = t.day?.c || t.prevDay?.c || 0;
                     const previousClose = t.prevDay?.c || 0;
-                    const currentVolume = t.day?.v || 0;
-                    const currentHigh = t.day?.h || 0;
-                    const currentLow = t.day?.l || 0;
-                    const currentVWAP = t.day?.vw || currentPrice;
+                    const currentVolume = t.day?.v || t.prevDay?.v || 0;
+                    const currentHigh = t.day?.h || t.prevDay?.h || 0;
+                    const currentLow = t.day?.l || t.prevDay?.l || 0;
+                    const currentVWAP = t.day?.vw || t.prevDay?.vw || currentPrice;
                     
                     // Calculate price change from previous close
                     let priceChange = 0;
