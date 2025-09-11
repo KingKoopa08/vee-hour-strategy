@@ -3,340 +3,397 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>After-Hours Trading Dashboard</title>
+    <title>After-Hours Dashboard - Top Volume Leaders</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #151932 100%);
-            color: #e0e0e0;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #ffffff;
             min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
             padding: 20px;
         }
-
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
+        
+        .header {
+            background: rgba(26, 26, 46, 0.8);
             backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .dashboard-header h1 {
-            font-size: 2.5rem;
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .title {
+            font-size: 32px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
         }
-
-        .market-status {
-            display: inline-flex;
+        
+        .market-info {
+            display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            margin-bottom: 10px;
+            gap: 24px;
         }
-
-        .status-indicator {
-            width: 10px;
-            height: 10px;
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
-        .status-indicator.after-hours {
+        
+        .status-dot.after-hours {
             background: #9b59b6;
         }
-
-        .status-indicator.closed {
+        
+        .status-dot.closed {
             background: #95a5a6;
             animation: none;
         }
-
-        .status-indicator.open {
+        
+        .status-dot.open {
             background: #2ecc71;
         }
-
-        .status-indicator.pre-market {
+        
+        .status-dot.pre-market {
             background: #f39c12;
         }
-
+        
         @keyframes pulse {
-            0% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-            100% { opacity: 1; }
         }
-
-        .stats-grid {
+        
+        .time {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .last-update {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+        }
+        
+        .refresh-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #9b59b6, #8e44ad);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
-
+        
         .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(10px);
             border-radius: 12px;
+            padding: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
-
-        .stat-card .label {
-            color: #888;
-            font-size: 0.9rem;
+        
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
             margin-bottom: 8px;
         }
-
-        .stat-card .value {
-            font-size: 1.8rem;
-            font-weight: 600;
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
         }
-
-        .stocks-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
+        
+        .stat-value.gainers {
+            color: #00ff88;
+        }
+        
+        .stat-value.losers {
+            color: #ff4444;
+        }
+        
+        .stat-value.unusual {
+            color: #ffa500;
+        }
+        
+        .table-container {
+            background: rgba(26, 26, 46, 0.6);
             backdrop-filter: blur(10px);
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .stocks-grid {
-            display: grid;
-            gap: 15px;
-        }
-
-        .stock-card {
-            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 15px;
-            align-items: center;
-            transition: all 0.3s ease;
         }
-
-        .stock-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateX(5px);
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
-
-        .rank-badge {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
+        
+        thead {
+            background: rgba(155, 89, 182, 0.1);
         }
-
-        .stock-info {
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .stock-symbol {
-            font-size: 1.3rem;
+        
+        th {
+            padding: 16px;
+            text-align: left;
             font-weight: 600;
-            color: #fff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+            border-bottom: 2px solid rgba(155, 89, 182, 0.3);
         }
-
-        .stock-metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 15px;
+        
+        th.number {
+            text-align: right;
         }
-
-        .metric {
+        
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+        }
+        
+        tbody tr:hover {
+            background: rgba(155, 89, 182, 0.05);
+        }
+        
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+        }
+        
+        td.number {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        
+        .rank {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
+        }
+        
+        .symbol {
+            font-weight: 700;
+            font-size: 16px;
+            color: #9b59b6;
+        }
+        
+        .price {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .change {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 80px;
             text-align: center;
         }
-
-        .metric-label {
-            font-size: 0.75rem;
-            color: #888;
-            margin-bottom: 4px;
+        
+        .positive {
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
         }
-
-        .metric-value {
-            font-size: 1rem;
+        
+        .negative {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+        
+        .neutral {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .volume {
             font-weight: 600;
+            color: #bd93f9;
         }
-
-        .price-up { color: #2ecc71; }
-        .price-down { color: #e74c3c; }
-        .price-neutral { color: #95a5a6; }
-
-        .signal-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+        
+        .signal {
+            padding: 4px 12px;
+            border-radius: 4px;
             font-weight: 600;
-            text-align: center;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-
+        
         .signal-buy {
-            background: rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
-            border: 1px solid #2ecc71;
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
         }
-
+        
         .signal-sell {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            border: 1px solid #e74c3c;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
         }
-
+        
         .signal-hold {
-            background: rgba(149, 165, 166, 0.2);
-            color: #95a5a6;
-            border: 1px solid #95a5a6;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
+        
         .signal-watch-buy {
-            background: rgba(241, 196, 15, 0.2);
-            color: #f1c40f;
-            border: 1px solid #f1c40f;
+            background: rgba(255, 165, 0, 0.2);
+            color: #ffa500;
+            border: 1px solid rgba(255, 165, 0, 0.3);
         }
-
+        
         .signal-watch-sell {
             background: rgba(230, 126, 34, 0.2);
             color: #e67e22;
-            border: 1px solid #e67e22;
+            border: 1px solid rgba(230, 126, 34, 0.3);
         }
-
-        .volume-bar {
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .volume-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s ease;
-        }
-
-        .unusual-activity {
+        
+        .unusual-badge {
             display: inline-block;
-            padding: 2px 8px;
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
+            padding: 2px 6px;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-size: 10px;
+            font-weight: 600;
             margin-left: 8px;
+            text-transform: uppercase;
         }
-
+        
         .loading {
             text-align: center;
             padding: 40px;
-            color: #888;
+            color: rgba(255, 255, 255, 0.6);
         }
-
+        
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #667eea;
+            border-top: 3px solid #9b59b6;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s;
-        }
-
-        .refresh-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .last-update {
-            color: #888;
-            font-size: 0.9rem;
+        
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-header">
-        <h1>🌙 After-Hours Trading Dashboard</h1>
-        <div class="market-status">
-            <div class="status-indicator" id="statusIndicator"></div>
-            <span id="marketStatus">Checking market status...</span>
-        </div>
-        <div style="margin-top: 10px;">
-            <span class="last-update" id="lastUpdate">Last updated: --</span>
-            <button class="refresh-btn" onclick="loadAfterHoursData()" style="margin-left: 20px;">
-                🔄 Refresh
-            </button>
-        </div>
-    </div>
-
-    <div class="stats-grid" id="statsGrid">
-        <div class="stat-card">
-            <div class="label">Active Stocks</div>
-            <div class="value" id="activeCount">--</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Gainers</div>
-            <div class="value price-up" id="gainersCount">--</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Losers</div>
-            <div class="value price-down" id="losersCount">--</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Unusual Activity</div>
-            <div class="value" style="color: #e74c3c;" id="unusualCount">--</div>
-        </div>
-    </div>
-
-    <div class="stocks-container">
-        <h2 class="section-title">
-            📊 Top After-Hours Movers
-        </h2>
-        <div id="stocksList" class="stocks-grid">
-            <div class="loading">
-                <div class="spinner"></div>
-                <div>Loading after-hours data...</div>
+    <div class="dashboard">
+        <div class="header">
+            <div class="header-top">
+                <h1 class="title">🌙 After-Hours Trading Dashboard</h1>
+                <button class="refresh-btn" onclick="loadAfterHoursData()">🔄 Refresh</button>
             </div>
+            <div class="market-info">
+                <div class="status">
+                    <div class="status-dot" id="statusIndicator"></div>
+                    <span class="time" id="marketStatus">Checking market status...</span>
+                </div>
+                <span class="last-update" id="lastUpdate">Last updated: --</span>
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-label">Active Stocks</div>
+                <div class="stat-value" id="activeCount">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Gainers</div>
+                <div class="stat-value gainers" id="gainersCount">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Losers</div>
+                <div class="stat-value losers" id="losersCount">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unusual Activity</div>
+                <div class="stat-value unusual" id="unusualCount">--</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Symbol</th>
+                        <th class="number">AH Price</th>
+                        <th class="number">AH Change</th>
+                        <th class="number">AH %</th>
+                        <th class="number">AH Volume</th>
+                        <th class="number">Day Close</th>
+                        <th class="number">Day %</th>
+                        <th>Signal</th>
+                    </tr>
+                </thead>
+                <tbody id="stocksTableBody">
+                    <tr>
+                        <td colspan="9" class="loading">
+                            <div class="spinner"></div>
+                            <div>Loading after-hours data...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -354,10 +411,12 @@
                 }
             } catch (error) {
                 console.error('Error loading after-hours data:', error);
-                document.getElementById('stocksList').innerHTML = `
-                    <div class="loading">
-                        <div style="color: #e74c3c;">Error loading data. Please check if the server is running.</div>
-                    </div>
+                document.getElementById('stocksTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="9" class="loading">
+                            <div style="color: #ff4444;">Error loading data. Please check if the server is running.</div>
+                        </td>
+                    </tr>
                 `;
             }
         }
@@ -368,7 +427,7 @@
             const statusIndicator = document.getElementById('statusIndicator');
             const marketStatusText = document.getElementById('marketStatus');
             
-            statusIndicator.className = `status-indicator ${status.status}`;
+            statusIndicator.className = `status-dot ${status.status.replace('-', '-')}`;
             marketStatusText.textContent = `${status.message} (${status.currentTime})`;
             
             // Update stats
@@ -385,71 +444,58 @@
             // Update last update time
             document.getElementById('lastUpdate').textContent = `Last updated: ${data.updateTime}`;
             
-            // Update stocks list
-            const stocksList = document.getElementById('stocksList');
+            // Update stocks table
+            const tableBody = document.getElementById('stocksTableBody');
             
             if (stocks.length === 0) {
-                stocksList.innerHTML = `
-                    <div class="loading">
-                        <div>No after-hours activity detected yet.</div>
-                    </div>
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="no-data">
+                            No after-hours activity detected yet.
+                        </td>
+                    </tr>
                 `;
                 return;
             }
             
-            stocksList.innerHTML = stocks.map(stock => {
-                const priceClass = stock.afterHoursChangePercent > 0 ? 'price-up' : 
-                                  stock.afterHoursChangePercent < 0 ? 'price-down' : 'price-neutral';
+            tableBody.innerHTML = stocks.map(stock => {
+                const ahChangeClass = stock.afterHoursChangePercent > 0 ? 'positive' : 
+                                     stock.afterHoursChangePercent < 0 ? 'negative' : 'neutral';
                 
-                const signalClass = stock.signal.toLowerCase().replace('_', '-');
-                const maxVolume = Math.max(...stocks.map(s => s.afterHoursVolume || 0));
-                const volumeWidth = (stock.afterHoursVolume / maxVolume) * 100;
+                const dayChangeClass = stock.dayChangePercent > 0 ? 'positive' : 
+                                      stock.dayChangePercent < 0 ? 'negative' : 'neutral';
+                
+                const signalClass = `signal-${stock.signal.toLowerCase().replace('_', '-')}`;
                 
                 return `
-                    <div class="stock-card">
-                        <div class="rank-badge">${stock.rank}</div>
-                        <div class="stock-info">
-                            <div>
-                                <div class="stock-symbol">
-                                    ${stock.symbol}
-                                    ${stock.unusualActivity ? '<span class="unusual-activity">UNUSUAL</span>' : ''}
-                                </div>
-                                <div class="volume-bar">
-                                    <div class="volume-fill" style="width: ${volumeWidth}%"></div>
-                                </div>
-                            </div>
-                            <div class="stock-metrics">
-                                <div class="metric">
-                                    <div class="metric-label">AH Price</div>
-                                    <div class="metric-value">$${stock.afterHoursPrice.toFixed(2)}</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-label">AH Change</div>
-                                    <div class="metric-value ${priceClass}">
-                                        ${stock.afterHoursChange >= 0 ? '+' : ''}${stock.afterHoursChange.toFixed(2)}
-                                        (${stock.afterHoursChangePercent >= 0 ? '+' : ''}${stock.afterHoursChangePercent.toFixed(2)}%)
-                                    </div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-label">AH Volume</div>
-                                    <div class="metric-value">${formatVolume(stock.afterHoursVolume)}</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-label">Regular Close</div>
-                                    <div class="metric-value">$${stock.regularClose.toFixed(2)}</div>
-                                </div>
-                                <div class="metric">
-                                    <div class="metric-label">Day Change</div>
-                                    <div class="metric-value ${stock.dayChangePercent > 0 ? 'price-up' : stock.dayChangePercent < 0 ? 'price-down' : 'price-neutral'}">
-                                        ${stock.dayChangePercent >= 0 ? '+' : ''}${stock.dayChangePercent.toFixed(2)}%
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="signal-badge signal-${signalClass}">
-                            ${stock.signal.replace('_', ' ')}
-                        </div>
-                    </div>
+                    <tr>
+                        <td class="rank">${stock.rank}</td>
+                        <td>
+                            <span class="symbol">${stock.symbol}</span>
+                            ${stock.unusualActivity ? '<span class="unusual-badge">Unusual</span>' : ''}
+                        </td>
+                        <td class="price number">$${stock.afterHoursPrice.toFixed(2)}</td>
+                        <td class="number">
+                            <span class="change ${ahChangeClass}">
+                                ${stock.afterHoursChange >= 0 ? '+' : ''}${stock.afterHoursChange.toFixed(2)}
+                            </span>
+                        </td>
+                        <td class="number">
+                            <span class="change ${ahChangeClass}">
+                                ${stock.afterHoursChangePercent >= 0 ? '+' : ''}${stock.afterHoursChangePercent.toFixed(2)}%
+                            </span>
+                        </td>
+                        <td class="volume number">${formatVolume(stock.afterHoursVolume)}</td>
+                        <td class="price number">$${stock.regularClose.toFixed(2)}</td>
+                        <td class="number">
+                            <span class="change ${dayChangeClass}">
+                                ${stock.dayChangePercent >= 0 ? '+' : ''}${stock.dayChangePercent.toFixed(2)}%
+                            </span>
+                        </td>
+                        <td>
+                            <span class="signal ${signalClass}">${stock.signal.replace('_', ' ')}</span>
+                        </td>
+                    </tr>
                 `;
             }).join('');
         }
@@ -474,7 +520,6 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'afterHoursUpdate') {
-                    // Handle real-time updates if needed
                     console.log('After-hours update:', data);
                 }
             };
