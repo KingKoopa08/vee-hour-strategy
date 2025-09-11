@@ -104,8 +104,19 @@ async function fetchTopStocks() {
         const response = await axios.get(url);
         
         if (response.data && response.data.tickers) {
+            // Combine watchlist with general active stocks
+            const allTickers = [...validWatchlistTickers, ...response.data.tickers];
+            
+            // Remove duplicates based on ticker symbol
+            const uniqueTickers = new Map();
+            allTickers.forEach(t => {
+                if (t && t.ticker) {
+                    uniqueTickers.set(t.ticker, t);
+                }
+            });
+            
             // Filter and sort by volume using live snapshot data
-            const stocks = response.data.tickers
+            const stocks = Array.from(uniqueTickers.values())
                 .filter(t => {
                     // During pre-market: use t.min (minute bar) data
                     // During regular hours: use t.day data
