@@ -38,7 +38,11 @@ app.get('/api/stocks/top-volume', (req, res) => {
       momentum: Math.random() > 0.5 ? 'bullish' : 'bearish',
       volumeSurge: Math.random() > 0.7,
       signal: Math.random() > 0.5 ? 'BUY' : Math.random() > 0.5 ? 'SELL' : 'HOLD',
-      news: Math.random() > 0.5 ? 'Recent news available' : null,
+      news: Math.random() > 0.5 ? {
+        count: Math.floor(Math.random() * 5) + 1,
+        latestTitle: 'Test News: Stock Shows Strong Pre-Market Movement',
+        latestTime: new Date(Date.now() - Math.random() * 3600000).toISOString()
+      } : null,
       updateTime: new Date().toLocaleTimeString('en-US'),
       mnavScore: 50 + Math.random() * 50  // Random score between 50-100
     };
