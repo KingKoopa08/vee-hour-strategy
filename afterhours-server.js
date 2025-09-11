@@ -236,7 +236,7 @@ app.get('/health', (req, res) => {
 });
 
 // Start HTTP server
-const PORT = 3013;
+const PORT = 3011;
 app.listen(PORT, () => {
     console.log(`🌙 After-Hours Server running on http://localhost:${PORT}`);
     console.log('📊 Serving after-hours trading data from Polygon.io');
