@@ -20,27 +20,29 @@ async function fetchPreMarketMovers() {
         
         // For demo purposes, we'll use a predefined list of active pre-market stocks
         // In production, you'd fetch this from a real API
+        // Real pre-market active stocks with more realistic volume data
+        // Volume numbers based on typical pre-market activity patterns
         const activeStocks = [
-            { symbol: 'AAPL', name: 'Apple Inc.', volume: 5234567, price: 178.45, change: 2.34, changePercent: 1.33 },
-            { symbol: 'TSLA', name: 'Tesla Inc.', volume: 8765432, price: 245.67, change: -3.21, changePercent: -1.29 },
-            { symbol: 'NVDA', name: 'NVIDIA Corp', volume: 12345678, price: 455.89, change: 8.76, changePercent: 1.96 },
-            { symbol: 'AMD', name: 'AMD', volume: 6543210, price: 105.34, change: -1.23, changePercent: -1.15 },
-            { symbol: 'META', name: 'Meta Platforms', volume: 4567890, price: 345.67, change: 5.43, changePercent: 1.60 },
-            { symbol: 'AMZN', name: 'Amazon', volume: 3456789, price: 145.23, change: 2.11, changePercent: 1.47 },
-            { symbol: 'GOOGL', name: 'Alphabet', volume: 2345678, price: 138.90, change: 1.23, changePercent: 0.89 },
-            { symbol: 'MSFT', name: 'Microsoft', volume: 7890123, price: 378.45, change: 3.45, changePercent: 0.92 },
-            { symbol: 'SPY', name: 'SPDR S&P 500', volume: 15678901, price: 445.67, change: 1.23, changePercent: 0.28 },
-            { symbol: 'QQQ', name: 'Invesco QQQ', volume: 9876543, price: 365.45, change: 2.34, changePercent: 0.64 },
-            { symbol: 'PLTR', name: 'Palantir', volume: 8765432, price: 15.67, change: 0.89, changePercent: 6.02 },
-            { symbol: 'NIO', name: 'NIO Inc.', volume: 6543210, price: 5.89, change: 0.34, changePercent: 6.12 },
-            { symbol: 'RIVN', name: 'Rivian', volume: 5432109, price: 12.34, change: -0.56, changePercent: -4.34 },
-            { symbol: 'LCID', name: 'Lucid Motors', volume: 4321098, price: 3.45, change: -0.12, changePercent: -3.36 },
-            { symbol: 'SOFI', name: 'SoFi Tech', volume: 3210987, price: 7.89, change: 0.45, changePercent: 6.05 },
-            { symbol: 'COIN', name: 'Coinbase', volume: 7654321, price: 89.45, change: 5.67, changePercent: 6.77 },
-            { symbol: 'HOOD', name: 'Robinhood', volume: 5432109, price: 12.34, change: 0.78, changePercent: 6.75 },
-            { symbol: 'SNAP', name: 'Snap Inc.', volume: 4321098, price: 10.23, change: -0.45, changePercent: -4.21 },
-            { symbol: 'UBER', name: 'Uber', volume: 6789012, price: 45.67, change: 1.23, changePercent: 2.77 },
-            { symbol: 'LYFT', name: 'Lyft Inc.', volume: 3456789, price: 12.34, change: 0.56, changePercent: 4.75 }
+            { symbol: 'SPY', name: 'SPDR S&P 500', volume: 85000000, price: 445.67, change: 1.23, changePercent: 0.28 },
+            { symbol: 'QQQ', name: 'Invesco QQQ', volume: 65000000, price: 365.45, change: 2.34, changePercent: 0.64 },
+            { symbol: 'TSLA', name: 'Tesla Inc.', volume: 45000000, price: 245.67, change: -3.21, changePercent: -1.29 },
+            { symbol: 'NVDA', name: 'NVIDIA Corp', volume: 42000000, price: 455.89, change: 8.76, changePercent: 1.96 },
+            { symbol: 'AAPL', name: 'Apple Inc.', volume: 38000000, price: 178.45, change: 2.34, changePercent: 1.33 },
+            { symbol: 'AMD', name: 'AMD', volume: 28000000, price: 105.34, change: -1.23, changePercent: -1.15 },
+            { symbol: 'PLTR', name: 'Palantir', volume: 25000000, price: 15.67, change: 0.89, changePercent: 6.02 },
+            { symbol: 'META', name: 'Meta Platforms', volume: 22000000, price: 345.67, change: 5.43, changePercent: 1.60 },
+            { symbol: 'MSFT', name: 'Microsoft', volume: 20000000, price: 378.45, change: 3.45, changePercent: 0.92 },
+            { symbol: 'AMZN', name: 'Amazon', volume: 18000000, price: 145.23, change: 2.11, changePercent: 1.47 },
+            { symbol: 'NIO', name: 'NIO Inc.', volume: 16000000, price: 5.89, change: 0.34, changePercent: 6.12 },
+            { symbol: 'SOFI', name: 'SoFi Tech', volume: 14000000, price: 7.89, change: 0.45, changePercent: 6.05 },
+            { symbol: 'COIN', name: 'Coinbase', volume: 12000000, price: 89.45, change: 5.67, changePercent: 6.77 },
+            { symbol: 'GOOGL', name: 'Alphabet', volume: 11000000, price: 138.90, change: 1.23, changePercent: 0.89 },
+            { symbol: 'RIVN', name: 'Rivian', volume: 9000000, price: 12.34, change: -0.56, changePercent: -4.34 },
+            { symbol: 'HOOD', name: 'Robinhood', volume: 8500000, price: 12.34, change: 0.78, changePercent: 6.75 },
+            { symbol: 'UBER', name: 'Uber', volume: 7500000, price: 45.67, change: 1.23, changePercent: 2.77 },
+            { symbol: 'LCID', name: 'Lucid Motors', volume: 6000000, price: 3.45, change: -0.12, changePercent: -3.36 },
+            { symbol: 'SNAP', name: 'Snap Inc.', volume: 5500000, price: 10.23, change: -0.45, changePercent: -4.21 },
+            { symbol: 'LYFT', name: 'Lyft Inc.', volume: 4000000, price: 12.34, change: 0.56, changePercent: 4.75 }
         ];
 
         // Add some randomization to make it look more realistic
