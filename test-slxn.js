@@ -1,4 +1,4 @@
-require('dotenv').config();
+// require('dotenv').config();
 const axios = require('axios');
 
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY || 'lY3CvltO1hyrC5DqUWCEkTpLlhb0UGsb';
