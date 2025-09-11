@@ -109,11 +109,12 @@ async function fetchTopStocks() {
                     const currentLow = t.min?.l || t.day?.l || t.prevDay?.l || 0;
                     const currentVWAP = t.min?.vw || t.day?.vw || t.prevDay?.vw || currentPrice;
                     
-                    // Calculate price change from previous close
-                    let priceChange = 0;
-                    let changePercent = 0;
+                    // Use the API's calculated change percentage or calculate it ourselves
+                    let changePercent = t.todaysChangePerc || 0;
+                    let priceChange = t.todaysChange || 0;
                     
-                    if (previousClose > 0 && currentPrice > 0) {
+                    // If API doesn't provide change, calculate it
+                    if (changePercent === 0 && previousClose > 0 && currentPrice > 0) {
                         priceChange = currentPrice - previousClose;
                         changePercent = (priceChange / previousClose) * 100;
                     }
