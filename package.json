@@ -1,9 +1,11 @@
 {
   "dependencies": {
     "axios": "^1.11.0",
+    "chrome-aws-lambda": "^10.1.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "finnhub": "^2.0.7",
+    "puppeteer-core": "^24.20.0",
     "ws": "^8.18.3"
   }
 }
