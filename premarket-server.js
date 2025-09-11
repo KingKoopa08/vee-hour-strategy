@@ -424,10 +424,107 @@ app.get('/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+// Fetch after-hours specific stocks
+async function fetchAfterHoursStocks() {
+    try {
+        console.log('🌙 Fetching after-hours movers...');
+        
+        // Fetch specific after-hours watchlist stocks first
+        const watchlistPromises = AFTERHOURS_WATCHLIST.map(async (symbol) => {
+            try {
+                const tickerUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+                const tickerResponse = await axios.get(tickerUrl);
+                return tickerResponse.data?.ticker;
+            } catch (err) {
+                console.log(`⚠️ Could not fetch ${symbol}: ${err.message}`);
+                return null;
+            }
+        });
+        
+        const watchlistTickers = await Promise.all(watchlistPromises);
+        const validWatchlistTickers = watchlistTickers.filter(t => t !== null);
+        console.log(`📋 Fetched ${validWatchlistTickers.length} after-hours watchlist stocks`);
+        
+        // Also get general most active stocks
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=500`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.tickers) {
+            // Combine watchlist with general active stocks
+            const allTickers = [...validWatchlistTickers, ...response.data.tickers];
+            
+            // Remove duplicates
+            const uniqueTickers = new Map();
+            allTickers.forEach(t => {
+                if (t && t.ticker) {
+                    uniqueTickers.set(t.ticker, t);
+                }
+            });
+            
+            // Process and filter stocks
+            const stocks = Array.from(uniqueTickers.values())
+                .filter(t => {
+                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    const currentVolume = t.min?.av || t.min?.v || t.day?.v || t.prevDay?.v || 0;
+                    
+                    return currentVolume > 1000 && // Lower threshold for after-hours
+                           currentPrice > 0.5 &&
+                           currentPrice < 2000;
+                })
+                .map(t => {
+                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    const previousClose = t.prevDay?.c || 0;
+                    const currentVolume = t.min?.av || t.min?.v || t.day?.v || t.prevDay?.v || 0;
+                    const currentHigh = t.min?.h || t.day?.h || t.prevDay?.h || 0;
+                    const currentLow = t.min?.l || t.day?.l || t.prevDay?.l || 0;
+                    const currentVWAP = t.min?.vw || t.day?.vw || t.prevDay?.vw || currentPrice;
+                    
+                    let changePercent = t.todaysChangePerc || 0;
+                    let priceChange = t.todaysChange || 0;
+                    
+                    if (changePercent === 0 && previousClose > 0 && currentPrice > 0) {
+                        priceChange = currentPrice - previousClose;
+                        changePercent = (priceChange / previousClose) * 100;
+                    }
+                    
+                    return {
+                        symbol: t.ticker,
+                        price: currentPrice,
+                        volume: currentVolume,
+                        change: priceChange,
+                        changePercent: changePercent,
+                        high: currentHigh,
+                        low: currentLow,
+                        vwap: currentVWAP,
+                        previousClose: previousClose,
+                        isAfterHours: true
+                    };
+                })
+                .sort((a, b) => {
+                    // Sort by change percentage * volume for after-hours activity
+                    const aActivity = Math.abs(a.changePercent) * a.volume;
+                    const bActivity = Math.abs(b.changePercent) * b.volume;
+                    return bActivity - aActivity;
+                })
+                .slice(0, 100);
+            
+            console.log(`✅ Found ${stocks.length} after-hours active stocks`);
+            console.log(`🌙 Top 5 movers: ${stocks.slice(0, 5).map(s => s.symbol).join(', ')}`);
+            
+            return stocks;
+        }
+        
+        return [];
+    } catch (error) {
+        console.error('Error fetching after-hours stocks:', error.message);
+        return [];
+    }
+}
+
 // After-hours endpoint
 app.get('/api/afterhours/top-movers', async (req, res) => {
     try {
-        const stocks = await fetchTopStocks();
+        const stocks = await fetchAfterHoursStocks();
         
         const formattedStocks = stocks.slice(0, 50).map((stock, index) => {
             const ahChangePercent = stock.changePercent || 0;
