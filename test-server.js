@@ -22,8 +22,31 @@ app.get('/health', (req, res) => {
 
 // API endpoints
 app.get('/api/stocks/top-volume', (req, res) => {
-  const stocks = Object.keys(testData);
-  res.json({ success: true, data: stocks });
+  const stocks = Object.keys(testData).map((symbol, index) => {
+    const basePrice = testData[symbol].price;
+    const changePercent = testData[symbol].change;
+    return {
+      rank: index + 1,
+      symbol: symbol,
+      companyName: testData[symbol].name,
+      price: basePrice,
+      priceChange: basePrice * changePercent / 100,
+      priceChangePercent: changePercent,
+      volume: Math.floor(Math.random() * 10000000) + 1000000,
+      volumeRatio: 1.2 + Math.random(),
+      vwap: basePrice * 0.99,
+      momentum: Math.random() > 0.5 ? 'bullish' : 'bearish',
+      volumeSurge: Math.random() > 0.7,
+      signal: Math.random() > 0.5 ? 'BUY' : Math.random() > 0.5 ? 'SELL' : 'HOLD',
+      news: Math.random() > 0.5 ? 'Recent news available' : null,
+      updateTime: new Date().toLocaleTimeString('en-US')
+    };
+  });
+  res.json({ 
+    success: true, 
+    stocks: stocks,
+    updateTime: new Date().toLocaleTimeString('en-US')
+  });
 });
 
 app.get('/api/stocks/:symbol/snapshot', (req, res) => {
