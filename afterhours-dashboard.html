@@ -511,7 +511,8 @@
 
         // Initialize WebSocket for real-time updates
         function initWebSocket() {
-            ws = new WebSocket('ws://localhost:3007');
+            const wsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:3007' : `ws://${window.location.hostname}:3007`;
+            ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
                 console.log('WebSocket connected for after-hours updates');
