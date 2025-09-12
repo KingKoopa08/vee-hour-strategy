@@ -11,9 +11,13 @@ echo "📦 Stopping existing containers..."
 docker stop premarket-strategy 2>/dev/null || true
 docker rm premarket-strategy 2>/dev/null || true
 
-# Build the Docker image
-echo "🔨 Building Docker image..."
-docker build -t premarket-strategy .
+# Remove old image to force rebuild
+echo "🗑️ Removing old Docker image..."
+docker rmi premarket-strategy 2>/dev/null || true
+
+# Build the Docker image with no cache
+echo "🔨 Building fresh Docker image (no cache)..."
+docker build --no-cache -t premarket-strategy .
 
 # Run the new container
 echo "🏃 Starting new container..."
