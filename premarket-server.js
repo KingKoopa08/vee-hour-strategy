@@ -8,9 +8,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve the live-dashboard.html file
+// Serve static files (HTML, CSS, JS)
+app.use(express.static(__dirname));
+
+// Serve the index.html file as landing page
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'live-dashboard.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Polygon.io configuration
