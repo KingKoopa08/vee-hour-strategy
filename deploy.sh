@@ -19,7 +19,7 @@ docker build -t premarket-strategy .
 echo "🏃 Starting new container..."
 docker run -d \
   --name premarket-strategy \
-  -p 3011:3011 \
+  -p 3012:3012 \
   -p 3006:3006 \
   -p 3007:3007 \
   -e POLYGON_API_KEY=$POLYGON_API_KEY \
@@ -38,9 +38,9 @@ if docker ps | grep -q premarket-strategy; then
     echo "   After-Hours Dashboard: http://your-vps-ip/afterhours-dashboard.html"
     echo ""
     echo "📡 API Endpoints:"
-    echo "   http://your-vps-ip:3011/api/premarket/top-stocks"
-    echo "   http://your-vps-ip:3011/api/stocks/most-active"
-    echo "   http://your-vps-ip:3011/api/afterhours/top-movers"
+    echo "   http://your-vps-ip:3012/api/premarket/top-stocks"
+    echo "   http://your-vps-ip:3012/api/stocks/most-active"
+    echo "   http://your-vps-ip:3012/api/afterhours/top-movers"
     echo ""
     echo "🔍 Check logs with: docker logs -f premarket-strategy"
 else
