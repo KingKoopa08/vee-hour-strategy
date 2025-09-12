@@ -13,7 +13,7 @@ RUN npm ci --only=production --legacy-peer-deps
 COPY . .
 
 # Expose ports for API and WebSocket
-EXPOSE 3012 3006 3007
+EXPOSE 3018 3006 3007
 
 # Set environment variable (can be overridden at runtime)
 ENV POLYGON_API_KEY=AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW
