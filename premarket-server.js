@@ -76,7 +76,87 @@ async function fetchSnapshot(symbol) {
 }
 
 // Pre-market watchlist - stocks that often have high pre-market volume
-const PREMARKET_WATCHLIST = ['SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD'];
+const PREMARKET_WATCHLIST = ['SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT'];
+
+// Cache for pre-market data
+let premarketDataCache = new Map();
+let premarketCacheTime = null;
+
+// Get today's date in YYYY-MM-DD format
+function getTodayDate() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+}
+
+// Fetch true pre-market data using aggregates API
+async function fetchPreMarketDataForSymbol(symbol) {
+    try {
+        const today = getTodayDate();
+        const url = `${POLYGON_BASE_URL}/v2/aggs/ticker/${symbol}/range/1/minute/${today}/${today}?adjusted=true&sort=asc&apiKey=${POLYGON_API_KEY}`;
+        
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.results) {
+            const bars = response.data.results;
+            
+            // Filter for pre-market hours (4:00 AM to 9:30 AM ET)
+            const premarketBars = bars.filter(bar => {
+                const date = new Date(bar.t);
+                const hour = date.getUTCHours() - 5; // Convert to ET
+                const minute = date.getMinutes();
+                const totalMinutes = hour * 60 + minute;
+                
+                // Pre-market: 4:00 AM (240 minutes) to 9:30 AM (570 minutes)
+                return totalMinutes >= 240 && totalMinutes < 570;
+            });
+            
+            if (premarketBars.length > 0) {
+                // Calculate pre-market metrics
+                const premarketVolume = premarketBars.reduce((sum, bar) => sum + (bar.v || 0), 0);
+                const firstBar = premarketBars[0];
+                const lastBar = premarketBars[premarketBars.length - 1];
+                const premarketHigh = Math.max(...premarketBars.map(bar => bar.h || 0));
+                const premarketLow = Math.min(...premarketBars.filter(bar => bar.l > 0).map(bar => bar.l));
+                
+                // Calculate VWAP
+                let totalValue = 0;
+                let totalVolume = 0;
+                premarketBars.forEach(bar => {
+                    if (bar.v && bar.vw) {
+                        totalValue += bar.vw * bar.v;
+                        totalVolume += bar.v;
+                    }
+                });
+                const premarketVWAP = totalVolume > 0 ? totalValue / totalVolume : 0;
+                
+                // Calculate trend (comparing last 30 minutes to first 30 minutes)
+                const recentBars = premarketBars.slice(-30);
+                const earlyBars = premarketBars.slice(0, 30);
+                const recentAvg = recentBars.reduce((sum, bar) => sum + bar.c, 0) / Math.max(recentBars.length, 1);
+                const earlyAvg = earlyBars.reduce((sum, bar) => sum + bar.c, 0) / Math.max(earlyBars.length, 1);
+                const trend = recentAvg > earlyAvg ? 'up' : recentAvg < earlyAvg ? 'down' : 'flat';
+                
+                return {
+                    symbol,
+                    premarketVolume,
+                    premarketOpen: firstBar.o,
+                    premarketLast: lastBar.c,
+                    premarketHigh,
+                    premarketLow,
+                    premarketVWAP,
+                    premarketChange: lastBar.c - firstBar.o,
+                    premarketChangePercent: ((lastBar.c - firstBar.o) / firstBar.o * 100),
+                    premarketBars: premarketBars.length,
+                    trend,
+                    trendStrength: Math.abs((recentAvg - earlyAvg) / earlyAvg * 100)
+                };
+            }
+        }
+    } catch (error) {
+        console.log(`Could not fetch pre-market data for ${symbol}`);
+    }
+    return null;
+}
 
 // After-hours watchlist - add stocks that are active after hours
 const AFTERHOURS_WATCHLIST = ['HCWB', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT', 'OPEN', 'TLRY', 'CMPO', 'YAAS', 'NXTT'];
@@ -620,6 +700,34 @@ app.get('/api/afterhours/top-movers', async (req, res) => {
 
 app.get('/api/stocks/top-volume', async (req, res) => {
     try {
+        // Check if we're in pre-market hours
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const isPreMarketTime = hour >= 4 && hour < 9 || (hour === 9 && minute < 30);
+        
+        // Fetch pre-market data if in pre-market hours and cache is stale
+        if (isPreMarketTime && (!premarketCacheTime || Date.now() - premarketCacheTime > 60000)) {
+            console.log('🌅 Fetching fresh pre-market data...');
+            const watchlistSymbols = [...PREMARKET_WATCHLIST];
+            
+            // Fetch pre-market data for watchlist stocks
+            const premarketPromises = watchlistSymbols.map(symbol => 
+                fetchPreMarketDataForSymbol(symbol)
+            );
+            
+            const premarketResults = await Promise.all(premarketPromises);
+            
+            // Update cache
+            premarketDataCache.clear();
+            premarketResults.forEach(data => {
+                if (data) {
+                    premarketDataCache.set(data.symbol, data);
+                }
+            });
+            premarketCacheTime = Date.now();
+        }
+        
         const stocks = await fetchTopStocks();
         // Return in the format the dashboard expects
         const formattedStocks = stocks
@@ -649,41 +757,91 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                     };
                 }
                 // If we have full stock objects, format them properly
-                // Fix the price change calculation
-                const priceChange = stock.change || 0;
-                const priceChangePercent = isFinite(stock.changePercent) ? stock.changePercent : 0;
+                // Get proper pre-market data if available
+                const premarketData = premarketDataCache.get(stock.symbol);
+                const actualVolume = premarketData ? premarketData.premarketVolume : stock.volume;
+                const actualPrice = premarketData ? premarketData.premarketLast : stock.price;
+                const actualVWAP = premarketData ? premarketData.premarketVWAP : stock.vwap;
+                const priceChange = premarketData ? premarketData.premarketChange : stock.change || 0;
+                const priceChangePercent = premarketData ? premarketData.premarketChangePercent : (isFinite(stock.changePercent) ? stock.changePercent : 0);
                 
-                // Determine signal based on pre-market activity
+                // Calculate MNAV Score (Market Normalized Activity Volume)
+                // Based on: volume, price movement, trend, and liquidity
+                let mnavScore = 50; // Base score
+                
+                // Volume component (0-30 points)
+                if (actualVolume > 1000000) mnavScore += 30;
+                else if (actualVolume > 500000) mnavScore += 20;
+                else if (actualVolume > 100000) mnavScore += 10;
+                else if (actualVolume > 50000) mnavScore += 5;
+                
+                // Price movement component (0-20 points)
+                const absChange = Math.abs(priceChangePercent);
+                if (absChange > 5) mnavScore += 20;
+                else if (absChange > 3) mnavScore += 15;
+                else if (absChange > 2) mnavScore += 10;
+                else if (absChange > 1) mnavScore += 5;
+                
+                // Trend component (0-20 points)
+                if (premarketData && premarketData.trend === 'up' && premarketData.trendStrength > 1) {
+                    mnavScore += Math.min(20, premarketData.trendStrength * 4);
+                } else if (premarketData && premarketData.trend === 'down' && premarketData.trendStrength > 1) {
+                    mnavScore += Math.min(15, premarketData.trendStrength * 3);
+                }
+                
+                // Price vs VWAP component (0-10 points)
+                if (actualVWAP > 0) {
+                    const vwapDiff = Math.abs((actualPrice - actualVWAP) / actualVWAP * 100);
+                    if (vwapDiff > 2) mnavScore += 10;
+                    else if (vwapDiff > 1) mnavScore += 5;
+                }
+                
+                // Cap at 100
+                mnavScore = Math.min(100, mnavScore);
+                
+                // Determine signal based on comprehensive analysis
                 let signal = 'HOLD';
-                // For pre-market: Look for volume surge and price movement
-                if (stock.volume > 1000000 && priceChangePercent > 2) {
+                if (mnavScore > 80 && priceChangePercent > 1 && premarketData?.trend === 'up') {
+                    signal = 'STRONG_BUY';
+                } else if (mnavScore > 70 && priceChangePercent > 0.5) {
                     signal = 'BUY';
-                } else if (stock.volume > 1000000 && priceChangePercent < -2) {
+                } else if (mnavScore > 80 && priceChangePercent < -1 && premarketData?.trend === 'down') {
+                    signal = 'STRONG_SELL';
+                } else if (mnavScore > 70 && priceChangePercent < -0.5) {
                     signal = 'SELL';
-                } else if (stock.volume > 500000 && Math.abs(priceChangePercent) > 1) {
+                } else if (mnavScore > 60) {
                     signal = priceChangePercent > 0 ? 'WATCH_BUY' : 'WATCH_SELL';
                 }
                 
-                // Determine momentum based on pre-market activity
+                // Determine momentum
                 let momentum = 'neutral';
-                if (priceChangePercent > 0.5) momentum = 'bullish';
-                else if (priceChangePercent < -0.5) momentum = 'bearish';
+                if (premarketData?.trend === 'up' && premarketData?.trendStrength > 0.5) {
+                    momentum = premarketData.trendStrength > 2 ? 'strong_bullish' : 'bullish';
+                } else if (premarketData?.trend === 'down' && premarketData?.trendStrength > 0.5) {
+                    momentum = premarketData.trendStrength > 2 ? 'strong_bearish' : 'bearish';
+                } else if (priceChangePercent > 0.5) {
+                    momentum = 'bullish';
+                } else if (priceChangePercent < -0.5) {
+                    momentum = 'bearish';
+                }
                 
                 return {
                     rank: index + 1,
                     symbol: stock.symbol,
                     companyName: stock.symbol,
-                    price: stock.price || 0,
+                    price: actualPrice || 0,
                     priceChange: priceChange,
                     priceChangePercent: priceChangePercent,
-                    volume: stock.volume || 0,
+                    volume: actualVolume || 0,
                     volumeRatio: 1.0,
-                    vwap: stock.vwap || stock.price || 0,
+                    vwap: actualVWAP || actualPrice || 0,
                     momentum: momentum,
-                    volumeSurge: stock.volume > 10000000,
+                    volumeSurge: actualVolume > 1000000,
                     signal: signal,
                     news: null,
-                    mnavScore: Math.min(100, 50 + (stock.volume / 1000000)),
+                    mnavScore: mnavScore,
+                    trend: premarketData?.trend || 'unknown',
+                    trendStrength: premarketData?.trendStrength || 0,
                     updateTime: new Date().toLocaleTimeString('en-US')
                 };
             });
