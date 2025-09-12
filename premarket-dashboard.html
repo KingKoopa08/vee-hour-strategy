@@ -954,7 +954,7 @@
                     refreshBtn.disabled = true;
                 }
                 
-                const response = await fetch('http://localhost:3011/api/stocks/top-volume?type=premarket');
+                const response = await fetch('http://localhost:3012/api/stocks/top-volume?type=premarket');
                 const data = await response.json();
                 
                 if (data.success && data.stocks) {

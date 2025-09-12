@@ -951,7 +951,7 @@
                     refreshBtn.disabled = true;
                 }
                 
-                const response = await fetch('http://localhost:3011/api/stocks/top-volume');
+                const response = await fetch('http://localhost:3012/api/stocks/top-volume');
                 const data = await response.json();
                 
                 if (data.success && data.stocks) {
