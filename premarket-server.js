@@ -170,10 +170,8 @@ async function fetchTopStocks() {
                         changePercent = (priceChange / previousClose) * 100;
                     }
                     
-                    // Check if we're in pre-market hours
-                    const now = new Date();
-                    const hour = now.getHours();
-                    const isPreMarketTime = hour >= 4 && hour < 9.5; // 4:00 AM - 9:30 AM ET
+                    // Check if we're in pre-market hours (reuse previously declared variables)
+                    // Variables now, hour, minute, isPreMarketTime already declared above
                     
                     return {
                         symbol: t.ticker,
