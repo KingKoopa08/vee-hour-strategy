@@ -703,30 +703,54 @@ app.get('/api/stocks/top-volume', async (req, res) => {
         // Check if this is a request for pre-market data (from premarket-dashboard)
         const isPremarketRequest = req.query.type === 'premarket' || req.headers.referer?.includes('premarket-dashboard');
         
+        // First fetch the top stocks
+        const stocks = await fetchTopStocks();
+        
         // Always fetch pre-market data for pre-market dashboard or if cache is stale
         if (isPremarketRequest || !premarketCacheTime || Date.now() - premarketCacheTime > 120000) {
             console.log('🌅 Fetching fresh pre-market data for dashboard...');
-            const watchlistSymbols = [...PREMARKET_WATCHLIST];
             
-            // Fetch pre-market data for all watchlist stocks
-            const premarketPromises = watchlistSymbols.map(symbol => 
-                fetchPreMarketDataForSymbol(symbol)
-            );
+            // Get symbols from top stocks (limit to top 50 to avoid too many API calls)
+            const topStockSymbols = stocks.slice(0, 50).map(s => 
+                typeof s === 'string' ? s : s.symbol
+            ).filter(Boolean);
             
-            const premarketResults = await Promise.all(premarketPromises);
+            // Combine with watchlist symbols for comprehensive coverage
+            const allSymbols = [...new Set([...topStockSymbols, ...PREMARKET_WATCHLIST])];
             
-            // Update cache with pre-market data
+            console.log(`📊 Fetching pre-market data for ${allSymbols.length} stocks...`);
+            
+            // Fetch pre-market data in batches to avoid rate limits
+            const batchSize = 10;
             premarketDataCache.clear();
-            premarketResults.forEach(data => {
-                if (data) {
-                    premarketDataCache.set(data.symbol, data);
-                    console.log(`📊 ${data.symbol}: Pre-market volume = ${data.premarketVolume}`);
+            
+            for (let i = 0; i < allSymbols.length; i += batchSize) {
+                const batch = allSymbols.slice(i, i + batchSize);
+                const batchPromises = batch.map(symbol => 
+                    fetchPreMarketDataForSymbol(symbol).catch(err => {
+                        console.log(`⚠️ Failed to fetch pre-market data for ${symbol}`);
+                        return null;
+                    })
+                );
+                
+                const batchResults = await Promise.all(batchPromises);
+                
+                batchResults.forEach(data => {
+                    if (data && data.premarketVolume > 0) {
+                        premarketDataCache.set(data.symbol, data);
+                        console.log(`📊 ${data.symbol}: Pre-market volume = ${data.premarketVolume.toLocaleString()}`);
+                    }
+                });
+                
+                // Small delay between batches to avoid rate limiting
+                if (i + batchSize < allSymbols.length) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
-            });
+            }
+            
             premarketCacheTime = Date.now();
+            console.log(`✅ Pre-market data fetched for ${premarketDataCache.size} stocks`);
         }
-        
-        const stocks = await fetchTopStocks();
         // Return in the format the dashboard expects
         const formattedStocks = stocks
             .filter(stock => stock.volume > 0) // Filter out stocks with no volume
