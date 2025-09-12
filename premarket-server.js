@@ -141,12 +141,21 @@ async function fetchTopStocks() {
                            currentPrice < 2000;      // Price < $2000
                 })
                 .map(t => {
-                    // During pre-market, t.min has current minute bar data
+                    // Check if we're in pre-market hours
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const minute = now.getMinutes();
+                    const isPreMarketTime = hour >= 4 && hour < 9 || (hour === 9 && minute < 30);
+                    
+                    // During pre-market, prioritize premarket data, then t.min has current minute bar data
                     // t.day is usually 0 during pre-market
                     // t.prevDay has the previous day's closing data
-                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    const currentPrice = t.premarket?.c || t.min?.c || t.day?.c || t.prevDay?.c || 0;
                     const previousClose = t.prevDay?.c || 0;
-                    const currentVolume = t.min?.av || t.min?.v || t.day?.v || t.prevDay?.v || 0; // Use average volume if available
+                    // Use pre-market specific volume during pre-market hours
+                    const currentVolume = isPreMarketTime ? 
+                        (t.premarket?.v || t.min?.v || t.min?.av || t.day?.v || 0) :
+                        (t.min?.av || t.min?.v || t.day?.v || t.prevDay?.v || 0);
                     const currentHigh = t.min?.h || t.day?.h || t.prevDay?.h || 0;
                     const currentLow = t.min?.l || t.day?.l || t.prevDay?.l || 0;
                     const currentVWAP = t.min?.vw || t.day?.vw || t.prevDay?.vw || currentPrice;
