@@ -700,29 +700,27 @@ app.get('/api/afterhours/top-movers', async (req, res) => {
 
 app.get('/api/stocks/top-volume', async (req, res) => {
     try {
-        // Check if we're in pre-market hours
-        const now = new Date();
-        const hour = now.getHours();
-        const minute = now.getMinutes();
-        const isPreMarketTime = hour >= 4 && hour < 9 || (hour === 9 && minute < 30);
+        // Check if this is a request for pre-market data (from premarket-dashboard)
+        const isPremarketRequest = req.query.type === 'premarket' || req.headers.referer?.includes('premarket-dashboard');
         
-        // Fetch pre-market data if in pre-market hours and cache is stale
-        if (isPreMarketTime && (!premarketCacheTime || Date.now() - premarketCacheTime > 60000)) {
-            console.log('🌅 Fetching fresh pre-market data...');
+        // Always fetch pre-market data for pre-market dashboard or if cache is stale
+        if (isPremarketRequest || !premarketCacheTime || Date.now() - premarketCacheTime > 120000) {
+            console.log('🌅 Fetching fresh pre-market data for dashboard...');
             const watchlistSymbols = [...PREMARKET_WATCHLIST];
             
-            // Fetch pre-market data for watchlist stocks
+            // Fetch pre-market data for all watchlist stocks
             const premarketPromises = watchlistSymbols.map(symbol => 
                 fetchPreMarketDataForSymbol(symbol)
             );
             
             const premarketResults = await Promise.all(premarketPromises);
             
-            // Update cache
+            // Update cache with pre-market data
             premarketDataCache.clear();
             premarketResults.forEach(data => {
                 if (data) {
                     premarketDataCache.set(data.symbol, data);
+                    console.log(`📊 ${data.symbol}: Pre-market volume = ${data.premarketVolume}`);
                 }
             });
             premarketCacheTime = Date.now();
