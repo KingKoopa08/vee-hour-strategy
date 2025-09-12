@@ -417,7 +417,7 @@
         let currentSymbol = null;
         let ws = null;
         let stocksData = {};
-        const API_URL = 'http://localhost:3018';
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3018' : `http://${window.location.hostname}:3018`;
         const WS_URL = 'ws://localhost:3006';
 
         // Format numbers
