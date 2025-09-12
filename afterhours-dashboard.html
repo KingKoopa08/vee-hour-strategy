@@ -398,7 +398,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3018';
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3018' : `http://${window.location.hostname}:3018`;
         let ws = null;
 
         async function loadAfterHoursData() {
