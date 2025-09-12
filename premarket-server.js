@@ -122,10 +122,19 @@ async function fetchTopStocks() {
             const stocks = Array.from(uniqueTickers.values())
                 .filter(t => {
                     // During pre-market: use t.min (minute bar) data
+                    // During pre-market hours (4 AM - 9:30 AM): use t.premarket data first, then t.min
                     // During regular hours: use t.day data
-                    // After hours: use previous day data
-                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
-                    const currentVolume = t.min?.v || t.day?.v || t.prevDay?.v || 0;
+                    // After hours: use t.min data (which contains after-hours trades)
+                    const now = new Date();
+                    const hour = now.getHours();
+                    const minute = now.getMinutes();
+                    const isPreMarketTime = hour >= 4 && hour < 9 || (hour === 9 && minute < 30);
+                    
+                    // Prioritize pre-market volume data when available
+                    const currentPrice = t.premarket?.c || t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    const currentVolume = isPreMarketTime ? 
+                        (t.premarket?.v || t.min?.v || t.min?.av || t.day?.v || 0) :
+                        (t.min?.v || t.day?.v || t.prevDay?.v || 0);
                     
                     return currentVolume > 10000 && // Lower threshold for pre-market (10k)
                            currentPrice > 0.5 &&     // Price > $0.50 
