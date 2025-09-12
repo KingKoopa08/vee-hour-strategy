@@ -19,7 +19,7 @@ docker build -t premarket-strategy .
 echo "🏃 Starting new container..."
 docker run -d \
   --name premarket-strategy \
-  -p 3012:3012 \
+  -p 3018:3018 \
   -p 3006:3006 \
   -p 3007:3007 \
   -e POLYGON_API_KEY=$POLYGON_API_KEY \
