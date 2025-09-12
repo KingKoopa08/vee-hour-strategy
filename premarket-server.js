@@ -130,11 +130,13 @@ async function fetchTopStocks() {
                     const minute = now.getMinutes();
                     const isPreMarketTime = hour >= 4 && hour < 9 || (hour === 9 && minute < 30);
                     
-                    // Prioritize pre-market volume data when available
-                    const currentPrice = t.premarket?.c || t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    // During pre-market: min.av has accumulated volume, day fields are 0
+                    // During regular hours: day.v has volume
+                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    // CRITICAL FIX: Use accumulated volume (min.av) during pre-market, not min.v
                     const currentVolume = isPreMarketTime ? 
-                        (t.premarket?.v || t.min?.v || t.min?.av || t.day?.v || 0) :
-                        (t.min?.v || t.day?.v || t.prevDay?.v || 0);
+                        (t.min?.av || t.min?.v || 0) :  // Pre-market: use accumulated volume
+                        (t.day?.v || t.prevDay?.v || 0); // Regular hours: use day volume
                     
                     return currentVolume > 10000 && // Lower threshold for pre-market (10k)
                            currentPrice > 0.5 &&     // Price > $0.50 
