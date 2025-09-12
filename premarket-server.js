@@ -753,8 +753,25 @@ app.get('/api/stocks/top-volume', async (req, res) => {
         }
         // Return in the format the dashboard expects
         const formattedStocks = stocks
-            .filter(stock => stock.volume > 0) // Filter out stocks with no volume
-            .sort((a, b) => b.volume - a.volume) // Sort by highest volume first
+            .map(stock => {
+                // Attach pre-market data if available
+                const symbol = typeof stock === 'string' ? stock : stock.symbol;
+                const premarketData = premarketDataCache.get(symbol);
+                if (premarketData && premarketData.premarketVolume > 0) {
+                    return {
+                        ...stock,
+                        actualVolume: premarketData.premarketVolume,
+                        hasPremarketData: true
+                    };
+                }
+                return {
+                    ...stock,
+                    actualVolume: stock.volume || 0,
+                    hasPremarketData: false
+                };
+            })
+            .filter(stock => stock.actualVolume > 0) // Filter out stocks with no volume
+            .sort((a, b) => b.actualVolume - a.actualVolume) // Sort by highest actual volume first
             .slice(0, 20) // Get top 20 highest volume stocks
             .map((stock, index) => {
                 if (typeof stock === 'string') {
