@@ -986,7 +986,7 @@ app.get('/api/stocks/best-opportunities', async (req, res) => {
 });
 
 // Start server
-const PORT = 3011;
+const PORT = process.env.PORT || 3012;
 app.listen(PORT, async () => {
     console.log(`✅ Pre-Market Strategy Server running on http://localhost:${PORT}`);
     console.log('🎯 VEE/HOUR/ISPC Strategy Active with Live Market Data');
