@@ -9,12 +9,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy application files
-COPY premarket-server.js ./
-COPY *.html ./
+# Copy all application files
+COPY . .
 
-# Expose ports
-EXPOSE 3011 3006
+# Expose ports for API and WebSocket
+EXPOSE 3011 3006 3007
+
+# Set environment variable (can be overridden at runtime)
+ENV POLYGON_API_KEY=AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
