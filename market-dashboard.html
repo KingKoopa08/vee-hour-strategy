@@ -951,7 +951,8 @@
                     refreshBtn.disabled = true;
                 }
                 
-                const response = await fetch('http://localhost:3018/api/stocks/top-volume');
+                const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:3018' : `http://${window.location.hostname}:3018`;
+                const response = await fetch(`${apiUrl}/api/stocks/top-volume`);
                 const data = await response.json();
                 
                 if (data.success && data.stocks) {
