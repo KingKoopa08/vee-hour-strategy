@@ -831,8 +831,9 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                 // Get proper pre-market data if available
                 const premarketData = premarketDataCache.get(stock.symbol);
                 const actualVolume = premarketData ? premarketData.premarketVolume : stock.volume;
-                const actualPrice = premarketData ? premarketData.premarketLast : stock.price;
+                const actualPrice = premarketData ? (premarketData.latestPrice || premarketData.premarketLast) : stock.price;
                 const actualVWAP = premarketData ? premarketData.premarketVWAP : stock.vwap;
+                const actualRSI = premarketData ? premarketData.premarketRSI : 50;
                 const priceChange = premarketData ? premarketData.premarketChange : stock.change || 0;
                 const priceChangePercent = premarketData ? premarketData.premarketChangePercent : (isFinite(stock.changePercent) ? stock.changePercent : 0);
                 
