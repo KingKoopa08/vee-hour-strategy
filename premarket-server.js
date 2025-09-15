@@ -121,12 +121,14 @@ async function fetchPreMarketDataForSymbol(symbol) {
                 const premarketHigh = Math.max(...premarketBars.map(bar => bar.h || 0));
                 const premarketLow = Math.min(...premarketBars.filter(bar => bar.l > 0).map(bar => bar.l));
                 
-                // Calculate VWAP
+                // Calculate VWAP using typical price formula
                 let totalValue = 0;
                 let totalVolume = 0;
                 premarketBars.forEach(bar => {
-                    if (bar.v && bar.vw) {
-                        totalValue += bar.vw * bar.v;
+                    if (bar.v > 0) {
+                        // Typical price = (High + Low + Close) / 3
+                        const typicalPrice = (bar.h + bar.l + bar.c) / 3;
+                        totalValue += typicalPrice * bar.v;
                         totalVolume += bar.v;
                     }
                 });
