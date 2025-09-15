@@ -755,6 +755,9 @@ app.get('/api/stocks/top-volume', async (req, res) => {
             console.log(`✅ Pre-market data fetched for ${premarketDataCache.size} stocks`);
         }
         // Return in the format the dashboard expects
+        const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : 100; // Default to $100 max
+        const minVolume = req.query.minVolume ? parseInt(req.query.minVolume) : 100000; // Default 100k min volume
+        
         const formattedStocks = stocks
             .map(stock => {
                 // Attach pre-market data if available
@@ -764,7 +767,8 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                     return {
                         ...stock,
                         actualVolume: premarketData.premarketVolume,
-                        hasPremarketData: true
+                        hasPremarketData: true,
+                        price: premarketData.latestPrice || stock.price || 0
                     };
                 }
                 return {
@@ -773,7 +777,12 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                     hasPremarketData: false
                 };
             })
-            .filter(stock => stock.actualVolume > 0) // Filter out stocks with no volume
+            .filter(stock => {
+                // Filter by volume and price
+                const hasVolume = stock.actualVolume > minVolume;
+                const priceInRange = stock.price > 0.50 && stock.price <= maxPrice; // Min $0.50, max from query
+                return hasVolume && priceInRange;
+            })
             .sort((a, b) => b.actualVolume - a.actualVolume) // Sort by highest actual volume first
             .slice(0, 20) // Get top 20 highest volume stocks
             .map((stock, index) => {
