@@ -141,14 +141,32 @@ async function fetchPreMarketDataForSymbol(symbol) {
                 const earlyAvg = earlyBars.reduce((sum, bar) => sum + bar.c, 0) / Math.max(earlyBars.length, 1);
                 const trend = recentAvg > earlyAvg ? 'up' : recentAvg < earlyAvg ? 'down' : 'flat';
                 
+                // Calculate RSI for pre-market bars
+                const prices = premarketBars.map(bar => bar.c);
+                const premarketRSI = calculateRSI(prices);
+                
+                // Calculate Bollinger Bands for pre-market
+                const sma20 = prices.length >= 20 
+                    ? prices.slice(-20).reduce((a, b) => a + b, 0) / 20
+                    : prices.reduce((a, b) => a + b, 0) / prices.length;
+                const variance = prices.slice(-20).map(p => Math.pow(p - sma20, 2)).reduce((a, b) => a + b, 0) / Math.min(20, prices.length);
+                const stdDev = Math.sqrt(variance);
+                
                 return {
                     symbol,
                     premarketVolume,
                     premarketOpen: firstBar.o,
                     premarketLast: lastBar.c,
+                    latestPrice: lastBar.c,  // Add this for price filtering
                     premarketHigh,
                     premarketLow,
                     premarketVWAP,
+                    premarketRSI,
+                    bollinger: {
+                        upper: sma20 + (2 * stdDev),
+                        middle: sma20,
+                        lower: sma20 - (2 * stdDev)
+                    },
                     premarketChange: lastBar.c - firstBar.o,
                     premarketChangePercent: ((lastBar.c - firstBar.o) / firstBar.o * 100),
                     premarketBars: premarketBars.length,
