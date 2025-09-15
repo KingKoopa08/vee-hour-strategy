@@ -907,6 +907,8 @@ app.get('/api/stocks/top-volume', async (req, res) => {
                     volume: actualVolume || 0,
                     volumeRatio: 1.0,
                     vwap: actualVWAP || actualPrice || 0,
+                    rsi: actualRSI || 50,
+                    bollinger: premarketData?.bollinger || { upper: 0, middle: 0, lower: 0 },
                     momentum: momentum,
                     volumeSurge: actualVolume > 1000000,
                     signal: signal,
