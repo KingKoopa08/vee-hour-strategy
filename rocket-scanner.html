@@ -798,12 +798,18 @@
         
         // Initialize
         function init() {
+            window.isFirstLoad = true;  // Prevent sound on initial load
             updateTime();
             setInterval(updateTime, 1000);
             loadSettings();
             startScanning();
             loadNews();
             connectWebSocket();
+            
+            // Allow sounds after initial load
+            setTimeout(() => {
+                window.isFirstLoad = false;
+            }, 3000);
         }
         
         // Update time
