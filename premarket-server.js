@@ -1781,12 +1781,16 @@ app.get('/api/rockets/scan', async (req, res) => {
             // Categorize based on 1-minute and 5-minute momentum (most recent trends)
             const priceChange1m = rocket.momentum?.priceChange1m;
             const priceChange5m = rocket.momentum?.priceChange5m;
+            const dayChange = rocket.changePercent || 0;
+            const volume = rocket.volume || 0;
+            const level = rocket.level || 0;
+            
             const hasValidMomentum = priceChange1m !== undefined && priceChange1m !== null;
             const hasMomentumMovement = hasValidMomentum && Math.abs(priceChange1m) > 0.01; // Check if there's actual movement
             
-            // Only use actual momentum data if available
+            // Use momentum data if available, otherwise use smart defaults
             if (hasMomentumMovement) {
-                // For Momentum Leaders: require positive movement in BOTH 1m and 5m
+                // For Momentum Leaders: require positive movement
                 if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
                     // Rising: positive momentum in last minute AND not down in 5 minutes
                     momentumLeaders.push(rocket);
@@ -1798,9 +1802,36 @@ app.get('/api/rockets/scan', async (req, res) => {
                     consolidating.push(rocket);
                 }
             } else {
-                // When no momentum data is available, put in consolidating
-                // Don't assume momentum just because of day gains
-                consolidating.push(rocket);
+                // Smart initial categorization when no momentum data available
+                // This provides immediate categorization while waiting for momentum data
+                
+                if (dayChange >= 50) {
+                    // Extreme gainers (50%+) are momentum leaders
+                    momentumLeaders.push(rocket);
+                } else if (dayChange >= 25) {
+                    // Strong gainers (25-50%) - check volume for categorization
+                    if (volume > 5000000 || level >= 3) {
+                        momentumLeaders.push(rocket);
+                    } else {
+                        consolidating.push(rocket);
+                    }
+                } else if (dayChange >= 15) {
+                    // Moderate gainers (15-25%) - likely consolidating unless high volume
+                    if (volume > 10000000 && level >= 2) {
+                        momentumLeaders.push(rocket);
+                    } else {
+                        consolidating.push(rocket);
+                    }
+                } else if (dayChange >= 10) {
+                    // Small gainers go to consolidating
+                    consolidating.push(rocket);
+                } else if (dayChange <= -5) {
+                    // Clear losers are pullbacks
+                    pullbacks.push(rocket);
+                } else {
+                    // Everything else consolidating
+                    consolidating.push(rocket);
+                }
             }
         }
         
