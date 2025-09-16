@@ -1034,6 +1034,192 @@ app.get('/api/sectors/heatmap', async (req, res) => {
     }
 });
 
+// Rocket Scanner - Explosive Mover Detection
+const rocketCache = new Map();
+const volumeHistory = new Map();
+const priceHistory = new Map();
+let rocketScanInterval = null;
+
+// Track 30-second price/volume changes
+function trackAcceleration(symbol, price, volume) {
+    if (!volumeHistory.has(symbol)) {
+        volumeHistory.set(symbol, []);
+        priceHistory.set(symbol, []);
+    }
+    
+    const volHistory = volumeHistory.get(symbol);
+    const priceHist = priceHistory.get(symbol);
+    
+    volHistory.push({ time: Date.now(), value: volume });
+    priceHist.push({ time: Date.now(), value: price });
+    
+    // Keep only last 10 minutes of history
+    const cutoff = Date.now() - 600000;
+    volumeHistory.set(symbol, volHistory.filter(v => v.time > cutoff));
+    priceHistory.set(symbol, priceHist.filter(p => p.time > cutoff));
+}
+
+// Detect acceleration
+function detectAcceleration(symbol) {
+    const volHistory = volumeHistory.get(symbol) || [];
+    const priceHist = priceHistory.get(symbol) || [];
+    
+    if (volHistory.length < 2 || priceHist.length < 2) return null;
+    
+    // Get 30-second ago data
+    const thirtySecAgo = Date.now() - 30000;
+    const oldVol = volHistory.find(v => v.time <= thirtySecAgo);
+    const oldPrice = priceHist.find(p => p.time <= thirtySecAgo);
+    
+    if (!oldVol || !oldPrice) return null;
+    
+    const currentVol = volHistory[volHistory.length - 1];
+    const currentPrice = priceHist[priceHist.length - 1];
+    
+    const volChange = (currentVol.value - oldVol.value) / Math.max(oldVol.value, 1);
+    const priceChange = ((currentPrice.value - oldPrice.value) / oldPrice.value) * 100;
+    
+    return {
+        volumeAcceleration: volChange,
+        priceAcceleration: priceChange,
+        currentVolume: currentVol.value,
+        currentPrice: currentPrice.value,
+        timeframe: '30s'
+    };
+}
+
+// Rocket scanner endpoint
+app.get('/api/rockets/scan', async (req, res) => {
+    try {
+        const stocks = await fetchTopStocks();
+        const rockets = [];
+        
+        for (const stock of stocks.slice(0, 100)) { // Check top 100 stocks
+            const symbol = stock.symbol;
+            const price = stock.price;
+            const volume = stock.volume;
+            
+            // Track for acceleration
+            trackAcceleration(symbol, price, volume);
+            
+            // Check acceleration
+            const accel = detectAcceleration(symbol);
+            
+            // Check for rocket conditions
+            const isRocket = 
+                stock.changePercent > 10 && // >10% move
+                volume > 500000 && // >500k volume
+                (accel && accel.volumeAcceleration > 5); // 5x volume spike
+            
+            if (isRocket) {
+                // Try to get news
+                const news = await fetchLatestNews(symbol);
+                
+                rockets.push({
+                    symbol: symbol,
+                    price: price,
+                    changePercent: stock.changePercent,
+                    volume: volume,
+                    vwap: stock.vwap || price,
+                    rsi: stock.rsi || 50,
+                    acceleration: accel,
+                    news: news ? news.headline : null,
+                    newsTime: news ? news.timestamp : null,
+                    float: stock.float || null,
+                    halted: stock.halted || false,
+                    level: getRocketLevel(stock, accel),
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+        
+        // Sort by level and change percent
+        rockets.sort((a, b) => {
+            if (a.level !== b.level) return b.level - a.level;
+            return b.changePercent - a.changePercent;
+        });
+        
+        res.json({ success: true, rockets: rockets });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get rocket alert level
+function getRocketLevel(stock, accel) {
+    const change = Math.abs(stock.changePercent);
+    const volume = stock.volume;
+    const volAccel = accel ? accel.volumeAcceleration : 1;
+    
+    if (change >= 100 && volume >= 5000000 && volAccel > 10) return 4; // JACKPOT
+    if (change >= 50 && volume >= 1000000 && volAccel > 5) return 3;   // URGENT
+    if (change >= 20 && volume >= 500000) return 2;                     // ALERT
+    return 1; // WATCH
+}
+
+// Fetch latest news for symbol
+async function fetchLatestNews(symbol) {
+    try {
+        // Try Polygon news API first
+        const url = `${POLYGON_BASE_URL}/v2/reference/news?ticker=${symbol}&limit=1&apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        if (response.data && response.data.results && response.data.results.length > 0) {
+            const news = response.data.results[0];
+            return {
+                headline: news.title,
+                description: news.description,
+                timestamp: news.published_utc,
+                source: news.publisher.name
+            };
+        }
+    } catch (error) {
+        console.log(`Could not fetch news for ${symbol}`);
+    }
+    return null;
+}
+
+// News aggregation endpoint
+app.get('/api/news/breaking', async (req, res) => {
+    try {
+        // Aggregate from multiple sources
+        const news = [];
+        
+        // Polygon news
+        const polygonUrl = `${POLYGON_BASE_URL}/v2/reference/news?limit=20&apiKey=${POLYGON_API_KEY}`;
+        const polygonResponse = await axios.get(polygonUrl);
+        
+        if (polygonResponse.data && polygonResponse.data.results) {
+            polygonResponse.data.results.forEach(item => {
+                news.push({
+                    id: item.id,
+                    headline: item.title,
+                    description: item.description,
+                    symbol: item.tickers ? item.tickers[0] : null,
+                    timestamp: item.published_utc,
+                    source: item.publisher.name,
+                    url: item.article_url
+                });
+            });
+        }
+        
+        res.json({ success: true, news: news });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Halt detection endpoint
+app.get('/api/halts', async (req, res) => {
+    try {
+        // This would need a real halt data source
+        // For now, return empty array
+        res.json({ success: true, halts: [] });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.get('/api/stocks/:symbol/snapshot', async (req, res) => {
     try {
         const { symbol } = req.params;
