@@ -1223,10 +1223,12 @@ app.get('/api/rockets/scan', async (req, res) => {
             const accel = detectAcceleration(symbol);
             
             // Check for rocket conditions
+            // More lenient: high % move OR high volume spike OR both
             const isRocket = 
-                stock.changePercent > 10 && // >10% move
-                volume > 500000 && // >500k volume
-                (accel && accel.volumeAcceleration > 5); // 5x volume spike
+                (stock.changePercent > 20) || // >20% move alone is enough
+                (stock.changePercent > 10 && volume > 1000000) || // >10% with good volume
+                (stock.changePercent > 5 && accel && accel.volumeAcceleration > 10) || // moderate move with huge volume
+                (volume > 500000 && accel && accel.volumeAcceleration > 5); // volume spike
             
             if (isRocket) {
                 // Try to get news
