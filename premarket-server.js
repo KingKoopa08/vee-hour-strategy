@@ -2632,7 +2632,7 @@ function startRealTimePriceUpdates() {
                         }
                     }
                     
-                    updates.push({
+                    const updateData = {
                         symbol,
                         price: snapshot.price,
                         changePercent: snapshot.changePercent,
@@ -2640,7 +2640,14 @@ function startRealTimePriceUpdates() {
                         priceChange1m,
                         priceChange5m,
                         timestamp: Date.now()
-                    });
+                    };
+                    
+                    // Log momentum values for debugging
+                    if (priceChange1m !== 0 || priceChange5m !== 0) {
+                        console.log(`📊 ${symbol}: 1m: ${priceChange1m.toFixed(2)}%, 5m: ${priceChange5m.toFixed(2)}%`);
+                    }
+                    
+                    updates.push(updateData);
                 }
             } catch (err) {
                 // Skip failed symbol fetches
