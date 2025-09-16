@@ -1681,7 +1681,7 @@ app.get('/api/rockets/scan', async (req, res) => {
                 // Get opening range info
                 const orRange = openingRanges.get(symbol);
                 
-                rockets.push({
+                const rocketData = {
                     symbol: symbol,
                     price: price,
                     changePercent: stock.changePercent,
@@ -1705,7 +1705,30 @@ app.get('/api/rockets/scan', async (req, res) => {
                     orbSignal: orbSignal,
                     openingRange: orRange,
                     timestamp: new Date().toISOString()
-                });
+                };
+                
+                rockets.push(rocketData);
+                
+                // Send Discord alert for significant rockets (not already sent)
+                const rocketKey = `${symbol}_${Math.floor(stock.changePercent)}_${marketSession.session}`;
+                if (!sentRockets.has(rocketKey) && adminSettings.webhooks.rocket) {
+                    // Alert for level 2+ rockets or any rocket with >15% gain or high volume
+                    if (rocketData.level >= 2 || 
+                        stock.changePercent >= 15 || 
+                        (volume > 5000000 && stock.changePercent > 5)) {
+                        
+                        await sendDiscordAlert(rocketData, 'rocket');
+                        sentRockets.add(rocketKey);
+                        
+                        // Keep set size manageable
+                        if (sentRockets.size > 500) {
+                            // Remove oldest entries (keep recent half)
+                            const keysArray = Array.from(sentRockets);
+                            sentRockets.clear();
+                            keysArray.slice(-250).forEach(key => sentRockets.add(key));
+                        }
+                    }
+                }
             }
         }
         
