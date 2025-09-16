@@ -1713,26 +1713,35 @@ app.get('/api/rockets/scan', async (req, res) => {
                 const rocketKey = `${symbol}_${Math.floor(stock.changePercent)}_${marketSession.session}`;
                 if (!sentRockets.has(rocketKey) && adminSettings.webhooks.rocket) {
                     // STRICT CRITERIA to reduce noise:
+                    // Need minimum history to verify trend (at least 2 min of data)
+                    const hasEnoughHistory = priceHistory.get(symbol)?.length >= 10; // At least 10 data points
+                    
                     // Check 5-minute trend specifically
-                    const has5MinDown = momentum && momentum.priceChange5m < -1; // Down more than 1% in 5 min
-                    const has2MinDown = momentum && momentum.priceChange2m < -0.5; // Down more than 0.5% in 2 min
-                    const isCurrentlyFalling = has5MinDown || has2MinDown || isDowntrending;
+                    const has5MinDown = momentum && momentum.priceChange5m !== undefined && momentum.priceChange5m < -1; // Down >1% in 5 min
+                    const has2MinDown = momentum && momentum.priceChange2m !== undefined && momentum.priceChange2m < -0.5; // Down >0.5% in 2 min
+                    const has1MinDown = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m < -0.3; // Down >0.3% in 1 min
+                    const isCurrentlyFalling = has5MinDown || has2MinDown || has1MinDown || isDowntrending;
+                    
+                    // If we don't have enough history, only alert on HUGE movers
+                    const minPercentForNoHistory = 50; // Need 50%+ gain if no momentum data
                     
                     // Log for debugging
                     if (stock.changePercent >= 15) {
-                        console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | 2m: ${momentum?.priceChange2m?.toFixed(2) || 'N/A'}% | Falling: ${isCurrentlyFalling}`);
+                        console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | 2m: ${momentum?.priceChange2m?.toFixed(2) || 'N/A'}% | History: ${hasEnoughHistory} | Falling: ${isCurrentlyFalling}`);
                     }
                     
-                    // Must meet high quality criteria AND not be falling
-                    const isHighQualityRocket = 
+                    // Must have enough history OR be a massive mover
+                    const isHighQualityRocket = hasEnoughHistory ? 
+                        // With history, use normal criteria but exclude falling stocks
                         (!isCurrentlyFalling && (
                             rocketData.level >= 3 || // Only URGENT or JACKPOT levels
                             stock.changePercent >= 35 || // Bigger threshold for alerts
                             (stock.changePercent >= 25 && volume > 10000000) || // 25%+ with huge volume
                             (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent >= 15) || // ORB with good gains
                             (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10 && !has5MinDown) // Big gap ups that aren't falling
-                        )) ||
-                        (!isCurrentlyFalling && stock.changePercent >= 50); // Exception for huge movers
+                        )) :
+                        // Without history, only alert on exceptional movers
+                        (stock.changePercent >= minPercentForNoHistory);
                     
                     if (isHighQualityRocket) {
                         console.log(`✅ Alert qualified: ${symbol} +${stock.changePercent.toFixed(1)}%`);
