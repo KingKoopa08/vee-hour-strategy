@@ -960,18 +960,29 @@
                 </span>
             ` : '';
             
+            // Get momentum indicator
+            const momentumIndicator = rocket.trend || '→';
+            const momentumColor = rocket.direction === 'up' ? '#32ff32' : 
+                                 rocket.direction === 'down' ? '#ff3232' : '#888';
+            const isAccelerating = rocket.accelerating ? '⚡' : '';
+            
             const card = document.createElement('div');
             card.className = `alert-card ${levelClass}`;
             card.innerHTML = `
                 <div class="alert-header">
                     <div class="stock-symbol">
                         ${rocket.symbol}
+                        <span style="font-size: 20px; color: ${momentumColor}; margin-left: 5px;">${momentumIndicator}</span>
+                        ${isAccelerating}
                         ${newsIndicator}
                     </div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
                 <div class="price-change ${changePercent > 0 ? 'positive' : 'negative'}">
                     ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%
+                    ${rocket.momentum && rocket.momentum.priceChange1m ? 
+                        `<span style="font-size: 12px; color: #888; margin-left: 10px;">(1m: ${rocket.momentum.priceChange1m > 0 ? '+' : ''}${rocket.momentum.priceChange1m.toFixed(2)}%)</span>` 
+                        : ''}
                 </div>
                 <div class="alert-stats">
                     <div class="stat">
