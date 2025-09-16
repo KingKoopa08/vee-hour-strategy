@@ -926,16 +926,20 @@
             document.getElementById('pullbacksContainer').innerHTML = '';
             document.getElementById('loadingMessage').style.display = 'none';
             
-            let topGainer = null;
-            let topVolume = null;
+            let topGainerRef = { value: null };
+            let topVolumeRef = { value: null };
             let totalCount = 0;
             
             // Update Momentum Leaders
             const leaders = categorizedData.momentumLeaders || [];
             document.getElementById('leadersCount').textContent = `(${leaders.length})`;
             leaders.forEach(rocket => {
+                // Normalize field names
+                if (rocket.priceChangePercent !== undefined && rocket.changePercent === undefined) {
+                    rocket.changePercent = rocket.priceChangePercent;
+                }
                 addRocketCardToContainer(rocket, 'leadersContainer');
-                updateTopStats(rocket, topGainer, topVolume);
+                updateTopStats(rocket, topGainerRef, topVolumeRef);
             });
             totalCount += leaders.length;
             
@@ -943,8 +947,12 @@
             const consolidating = categorizedData.consolidating || [];
             document.getElementById('consolidatingCount').textContent = `(${consolidating.length})`;
             consolidating.forEach(rocket => {
+                // Normalize field names
+                if (rocket.priceChangePercent !== undefined && rocket.changePercent === undefined) {
+                    rocket.changePercent = rocket.priceChangePercent;
+                }
                 addRocketCardToContainer(rocket, 'consolidatingContainer');
-                updateTopStats(rocket, topGainer, topVolume);
+                updateTopStats(rocket, topGainerRef, topVolumeRef);
             });
             totalCount += consolidating.length;
             
@@ -952,18 +960,28 @@
             const pullbacks = categorizedData.pullbacks || [];
             document.getElementById('pullbacksCount').textContent = `(${pullbacks.length})`;
             pullbacks.forEach(rocket => {
+                // Normalize field names
+                if (rocket.priceChangePercent !== undefined && rocket.changePercent === undefined) {
+                    rocket.changePercent = rocket.priceChangePercent;
+                }
                 addRocketCardToContainer(rocket, 'pullbacksContainer');
-                updateTopStats(rocket, topGainer, topVolume);
+                updateTopStats(rocket, topGainerRef, topVolumeRef);
             });
             totalCount += pullbacks.length;
             
             // Update total count
             document.getElementById('totalRockets').textContent = totalCount;
             
-            // Hide empty sections
+            // Hide empty sections and display non-empty ones
             document.getElementById('momentumLeadersSection').style.display = leaders.length > 0 ? 'block' : 'none';
             document.getElementById('consolidatingSection').style.display = consolidating.length > 0 ? 'block' : 'none';
             document.getElementById('pullbacksSection').style.display = pullbacks.length > 0 ? 'block' : 'none';
+            
+            // Show message if no rockets found
+            if (totalCount === 0) {
+                document.getElementById('loadingMessage').innerHTML = '<div style="font-size: 24px; margin-bottom: 10px;">📭</div><div>No rockets detected yet. Waiting for market movers...</div>';
+                document.getElementById('loadingMessage').style.display = 'block';
+            }
         }
         
         function updateTopStats(rocket, topGainerRef, topVolumeRef) {
