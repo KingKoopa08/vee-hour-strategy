@@ -883,6 +883,13 @@
                 if (data.type === 'priceUpdates') {
                     // Real-time price updates for individual stocks
                     console.log(`📈 Received price updates for ${data.data.length} stocks`);
+                    // Debug: Log momentum data
+                    const withMomentum = data.data.filter(d => d.priceChange1m !== 0 || d.priceChange5m !== 0);
+                    if (withMomentum.length > 0) {
+                        console.log('📊 Momentum data received:', withMomentum.map(d => 
+                            `${d.symbol}: 1m=${d.priceChange1m?.toFixed(2)}%, 5m=${d.priceChange5m?.toFixed(2)}%`
+                        ));
+                    }
                     updateRealTimePrices(data.data);
                 } else if (data.type === 'rocketsUpdate') {
                     // Full rockets categorization update - skip if we just did a scan
