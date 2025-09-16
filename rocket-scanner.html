@@ -908,6 +908,16 @@
             }
         }
         
+        // Format volume for display
+        function formatVolume(volume) {
+            if (volume >= 1000000) {
+                return (volume / 1000000).toFixed(1) + 'M';
+            } else if (volume >= 1000) {
+                return (volume / 1000).toFixed(0) + 'K';
+            }
+            return volume.toString();
+        }
+        
         // Update categorized rockets display
         function updateCategorizedRockets(categorizedData) {
             // Clear all containers
