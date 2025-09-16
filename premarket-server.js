@@ -4,6 +4,7 @@ const { WebSocketServer } = require('ws');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs').promises;
+const http = require('http');
 
 // Load environment variables
 const dotenv = require('dotenv');
@@ -2510,7 +2511,9 @@ app.get('/api/stocks/best-opportunities', async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3018;
-app.listen(PORT, async () => {
+const server = http.createServer(app);
+
+server.listen(PORT, async () => {
     console.log(`✅ Pre-Market Strategy Server running on http://localhost:${PORT}`);
     console.log('🎯 VEE/HOUR/ISPC Strategy Active with Live Market Data');
     console.log('📊 Loading current most active stocks from live market...');
@@ -2531,8 +2534,26 @@ app.listen(PORT, async () => {
 });
 
 // WebSocket for real-time updates
-const WS_PORT = 3006;
-const wss = new WebSocketServer({ port: WS_PORT });
+let wss;
+if (process.env.NODE_ENV === 'production') {
+    // In production, use same port with /ws path
+    wss = new WebSocketServer({ noServer: true });
+    
+    // Handle WebSocket upgrade
+    server.on('upgrade', (request, socket, head) => {
+        if (request.url === '/ws') {
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                wss.emit('connection', ws, request);
+            });
+        } else {
+            socket.destroy();
+        }
+    });
+} else {
+    // In development, use separate port
+    const WS_PORT = 3006;
+    wss = new WebSocketServer({ port: WS_PORT });
+}
 
 // Track active rockets for real-time updates
 let activeRockets = new Set();
@@ -2678,7 +2699,11 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log(`📡 WebSocket running on ws://localhost:${WS_PORT}`);
+if (process.env.NODE_ENV === 'production') {
+    console.log(`📡 WebSocket available at /ws endpoint`);
+} else {
+    console.log(`📡 WebSocket running on ws://localhost:3006`);
+}
 
 // Start real-time price updates
 startRealTimePriceUpdates();
