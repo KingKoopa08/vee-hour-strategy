@@ -872,8 +872,14 @@
                 const response = await fetch(`${API_URL}/api/rockets/scan`);
                 const data = await response.json();
                 
-                if (data.success && data.rockets && data.rockets.length > 0) {
-                    updateRockets(data.rockets);
+                if (data.success && data.rockets) {
+                    // Handle categorized rockets
+                    if (data.rockets.momentumLeaders || data.rockets.consolidating || data.rockets.pullbacks) {
+                        updateCategorizedRockets(data.rockets);
+                    } else if (Array.isArray(data.rockets) && data.rockets.length > 0) {
+                        // Fallback for old format
+                        updateRockets(data.rockets);
+                    }
                 } else {
                     // Fallback to top volume stocks if no rockets
                     const volumeResponse = await fetch(`${API_URL}/api/stocks/top-volume`);
@@ -902,14 +908,76 @@
             }
         }
         
-        // Update rockets display
-        function updateRockets(rocketsList) {
-            const container = document.getElementById('alertsContainer');
-            container.innerHTML = '';
+        // Update categorized rockets display
+        function updateCategorizedRockets(categorizedData) {
+            // Clear all containers
+            document.getElementById('leadersContainer').innerHTML = '';
+            document.getElementById('consolidatingContainer').innerHTML = '';
+            document.getElementById('pullbacksContainer').innerHTML = '';
+            document.getElementById('loadingMessage').style.display = 'none';
             
             let topGainer = null;
             let topVolume = null;
-            let displayedCount = 0;
+            let totalCount = 0;
+            
+            // Update Momentum Leaders
+            const leaders = categorizedData.momentumLeaders || [];
+            document.getElementById('leadersCount').textContent = `(${leaders.length})`;
+            leaders.forEach(rocket => {
+                addRocketCardToContainer(rocket, 'leadersContainer');
+                updateTopStats(rocket, topGainer, topVolume);
+            });
+            totalCount += leaders.length;
+            
+            // Update Consolidating
+            const consolidating = categorizedData.consolidating || [];
+            document.getElementById('consolidatingCount').textContent = `(${consolidating.length})`;
+            consolidating.forEach(rocket => {
+                addRocketCardToContainer(rocket, 'consolidatingContainer');
+                updateTopStats(rocket, topGainer, topVolume);
+            });
+            totalCount += consolidating.length;
+            
+            // Update Pullbacks
+            const pullbacks = categorizedData.pullbacks || [];
+            document.getElementById('pullbacksCount').textContent = `(${pullbacks.length})`;
+            pullbacks.forEach(rocket => {
+                addRocketCardToContainer(rocket, 'pullbacksContainer');
+                updateTopStats(rocket, topGainer, topVolume);
+            });
+            totalCount += pullbacks.length;
+            
+            // Update total count
+            document.getElementById('totalRockets').textContent = totalCount;
+            
+            // Hide empty sections
+            document.getElementById('momentumLeadersSection').style.display = leaders.length > 0 ? 'block' : 'none';
+            document.getElementById('consolidatingSection').style.display = consolidating.length > 0 ? 'block' : 'none';
+            document.getElementById('pullbacksSection').style.display = pullbacks.length > 0 ? 'block' : 'none';
+        }
+        
+        function updateTopStats(rocket, topGainer, topVolume) {
+            if (!topGainer || Math.abs(rocket.changePercent) > Math.abs(topGainer.changePercent)) {
+                topGainer = rocket;
+                document.getElementById('topGainer').textContent = 
+                    `${rocket.symbol} ${rocket.changePercent >= 0 ? '+' : ''}${rocket.changePercent.toFixed(1)}%`;
+            }
+            
+            if (!topVolume || rocket.volume > topVolume.volume) {
+                topVolume = rocket;
+                document.getElementById('topVolume').textContent = 
+                    `${rocket.symbol} ${formatVolume(rocket.volume)}`;
+            }
+        }
+        
+        // Update rockets display (legacy)
+        function updateRockets(rocketsList) {
+            // Convert to categorized format and use new function
+            const categorized = {
+                momentumLeaders: [],
+                consolidating: [],
+                pullbacks: []
+            };
             
             rocketsList.forEach(rocket => {
                 // Normalize field names
@@ -917,9 +985,18 @@
                     rocket.changePercent = rocket.priceChangePercent;
                 }
                 
-                if (shouldShowRocket(rocket)) {
-                    addRocketCard(rocket);
-                    displayedCount++;
+                // Categorize based on momentum
+                const priceChange1m = rocket.momentum?.priceChange1m || 0;
+                if (priceChange1m > 0.1) {
+                    categorized.momentumLeaders.push(rocket);
+                } else if (priceChange1m < -0.1) {
+                    categorized.pullbacks.push(rocket);
+                } else {
+                    categorized.consolidating.push(rocket);
+                }
+            });
+            
+            updateCategorizedRockets(categorized);
                     
                     const changeValue = Math.abs(rocket.changePercent || 0);
                     if (!topGainer || changeValue > Math.abs(topGainer.changePercent || 0)) {
