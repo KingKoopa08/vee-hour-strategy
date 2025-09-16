@@ -2599,19 +2599,35 @@ function startRealTimePriceUpdates() {
             try {
                 const snapshot = await fetchSnapshot(symbol);
                 if (snapshot) {
-                    // Calculate momentum
+                    // Calculate momentum using the same logic as calculateMomentum
                     const history = priceHistory.get(symbol) || [];
                     let priceChange1m = 0;
                     let priceChange5m = 0;
                     
                     if (history.length > 0) {
-                        const oneMinAgo = history.find(h => (Date.now() - h.timestamp) >= 60000);
-                        const fiveMinAgo = history.find(h => (Date.now() - h.timestamp) >= 300000);
+                        const now = Date.now();
                         
-                        if (oneMinAgo) {
+                        // Find the closest entries to 1 minute and 5 minutes ago
+                        // Sort by how close they are to the target time
+                        const oneMinTarget = now - 60000;
+                        const fiveMinTarget = now - 300000;
+                        
+                        // Find entry closest to 1 minute ago (between 50-70 seconds)
+                        const oneMinAgo = history.find(h => {
+                            const age = now - h.timestamp;
+                            return age >= 50000 && age <= 70000;
+                        });
+                        
+                        // Find entry closest to 5 minutes ago (between 280-320 seconds)
+                        const fiveMinAgo = history.find(h => {
+                            const age = now - h.timestamp;
+                            return age >= 280000 && age <= 320000;
+                        });
+                        
+                        if (oneMinAgo && oneMinAgo.price > 0) {
                             priceChange1m = ((snapshot.price - oneMinAgo.price) / oneMinAgo.price) * 100;
                         }
-                        if (fiveMinAgo) {
+                        if (fiveMinAgo && fiveMinAgo.price > 0) {
                             priceChange5m = ((snapshot.price - fiveMinAgo.price) / fiveMinAgo.price) * 100;
                         }
                     }
