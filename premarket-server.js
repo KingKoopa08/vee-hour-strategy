@@ -925,6 +925,115 @@ app.get('/api/stocks/top-volume', async (req, res) => {
     }
 });
 
+// Sector mapping for popular stocks
+const SECTOR_MAPPING = {
+    // Technology
+    'AAPL': 'Technology', 'MSFT': 'Technology', 'GOOGL': 'Technology', 'META': 'Technology',
+    'NVDA': 'Technology', 'AMD': 'Technology', 'INTC': 'Technology', 'ORCL': 'Technology',
+    'CRM': 'Technology', 'ADBE': 'Technology', 'CSCO': 'Technology', 'IBM': 'Technology',
+    'QCOM': 'Technology', 'TXN': 'Technology', 'AVGO': 'Technology', 'MU': 'Technology',
+    
+    // Financial
+    'JPM': 'Financial', 'BAC': 'Financial', 'WFC': 'Financial', 'GS': 'Financial',
+    'MS': 'Financial', 'C': 'Financial', 'BLK': 'Financial', 'SCHW': 'Financial',
+    'AXP': 'Financial', 'USB': 'Financial', 'PNC': 'Financial', 'TFC': 'Financial',
+    
+    // Healthcare
+    'JNJ': 'Healthcare', 'UNH': 'Healthcare', 'PFE': 'Healthcare', 'CVS': 'Healthcare',
+    'ABBV': 'Healthcare', 'TMO': 'Healthcare', 'ABT': 'Healthcare', 'LLY': 'Healthcare',
+    'MRK': 'Healthcare', 'DHR': 'Healthcare', 'MDT': 'Healthcare', 'BMY': 'Healthcare',
+    
+    // Consumer
+    'AMZN': 'Consumer', 'TSLA': 'Consumer', 'WMT': 'Consumer', 'HD': 'Consumer',
+    'NKE': 'Consumer', 'MCD': 'Consumer', 'SBUX': 'Consumer', 'TGT': 'Consumer',
+    'COST': 'Consumer', 'LOW': 'Consumer', 'BABA': 'Consumer', 'JD': 'Consumer',
+    
+    // Energy
+    'XOM': 'Energy', 'CVX': 'Energy', 'COP': 'Energy', 'SLB': 'Energy',
+    'EOG': 'Energy', 'PSX': 'Energy', 'MPC': 'Energy', 'VLO': 'Energy',
+    'OXY': 'Energy', 'HAL': 'Energy', 'BKR': 'Energy', 'DVN': 'Energy',
+    
+    // Industrial
+    'BA': 'Industrial', 'CAT': 'Industrial', 'GE': 'Industrial', 'HON': 'Industrial',
+    'UPS': 'Industrial', 'RTX': 'Industrial', 'DE': 'Industrial', 'LMT': 'Industrial',
+    'MMM': 'Industrial', 'FDX': 'Industrial', 'EMR': 'Industrial', 'ETN': 'Industrial',
+    
+    // Materials
+    'LIN': 'Materials', 'APD': 'Materials', 'SHW': 'Materials', 'FCX': 'Materials',
+    'NEM': 'Materials', 'ECL': 'Materials', 'DD': 'Materials', 'DOW': 'Materials',
+    
+    // Utilities
+    'NEE': 'Utilities', 'DUK': 'Utilities', 'SO': 'Utilities', 'D': 'Utilities',
+    'AEP': 'Utilities', 'EXC': 'Utilities', 'SRE': 'Utilities', 'XEL': 'Utilities',
+    
+    // Real Estate
+    'AMT': 'Real Estate', 'PLD': 'Real Estate', 'CCI': 'Real Estate', 'EQIX': 'Real Estate',
+    'SPG': 'Real Estate', 'PSA': 'Real Estate', 'WELL': 'Real Estate', 'AVB': 'Real Estate',
+    
+    // Communication
+    'DIS': 'Communication', 'NFLX': 'Communication', 'CMCSA': 'Communication', 'T': 'Communication',
+    'VZ': 'Communication', 'TMUS': 'Communication', 'CHTR': 'Communication', 'EA': 'Communication'
+};
+
+// Sector heatmap endpoint
+app.get('/api/sectors/heatmap', async (req, res) => {
+    try {
+        const stocks = await fetchTopStocks();
+        const sectorData = {};
+        
+        // Initialize sectors
+        const sectors = ['Technology', 'Financial', 'Healthcare', 'Consumer', 'Energy', 
+                        'Industrial', 'Materials', 'Utilities', 'Real Estate', 'Communication'];
+        
+        sectors.forEach(sector => {
+            sectorData[sector] = {
+                totalVolume: 0,
+                totalMarketCap: 0,
+                avgPerformance: 0,
+                stockCount: 0,
+                topPerformers: [],
+                worstPerformers: [],
+                stocks: []
+            };
+        });
+        
+        // Process each stock
+        stocks.forEach(stock => {
+            const sector = SECTOR_MAPPING[stock.symbol] || 'Other';
+            if (sector !== 'Other' && sectorData[sector]) {
+                sectorData[sector].stocks.push({
+                    symbol: stock.symbol,
+                    price: stock.price,
+                    changePercent: stock.changePercent || 0,
+                    volume: stock.volume
+                });
+                sectorData[sector].totalVolume += stock.volume || 0;
+                sectorData[sector].avgPerformance += stock.changePercent || 0;
+                sectorData[sector].stockCount++;
+            }
+        });
+        
+        // Calculate averages and sort performers
+        Object.keys(sectorData).forEach(sector => {
+            const data = sectorData[sector];
+            if (data.stockCount > 0) {
+                data.avgPerformance = data.avgPerformance / data.stockCount;
+                data.stocks.sort((a, b) => b.changePercent - a.changePercent);
+                data.topPerformers = data.stocks.slice(0, 3);
+                data.worstPerformers = data.stocks.slice(-3).reverse();
+            }
+        });
+        
+        res.json({ 
+            success: true, 
+            sectors: sectorData,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.get('/api/stocks/:symbol/snapshot', async (req, res) => {
     try {
         const { symbol } = req.params;
