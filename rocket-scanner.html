@@ -948,11 +948,26 @@
                               rocket.level === 2 ? '⚡ ALERT' :
                               '👀 WATCH';
             
+            // Create news indicator if news exists
+            const newsIndicator = rocket.news ? `
+                <span class="news-indicator" onclick="showNewsModal('${rocket.symbol}', \`${rocket.news.replace(/'/g, "\\'").replace(/`/g, "\\`")}\`, \`${(rocket.newsDescription || '').replace(/'/g, "\\'").replace(/`/g, "\\`")}\`, '${rocket.newsSource || ''}', '${rocket.newsTime || ''}')">
+                    📰
+                    <div class="news-tooltip">
+                        <strong>${rocket.news.substring(0, 50)}...</strong>
+                        <br><br>
+                        Click to read full article
+                    </div>
+                </span>
+            ` : '';
+            
             const card = document.createElement('div');
             card.className = `alert-card ${levelClass}`;
             card.innerHTML = `
                 <div class="alert-header">
-                    <div class="stock-symbol">${rocket.symbol}</div>
+                    <div class="stock-symbol">
+                        ${rocket.symbol}
+                        ${newsIndicator}
+                    </div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
                 <div class="price-change ${changePercent > 0 ? 'positive' : 'negative'}">
@@ -976,7 +991,6 @@
                         <span>${rocket.session || 'regular'}</span>
                     </div>
                 </div>
-                ${rocket.news ? `<div style="margin-top: 10px; font-size: 11px; color: #888;">📰 ${rocket.news}</div>` : ''}
             `;
             
             container.appendChild(card);
