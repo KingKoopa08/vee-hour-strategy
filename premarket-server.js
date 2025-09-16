@@ -1729,19 +1729,21 @@ app.get('/api/rockets/scan', async (req, res) => {
                     const has1MinDown = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m < -0.3; // Down >0.3% in 1 min
                     const isCurrentlyFalling = has5MinDown || has2MinDown || has1MinDown || isDowntrending;
                     
-                    // NEW: Only alert on momentum leaders (positive 1-minute momentum)
+                    // NEW: Only alert on momentum leaders (positive 1-minute momentum) AND significant day change
                     const isMomentumLeader = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m > 0.1;
+                    const hasSignificantDayChange = stock.changePercent >= 10; // Require at least 10% day change
+                    const isActuallyMoving = isMomentumLeader && hasSignificantDayChange;
                     
                     // If we don't have enough history, only alert on HUGE movers
                     const minPercentForNoHistory = 50; // Need 50%+ gain if no momentum data
                     
                     // Log for debugging
-                    if (stock.changePercent >= 15) {
-                        console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | 2m: ${momentum?.priceChange2m?.toFixed(2) || 'N/A'}% | History: ${hasEnoughHistory} | Falling: ${isCurrentlyFalling}`);
+                    if (stock.changePercent >= 15 || symbol === 'FGI' || symbol === 'TURB') {
+                        console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 1m: ${momentum?.priceChange1m?.toFixed(2) || 'N/A'}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | History: ${hasEnoughHistory} | Falling: ${isCurrentlyFalling} | MomentumLeader: ${isMomentumLeader}`);
                     }
                     
-                    // Must be a momentum leader AND meet quality criteria
-                    const isHighQualityRocket = isMomentumLeader && (hasEnoughHistory ? 
+                    // Must be actually moving AND meet quality criteria
+                    const isHighQualityRocket = isActuallyMoving && (hasEnoughHistory ? 
                         // With history, use normal criteria for momentum leaders
                         (
                             rocketData.level >= 3 || // Only URGENT or JACKPOT levels
