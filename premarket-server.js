@@ -1823,6 +1823,7 @@ app.get('/api/rockets/scan', async (req, res) => {
         [...momentumLeaders, ...consolidating, ...pullbacks].forEach(rocket => {
             activeRockets.add(rocket.symbol);
         });
+        console.log(`🎯 Tracking ${activeRockets.size} active rockets for real-time updates`);
         
         // Broadcast to all WebSocket clients
         broadcast({
