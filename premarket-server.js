@@ -1739,18 +1739,18 @@ app.get('/api/rockets/scan', async (req, res) => {
                         console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | 2m: ${momentum?.priceChange2m?.toFixed(2) || 'N/A'}% | History: ${hasEnoughHistory} | Falling: ${isCurrentlyFalling}`);
                     }
                     
-                    // Must have enough history OR be a massive mover
-                    const isHighQualityRocket = hasEnoughHistory ? 
-                        // With history, use normal criteria but exclude falling stocks
-                        (!isCurrentlyFalling && (
+                    // Must be a momentum leader AND meet quality criteria
+                    const isHighQualityRocket = isMomentumLeader && (hasEnoughHistory ? 
+                        // With history, use normal criteria for momentum leaders
+                        (
                             rocketData.level >= 3 || // Only URGENT or JACKPOT levels
                             stock.changePercent >= 35 || // Bigger threshold for alerts
                             (stock.changePercent >= 25 && volume > 10000000) || // 25%+ with huge volume
                             (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent >= 15) || // ORB with good gains
-                            (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10 && !has5MinDown) // Big gap ups that aren't falling
-                        )) :
-                        // Without history, only alert on exceptional movers
-                        (stock.changePercent >= minPercentForNoHistory);
+                            (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10) // Big gap ups
+                        ) :
+                        // Without history, only alert on exceptional movers that are momentum leaders
+                        (stock.changePercent >= minPercentForNoHistory));
                     
                     if (isHighQualityRocket) {
                         console.log(`✅ Alert qualified: ${symbol} +${stock.changePercent.toFixed(1)}%`);
