@@ -1662,9 +1662,7 @@ app.get('/api/rockets/scan', async (req, res) => {
                 // Try to get news
                 const news = await fetchLatestNews(symbol);
                 
-                // Calculate momentum (only if we have enough history)
-                const momentum = calculateMomentum(symbol);
-                const hasValidMomentum = momentum && priceHistory.get(symbol)?.length > 5;
+                // Momentum already calculated above for filtering
                 
                 // Check if this is a gap stock
                 const pmData = preMarketCloseData.get(symbol);
