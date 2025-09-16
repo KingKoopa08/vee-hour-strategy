@@ -1064,26 +1064,6 @@
         
         // Check if rocket should be shown based on filters
         function shouldShowRocket(rocket) {
-                container.innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">
-                        <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
-                        <div>No rockets matching current filters</div>
-                        <div style="font-size: 12px; margin-top: 10px;">Try adjusting your filters or wait for market activity</div>
-                    </div>
-                `;
-            }
-            
-            // Update stats
-            document.getElementById('totalRockets').textContent = displayedCount;
-            const changePercent = topGainer ? (topGainer.changePercent || topGainer.priceChangePercent || 0) : 0;
-            document.getElementById('topGainer').textContent = 
-                topGainer ? `${topGainer.symbol} ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%` : '-';
-            document.getElementById('topVolume').textContent = 
-                topVolume ? `${topVolume.symbol} ${(topVolume.volume / 1000000).toFixed(1)}M` : '-';
-        }
-        
-        // Check if should show rocket
-        function shouldShowRocket(rocket) {
             const minChange = parseFloat(document.getElementById('minChange').value);
             const minVolume = parseFloat(document.getElementById('minVolume').value);
             const maxPrice = parseFloat(document.getElementById('maxPrice').value);
