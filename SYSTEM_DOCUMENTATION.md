@@ -772,6 +772,26 @@ curl http://localhost:3018/api/rockets/scan
 
 ---
 
-*Last Updated: Current Session*
-*Version: 2.1 - Real-time WebSocket with Smart Categorization*
+*Last Updated: 2025-09-16*
+*Version: 2.2 - Enhanced Momentum Calculation with Flexible Time Windows*
 *Repository: /mnt/d/Cursor Ideas/PreMarket_Stratedy/*
+
+## Change Log
+
+### Version 2.2 (2025-09-16)
+- Fixed momentum calculation returning 0.0% in WebSocket updates
+- Implemented progressive time window search with fallbacks
+- Added debug logging for momentum calculation issues
+- Enhanced documentation with technical details
+
+### Version 2.1
+- Real-time WebSocket implementation
+- Smart stock categorization system
+- Max price threshold for alerts
+- Flat stock alert prevention
+
+### Version 2.0
+- Complete system rewrite
+- Discord webhook integration
+- Admin configuration panel
+- Three-tier categorization engine
