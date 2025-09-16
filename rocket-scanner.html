@@ -1304,9 +1304,16 @@
         
         // Play alert sound
         function playAlertSound() {
-            const audio = new Audio('data:audio/wav;base64,UklGRmAFAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoFAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSl+zPDaizsIGGS57OScTgwNTKvm7blmFgU2jdXy0Hww');
-            audio.volume = 0.5;
-            audio.play();
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRmAFAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoFAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSl+zPDaizsIGGS57OScTgwNTKvm7blmFgU2jdXy0Hww');
+                audio.volume = 0.5;
+                audio.play().catch(e => {
+                    // Silently ignore autoplay errors
+                    console.log('Audio autoplay prevented by browser');
+                });
+            } catch (e) {
+                // Silently handle any audio errors
+            }
         }
         
         // Show news modal
