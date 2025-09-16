@@ -905,44 +905,84 @@
         
         // Update real-time prices for specific stocks
         function updateRealTimePrices(priceUpdates) {
+            let updatedCount = 0;
             for (const update of priceUpdates) {
                 // Update all tiles with this symbol
                 const tiles = document.querySelectorAll(`.rocket-tile[data-symbol="${update.symbol}"]`);
+                
+                if (tiles.length === 0) {
+                    // Tile doesn't exist yet, skip
+                    continue;
+                }
+                
                 tiles.forEach(tile => {
+                    updatedCount++;
+                    
                     // Update price
                     const priceElement = tile.querySelector('.rocket-price');
                     if (priceElement) {
+                        const oldPrice = priceElement.textContent;
                         priceElement.textContent = `$${update.price.toFixed(2)}`;
+                        
+                        // Add price direction indicator
+                        if (oldPrice !== priceElement.textContent) {
+                            priceElement.style.color = update.price > parseFloat(oldPrice.replace('$', '')) ? '#32ff32' : '#ff3232';
+                            setTimeout(() => {
+                                priceElement.style.color = '';
+                            }, 500);
+                        }
                     }
                     
                     // Update day change
-                    const dayChangeElement = tile.querySelector('.rocket-change');
+                    const dayChangeElement = tile.querySelector('.rocket-change, .price-change');
                     if (dayChangeElement) {
-                        dayChangeElement.textContent = `${update.changePercent >= 0 ? '+' : ''}${update.changePercent.toFixed(2)}%`;
-                        dayChangeElement.className = `rocket-change ${update.changePercent >= 0 ? 'positive' : 'negative'}`;
+                        const percentText = `${update.changePercent >= 0 ? '+' : ''}${update.changePercent.toFixed(1)}%`;
+                        // Only update the percentage text, not the entire element
+                        const textNode = Array.from(dayChangeElement.childNodes).find(node => node.nodeType === 3);
+                        if (textNode) {
+                            textNode.textContent = percentText;
+                        } else {
+                            // If no text node, update the first part of innerHTML
+                            const currentHTML = dayChangeElement.innerHTML;
+                            dayChangeElement.innerHTML = percentText + currentHTML.substring(currentHTML.indexOf('<') > -1 ? currentHTML.indexOf('<') : currentHTML.length);
+                        }
+                        dayChangeElement.classList.toggle('positive', update.changePercent >= 0);
+                        dayChangeElement.classList.toggle('negative', update.changePercent < 0);
                     }
                     
                     // Update 1m momentum
                     const momentum1mElement = tile.querySelector('.momentum-1m');
                     if (momentum1mElement && update.priceChange1m !== undefined) {
-                        momentum1mElement.textContent = `1m: ${update.priceChange1m >= 0 ? '+' : ''}${update.priceChange1m.toFixed(2)}%`;
-                        momentum1mElement.className = `momentum-1m ${update.priceChange1m >= 0 ? 'positive' : 'negative'}`;
+                        momentum1mElement.textContent = `1m: ${update.priceChange1m >= 0 ? '+' : ''}${update.priceChange1m.toFixed(1)}%`;
+                        momentum1mElement.classList.toggle('positive', update.priceChange1m >= 0);
+                        momentum1mElement.classList.toggle('negative', update.priceChange1m < 0);
                     }
                     
-                    // Update 5m momentum
+                    // Update 5m momentum (if exists as separate element)
                     const momentum5mElement = tile.querySelector('.momentum-5m');
                     if (momentum5mElement && update.priceChange5m !== undefined) {
-                        momentum5mElement.textContent = `5m: ${update.priceChange5m >= 0 ? '+' : ''}${update.priceChange5m.toFixed(2)}%`;
-                        momentum5mElement.className = `momentum-5m ${update.priceChange5m >= 0 ? 'positive' : 'negative'}`;
+                        momentum5mElement.textContent = `5m: ${update.priceChange5m >= 0 ? '+' : ''}${update.priceChange5m.toFixed(1)}%`;
+                        momentum5mElement.classList.toggle('positive', update.priceChange5m >= 0);
+                        momentum5mElement.classList.toggle('negative', update.priceChange5m < 0);
+                    }
+                    
+                    // Update volume if changed significantly
+                    const volumeElement = tile.querySelector('.rocket-volume');
+                    if (volumeElement && update.volume) {
+                        volumeElement.textContent = `${(update.volume / 1000000).toFixed(1)}M`;
                     }
                     
                     // Add a subtle animation to show the update
                     tile.style.transition = 'background-color 0.3s';
-                    tile.style.backgroundColor = update.priceChange1m > 0 ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)';
+                    tile.style.backgroundColor = update.priceChange1m > 0 ? 'rgba(0, 255, 0, 0.05)' : 'rgba(255, 0, 0, 0.05)';
                     setTimeout(() => {
                         tile.style.backgroundColor = '';
                     }, 300);
                 });
+            }
+            
+            if (updatedCount > 0) {
+                console.log(`✅ Updated ${updatedCount} tiles with real-time prices`);
             }
         }
         
