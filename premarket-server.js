@@ -1576,15 +1576,32 @@ app.get('/api/rockets/scan', async (req, res) => {
             // Check acceleration
             const accel = detectAcceleration(symbol);
             
+            // Check for ORB breakout during regular hours
+            let orbSignal = null;
+            if (marketSession.session === 'regular') {
+                orbSignal = checkORBreakout(symbol, price);
+            }
+            
             // Check for rocket conditions
-            // More lenient: high % move OR high volume spike OR both
+            // More lenient: high % move OR high volume spike OR ORB breakout
             const isRocket = 
                 (stock.changePercent > 20) || // >20% move alone is enough
                 (stock.changePercent > 10 && volume > 1000000) || // >10% with good volume
                 (stock.changePercent > 5 && accel && accel.volumeAcceleration > 10) || // moderate move with huge volume
-                (volume > 500000 && accel && accel.volumeAcceleration > 5); // volume spike
+                (volume > 500000 && accel && accel.volumeAcceleration > 5) || // volume spike
+                (orbSignal && orbSignal.type === 'BREAKOUT_UP'); // ORB breakout
             
             if (isRocket) {
+                // Send ORB alert if detected
+                if (orbSignal && !rocketCache.has(`${symbol}_ORB_${orbSignal.type}`)) {
+                    await sendORBAlert({
+                        symbol,
+                        price,
+                        orbSignal,
+                        volume
+                    });
+                    rocketCache.set(`${symbol}_ORB_${orbSignal.type}`, true);
+                }
                 // Try to get news
                 const news = await fetchLatestNews(symbol);
                 
