@@ -508,6 +508,23 @@
                     <span class="panel-title">Alert Thresholds</span>
                 </div>
 
+                <!-- Master Alert Toggle -->
+                <div class="setting-group" style="border-bottom: 2px solid rgba(255, 100, 50, 0.2); margin-bottom: 20px; padding-bottom: 15px;">
+                    <label class="setting-label" style="font-size: 16px; font-weight: 600;">
+                        🔔 Master Alert Control
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="alertsEnabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span id="alertStatusText" style="font-size: 14px; color: #32ff32;">Alerts Enabled</span>
+                    </div>
+                    <div style="color: #888; font-size: 12px; margin-top: 8px;">
+                        Turn off all Discord alerts temporarily without losing your settings
+                    </div>
+                </div>
+
                 <div class="threshold-grid">
                     <div class="threshold-item">
                         <div class="threshold-level">Level 1 - WATCH</div>
