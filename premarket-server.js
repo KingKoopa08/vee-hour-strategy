@@ -2300,6 +2300,9 @@ async function sendNewsAlert(newsItem) {
 
 // Send Discord alert with admin webhooks
 async function sendDiscordAlert(rocket, type = 'rocket') {
+    // Check if alerts are enabled
+    if (!adminSettings.alertsEnabled) return;
+    
     const webhook = type === 'news' ? adminSettings.webhooks.news : 
                    (rocket.level >= 3 && adminSettings.webhooks.urgent) ? 
                    adminSettings.webhooks.urgent : 
