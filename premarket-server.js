@@ -1285,33 +1285,36 @@ app.get('/api/admin/settings', (req, res) => {
 });
 
 // Admin API: Save webhooks
-app.post('/api/admin/webhooks', (req, res) => {
+app.post('/api/admin/webhooks', async (req, res) => {
     const { webhooks } = req.body;
     if (webhooks) {
         adminSettings.webhooks = { ...adminSettings.webhooks, ...webhooks };
-        res.json({ success: true });
+        await saveSettings();
+        res.json({ success: true, message: 'Webhooks saved successfully' });
     } else {
         res.status(400).json({ success: false, error: 'Invalid webhooks' });
     }
 });
 
 // Admin API: Save thresholds
-app.post('/api/admin/thresholds', (req, res) => {
+app.post('/api/admin/thresholds', async (req, res) => {
     const { thresholds } = req.body;
     if (thresholds) {
         adminSettings.thresholds = { ...adminSettings.thresholds, ...thresholds };
-        res.json({ success: true });
+        await saveSettings();
+        res.json({ success: true, message: 'Thresholds saved successfully' });
     } else {
         res.status(400).json({ success: false, error: 'Invalid thresholds' });
     }
 });
 
 // Admin API: Save general settings
-app.post('/api/admin/settings', (req, res) => {
+app.post('/api/admin/settings', async (req, res) => {
     const { settings } = req.body;
     if (settings) {
         Object.assign(adminSettings, settings);
-        res.json({ success: true });
+        await saveSettings();
+        res.json({ success: true, message: 'Settings saved successfully' });
     } else {
         res.status(400).json({ success: false, error: 'Invalid settings' });
     }
