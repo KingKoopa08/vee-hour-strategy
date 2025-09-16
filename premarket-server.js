@@ -1041,6 +1041,12 @@ const volumeHistory = new Map();
 const priceHistory = new Map();
 let rocketScanInterval = null;
 
+// Market open tracking
+const preMarketCloseData = new Map();
+const openingRanges = new Map();
+const gapAlertsSent = new Set();
+let marketOpenHandled = false;
+
 // Track 30-second price/volume changes
 function trackAcceleration(symbol, price, volume) {
     if (!volumeHistory.has(symbol)) {
@@ -1174,6 +1180,23 @@ function getMarketSession() {
     
     // Time-based sessions
     const time = hour * 100 + minute;
+    
+    // Check for market open transition (9:29-9:31 AM ET)
+    if (time >= 929 && time <= 931) {
+        if (!marketOpenHandled) {
+            handleMarketOpen();
+            marketOpenHandled = true;
+        }
+    } else if (time < 929 || time > 1000) {
+        // Reset flag after market has been open for a while
+        marketOpenHandled = false;
+        if (time < 400) {
+            // Reset for next day
+            preMarketCloseData.clear();
+            openingRanges.clear();
+            gapAlertsSent.clear();
+        }
+    }
     
     if (time >= 400 && time < 930) {
         return { session: 'premarket', description: 'Pre-Market (4:00 AM - 9:30 AM ET)' };
