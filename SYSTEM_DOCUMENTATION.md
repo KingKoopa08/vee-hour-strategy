@@ -569,6 +569,118 @@ docker logs --tail 100 -f premarket-strategy
 
 ## Technical Details
 
+### Momentum Tracking System
+
+The system maintains price history for accurate momentum calculation:
+
+#### Price History Management
+```javascript
+// Price history structure
+const priceHistory = new Map(); // symbol -> array of {price, timestamp, volume}
+
+// Adding price points (every 2 seconds via WebSocket)
+function addPriceHistory(symbol, price, volume) {
+    if (!priceHistory.has(symbol)) {
+        priceHistory.set(symbol, []);
+    }
+    const history = priceHistory.get(symbol);
+    
+    // Add new entry
+    history.unshift({ price, timestamp: Date.now(), volume });
+    
+    // Keep last 10 minutes of data (300 entries at 2-second intervals)
+    if (history.length > 300) {
+        history.pop();
+    }
+}
+```
+
+#### Momentum Calculation Algorithm
+
+1. **Data Collection**: Price snapshots every 2 seconds
+2. **Time Window Matching**: Progressive search strategy
+   - Primary window: 50-70s (1m), 280-320s (5m)
+   - Secondary window: 40-90s (1m), 240-360s (5m)
+   - Fallback: Find closest available entry
+
+3. **Percentage Calculation**:
+```javascript
+priceChange1m = ((currentPrice - oneMinAgoPrice) / oneMinAgoPrice) * 100;
+priceChange5m = ((currentPrice - fiveMinAgoPrice) / fiveMinAgoPrice) * 100;
+```
+
+#### Real-Time Update Flow
+
+1. **Server-Side Broadcasting** (every 2 seconds):
+   - Fetch current price snapshots
+   - Calculate momentum from price history
+   - Broadcast via WebSocket to all clients
+
+2. **Client-Side Reception**:
+   - Receive WebSocket updates
+   - Update DOM with price flash animation
+   - Preserve momentum values if not provided
+   - Trigger re-categorization if thresholds crossed
+
+3. **Full Rocket Scan** (every 30 seconds):
+   - Comprehensive market scan
+   - Fresh categorization with momentum data
+   - Discord alerts for new movers
+
+### Stock Categorization Engine
+
+#### Three-Tier Classification System
+
+1. **🚀 Momentum Leaders**
+   - Positive 1-minute momentum (>0.1%)
+   - Not declining over 5 minutes
+   - OR: Day gain >50% (immediate classification)
+   - OR: Day gain >25% with >5M volume
+
+2. **⏸️ Consolidating**
+   - Minimal price movement (<0.1% per minute)
+   - Sideways action indicating potential breakout
+   - Default category for uncertain movements
+
+3. **📉 Pullbacks**
+   - Negative 1-minute momentum (<-0.1%)
+   - Stocks cooling off from recent highs
+   - Potential reversal candidates
+
+#### Smart Categorization Logic
+
+```javascript
+// Categorization with momentum data
+if (hasMomentumData) {
+    if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
+        // Rising with positive momentum
+        category = 'momentumLeaders';
+    } else if (priceChange1m < -0.1) {
+        // Falling momentum
+        category = 'pullbacks';
+    } else {
+        // Sideways movement
+        category = 'consolidating';
+    }
+}
+// Categorization without momentum data (initial load)
+else {
+    if (dayChange >= 50) {
+        // Extreme movers always leaders
+        category = 'momentumLeaders';
+    } else if (dayChange >= 25 && volume > 5000000) {
+        // High volume breakouts
+        category = 'momentumLeaders';
+    } else if (dayChange < -5) {
+        // Significant decline
+        category = 'pullbacks';
+    } else {
+        // Default to consolidating
+        category = 'consolidating';
+    }
+}
+```
+
 ### File Structure
 ```
 /PreMarket_Strategy/
@@ -581,6 +693,7 @@ docker logs --tail 100 -f premarket-strategy
 ├── deploy.sh                 # Deploy script
 ├── start-local.sh            # Dev startup
 ├── admin-settings.json       # Settings file
+├── screenshots/              # Documentation images
 ├── .env.local               # Dev environment
 ├── .env.production          # Prod environment
 └── SYSTEM_DOCUMENTATION.md   # This file
