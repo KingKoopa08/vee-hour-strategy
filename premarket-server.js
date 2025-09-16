@@ -1713,19 +1713,29 @@ app.get('/api/rockets/scan', async (req, res) => {
                 const rocketKey = `${symbol}_${Math.floor(stock.changePercent)}_${marketSession.session}`;
                 if (!sentRockets.has(rocketKey) && adminSettings.webhooks.rocket) {
                     // STRICT CRITERIA to reduce noise:
-                    // - Must NOT be in downtrend (unless exceptional)
-                    // - Must meet one of these high-quality signals:
+                    // Check 5-minute trend specifically
+                    const has5MinDown = momentum && momentum.priceChange5m < -1; // Down more than 1% in 5 min
+                    const has2MinDown = momentum && momentum.priceChange2m < -0.5; // Down more than 0.5% in 2 min
+                    const isCurrentlyFalling = has5MinDown || has2MinDown || isDowntrending;
+                    
+                    // Log for debugging
+                    if (stock.changePercent >= 15) {
+                        console.log(`📊 ${symbol}: Day +${stock.changePercent.toFixed(1)}% | 5m: ${momentum?.priceChange5m?.toFixed(2) || 'N/A'}% | 2m: ${momentum?.priceChange2m?.toFixed(2) || 'N/A'}% | Falling: ${isCurrentlyFalling}`);
+                    }
+                    
+                    // Must meet high quality criteria AND not be falling
                     const isHighQualityRocket = 
-                        (!isDowntrending && (
+                        (!isCurrentlyFalling && (
                             rocketData.level >= 3 || // Only URGENT or JACKPOT levels
-                            stock.changePercent >= 30 || // Big gainers only
-                            (stock.changePercent >= 20 && volume > 10000000) || // 20%+ with huge volume
-                            (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent >= 10) || // ORB with gains
-                            (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10) // Big gap ups
+                            stock.changePercent >= 35 || // Bigger threshold for alerts
+                            (stock.changePercent >= 25 && volume > 10000000) || // 25%+ with huge volume
+                            (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent >= 15) || // ORB with good gains
+                            (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10 && !has5MinDown) // Big gap ups that aren't falling
                         )) ||
-                        (isDowntrending && stock.changePercent >= 50); // Exception for huge movers despite downtrend
+                        (!isCurrentlyFalling && stock.changePercent >= 50); // Exception for huge movers
                     
                     if (isHighQualityRocket) {
+                        console.log(`✅ Alert qualified: ${symbol} +${stock.changePercent.toFixed(1)}%`);
                         await sendDiscordAlert(rocketData, 'rocket');
                         sentRockets.add(rocketKey);
                         
