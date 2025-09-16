@@ -1070,67 +1070,111 @@ function trackAcceleration(symbol, price, volume) {
 function calculateMomentum(symbol) {
     const priceHist = priceHistory.get(symbol) || [];
     
-    if (priceHist.length < 2) return { direction: 'flat', strength: 0, trend: '→' };
+    if (priceHist.length < 2) return { direction: 'unknown', strength: 0, trend: '', is5MinDown: false };
     
     const now = Date.now();
-    const oneMinAgo = priceHist.find(p => p.time <= now - 60000);
-    const twoMinAgo = priceHist.find(p => p.time <= now - 120000);
     const currentPrice = priceHist[priceHist.length - 1];
     
-    if (!currentPrice) return { direction: 'flat', strength: 0, trend: '→' };
+    if (!currentPrice) return { direction: 'unknown', strength: 0, trend: '', is5MinDown: false };
+    
+    // Get price points at different intervals
+    const oneMinAgo = priceHist.find(p => p.time <= now - 60000);
+    const twoMinAgo = priceHist.find(p => p.time <= now - 120000);
+    const threeMinAgo = priceHist.find(p => p.time <= now - 180000);
+    const fiveMinAgo = priceHist.find(p => p.time <= now - 300000);
     
     let momentum = {
-        direction: 'flat',
+        direction: 'unknown',
         strength: 0,
-        trend: '→',
+        trend: '',
         priceChange1m: 0,
-        priceChange2m: 0
+        priceChange2m: 0,
+        priceChange5m: 0,
+        is5MinDown: false,
+        isDowntrend: false
     };
     
-    // Calculate 1-minute momentum
+    // Calculate 5-minute change (MOST IMPORTANT FOR TREND)
+    if (fiveMinAgo) {
+        momentum.priceChange5m = ((currentPrice.value - fiveMinAgo.value) / fiveMinAgo.value) * 100;
+        momentum.is5MinDown = momentum.priceChange5m < -0.1; // Down over 5 minutes
+    }
+    
+    // Calculate shorter timeframe changes
     if (oneMinAgo) {
         momentum.priceChange1m = ((currentPrice.value - oneMinAgo.value) / oneMinAgo.value) * 100;
     }
     
-    // Calculate 2-minute momentum
     if (twoMinAgo) {
         momentum.priceChange2m = ((currentPrice.value - twoMinAgo.value) / twoMinAgo.value) * 100;
     }
     
-    // Determine direction and trend
-    if (momentum.priceChange1m > 0.5) {
+    // Use 5-minute trend as primary indicator, fallback to shorter timeframes if not available
+    let primaryTrend = 0;
+    let trendPeriod = '';
+    
+    if (fiveMinAgo) {
+        primaryTrend = momentum.priceChange5m;
+        trendPeriod = '5m';
+    } else if (threeMinAgo) {
+        const change3m = ((currentPrice.value - threeMinAgo.value) / threeMinAgo.value) * 100;
+        primaryTrend = change3m;
+        trendPeriod = '3m';
+    } else if (twoMinAgo) {
+        primaryTrend = momentum.priceChange2m;
+        trendPeriod = '2m';
+    } else if (oneMinAgo) {
+        primaryTrend = momentum.priceChange1m;
+        trendPeriod = '1m';
+    }
+    
+    // Determine direction and visual trend based on 5-minute (or best available) data
+    if (primaryTrend > 0.1) {
         momentum.direction = 'up';
-        momentum.strength = momentum.priceChange1m;
-        if (momentum.priceChange1m > 2) {
-            momentum.trend = '🚀'; // Rocketing up
-        } else if (momentum.priceChange1m > 1) {
+        momentum.strength = primaryTrend;
+        momentum.isDowntrend = false;
+        
+        if (primaryTrend > 5) {
+            momentum.trend = '🚀'; // Massive move up
+        } else if (primaryTrend > 2) {
             momentum.trend = '⬆️'; // Strong up
-        } else {
+        } else if (primaryTrend > 0.5) {
             momentum.trend = '↗️'; // Mild up
-        }
-    } else if (momentum.priceChange1m < -0.5) {
-        momentum.direction = 'down';
-        momentum.strength = Math.abs(momentum.priceChange1m);
-        if (momentum.priceChange1m < -2) {
-            momentum.trend = '📉'; // Crashing
-        } else if (momentum.priceChange1m < -1) {
-            momentum.trend = '⬇️'; // Strong down
         } else {
+            momentum.trend = '→'; // Flat-ish up
+        }
+    } else if (primaryTrend < -0.1) {
+        momentum.direction = 'down';
+        momentum.strength = Math.abs(primaryTrend);
+        momentum.isDowntrend = true;
+        
+        if (primaryTrend < -5) {
+            momentum.trend = '💀'; // Massive drop
+        } else if (primaryTrend < -2) {
+            momentum.trend = '📉'; // Strong down
+        } else if (primaryTrend < -0.5) {
             momentum.trend = '↘️'; // Mild down
+        } else {
+            momentum.trend = '→'; // Flat-ish down
         }
     } else {
         momentum.direction = 'flat';
         momentum.trend = '→';
         momentum.strength = 0;
+        momentum.isDowntrend = false;
     }
     
-    // Check if accelerating (1m change > 2m change)
+    // Add period indicator if we don't have full 5-minute data
+    if (trendPeriod && trendPeriod !== '5m') {
+        momentum.trendPeriod = trendPeriod;
+    }
+    
+    // Check if accelerating (recent move stronger than earlier)
     if (oneMinAgo && twoMinAgo) {
-        const accel1m = currentPrice.value - oneMinAgo.value;
-        const accel2m = oneMinAgo.value - (twoMinAgo ? twoMinAgo.value : oneMinAgo.value);
-        if (accel1m > accel2m * 1.5) {
-            momentum.accelerating = true;
-        }
+        const recentMove = momentum.priceChange1m;
+        const earlierMove = ((oneMinAgo.value - twoMinAgo.value) / twoMinAgo.value) * 100;
+        // Only mark as accelerating if moving UP faster
+        momentum.accelerating = recentMove > earlierMove && recentMove > 0.5;
     }
     
     return momentum;
