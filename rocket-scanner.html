@@ -977,8 +977,9 @@
                 <div class="alert-header">
                     <div class="stock-symbol">
                         ${rocket.symbol}
-                        <span style="font-size: 20px; color: ${momentumColor}; margin-left: 5px;">${momentumIndicator}</span>
+                        ${momentumIndicator ? `<span style="font-size: 20px; color: ${momentumColor}; margin-left: 5px;">${momentumIndicator}</span>` : ''}
                         ${isAccelerating}
+                        ${momentumWarning}
                         ${newsIndicator}
                     </div>
                     <div class="level-badge">${levelEmoji}</div>
