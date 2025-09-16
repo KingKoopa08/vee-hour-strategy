@@ -27,5 +27,13 @@
   "premarketEnabled": true,
   "afterhoursEnabled": true,
   "newsEnabled": true,
-  "haltEnabled": true
+  "haltEnabled": true,
+  "alertSettings": {
+    "minChangePercent": 30,
+    "minLevel": 3,
+    "minVolumeForAlert": 10000000,
+    "excludeDowntrending": true,
+    "orbMinGain": 10,
+    "gapMinPercent": 10
+  }
 }
