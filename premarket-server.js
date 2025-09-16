@@ -1522,28 +1522,54 @@ const sentRockets = new Set();
 
 // Start news scanner
 function startNewsScanner() {
-    // Check for breaking news every 2 minutes
-    setInterval(async () => {
-        if (!adminSettings.webhooks.news) return;
+    // Initial scan on startup
+    scanForNews();
+    
+    // Check for breaking news every 60 seconds
+    setInterval(scanForNews, 60000); // Every 1 minute
+}
+
+async function scanForNews() {
+    if (!adminSettings.webhooks.news) return;
+    
+    try {
+        // Get more news items and include market-moving keywords
+        const polygonUrl = `${POLYGON_BASE_URL}/v2/reference/news?limit=25&apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(polygonUrl);
         
-        try {
-            const polygonUrl = `${POLYGON_BASE_URL}/v2/reference/news?limit=10&apiKey=${POLYGON_API_KEY}`;
-            const response = await axios.get(polygonUrl);
+        if (response.data && response.data.results) {
+            let newsCount = 0;
             
-            if (response.data && response.data.results) {
-                for (const newsItem of response.data.results) {
-                    // Skip if already sent
-                    if (sentNewsIds.has(newsItem.id)) continue;
+            for (const newsItem of response.data.results) {
+                // Skip if already sent
+                if (sentNewsIds.has(newsItem.id)) continue;
+                
+                // Check if news is recent (last 2 hours for more coverage)
+                const newsTime = new Date(newsItem.published_utc);
+                const now = new Date();
+                const ageMinutes = (now - newsTime) / 60000;
+                
+                // Send news from last 2 hours
+                if (ageMinutes <= 120) {
+                    // Check for important keywords that indicate market-moving news
+                    const title = (newsItem.title || '').toLowerCase();
+                    const isImportant = 
+                        title.includes('fda') ||
+                        title.includes('earnings') ||
+                        title.includes('merger') ||
+                        title.includes('acquisition') ||
+                        title.includes('bankrupt') ||
+                        title.includes('halted') ||
+                        title.includes('investigation') ||
+                        title.includes('approval') ||
+                        title.includes('lawsuit') ||
+                        title.includes('recall');
                     
-                    // Check if news is recent (last 30 minutes)
-                    const newsTime = new Date(newsItem.published_utc);
-                    const now = new Date();
-                    const ageMinutes = (now - newsTime) / 60000;
-                    
-                    if (ageMinutes <= 30) {
-                        // Send to Discord
+                    // Send all news from last 30 min, or important news from last 2 hours
+                    if (ageMinutes <= 30 || isImportant) {
                         await sendNewsAlert(newsItem);
                         sentNewsIds.add(newsItem.id);
+                        newsCount++;
                         
                         // Keep set size manageable
                         if (sentNewsIds.size > 1000) {
@@ -1554,10 +1580,14 @@ function startNewsScanner() {
                     }
                 }
             }
-        } catch (error) {
-            console.error('News scan error:', error.message);
+            
+            if (newsCount > 0) {
+                console.log(`📰 Sent ${newsCount} news alerts`);
+            }
         }
-    }, 120000); // Every 2 minutes
+    } catch (error) {
+        console.error('News scan error:', error.message);
+    }
 }
 
 // Start rocket scanner
