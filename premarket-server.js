@@ -1766,15 +1766,45 @@ app.get('/api/rockets/scan', async (req, res) => {
             }
         }
         
-        // Sort by level and change percent
-        rockets.sort((a, b) => {
-            if (a.level !== b.level) return b.level - a.level;
-            return b.changePercent - a.changePercent;
-        });
+        // Categorize rockets based on momentum trend
+        const momentumLeaders = []; // Rising stocks (formerly "rising")
+        const consolidating = [];   // Flat/sideways movement
+        const pullbacks = [];       // Declining stocks
+        
+        for (const rocket of rockets) {
+            // Categorize based on 1-minute momentum (most recent trend)
+            const priceChange1m = rocket.momentum?.priceChange1m || 0;
+            
+            if (priceChange1m > 0.1) {
+                // Rising: positive momentum in last minute
+                momentumLeaders.push(rocket);
+            } else if (priceChange1m < -0.1) {
+                // Pullback: negative momentum in last minute
+                pullbacks.push(rocket);
+            } else {
+                // Consolidating: flat movement
+                consolidating.push(rocket);
+            }
+        }
+        
+        // Sort each category by 1-minute percentage change (highest to lowest)
+        const sortBy1mChange = (a, b) => {
+            const aChange = a.momentum?.priceChange1m || 0;
+            const bChange = b.momentum?.priceChange1m || 0;
+            return bChange - aChange; // Descending order
+        };
+        
+        momentumLeaders.sort(sortBy1mChange);
+        consolidating.sort(sortBy1mChange);
+        pullbacks.sort(sortBy1mChange);
         
         res.json({ 
             success: true, 
-            rockets: rockets,
+            rockets: {
+                momentumLeaders: momentumLeaders,
+                consolidating: consolidating,
+                pullbacks: pullbacks
+            },
             marketSession: marketSession,
             scanTime: new Date().toISOString()
         });
