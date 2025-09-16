@@ -2119,18 +2119,22 @@ async function scanAndAlertRockets() {
                 
                 // Alert for HIGH QUALITY rockets not already sent
                 if (!sentRockets.has(rocketKey)) {
-                    // STRICT CRITERIA - same as main scan to reduce noise
+                    // STRICT CRITERIA - check actual price movement
+                    const has5MinDown = rocket.momentum && rocket.momentum.priceChange5m < -1; // Down >1% in 5 min
+                    const has2MinDown = rocket.momentum && rocket.momentum.priceChange2m < -0.5; // Down >0.5% in 2 min
                     const isDowntrending = rocket.momentum && (rocket.momentum.isDowntrend || rocket.momentum.is5MinDown);
+                    const isCurrentlyFalling = has5MinDown || has2MinDown || isDowntrending;
                     
+                    // Must be actually rising and meet quality criteria
                     const isHighQualityRocket = 
-                        (!isDowntrending && (
+                        (!isCurrentlyFalling && (
                             rocket.level >= 3 || // Only URGENT or JACKPOT levels
-                            rocket.changePercent >= 30 || // Big gainers only
-                            (rocket.changePercent >= 20 && rocket.volume > 10000000) || // 20%+ with huge volume
-                            (rocket.orbSignal && rocket.orbSignal.type === 'BREAKOUT_UP' && rocket.changePercent >= 10) || // ORB with gains
-                            (rocket.gap && rocket.gap.type === 'GAP_UP' && rocket.gap.percent >= 10) // Big gap ups
+                            rocket.changePercent >= 35 || // Higher threshold
+                            (rocket.changePercent >= 25 && rocket.volume > 10000000) || // 25%+ with huge volume
+                            (rocket.orbSignal && rocket.orbSignal.type === 'BREAKOUT_UP' && rocket.changePercent >= 15) || // ORB with good gains
+                            (rocket.gap && rocket.gap.type === 'GAP_UP' && rocket.gap.percent >= 10 && !has5MinDown) // Big gap ups not falling
                         )) ||
-                        (isDowntrending && rocket.changePercent >= 50); // Exception for huge movers
+                        (!isCurrentlyFalling && rocket.changePercent >= 50); // Exception for huge movers
                     
                     if (isHighQualityRocket) {
                         await sendDiscordAlert(rocket, 'rocket');
