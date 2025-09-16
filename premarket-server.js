@@ -1609,6 +1609,23 @@ app.get('/api/rockets/scan', async (req, res) => {
                 const momentum = calculateMomentum(symbol);
                 const hasValidMomentum = momentum && priceHistory.get(symbol)?.length > 5;
                 
+                // Check if this is a gap stock
+                const pmData = preMarketCloseData.get(symbol);
+                let gapInfo = null;
+                if (pmData && marketSession.session === 'regular') {
+                    const gapPercent = ((price - pmData.price) / pmData.price) * 100;
+                    if (Math.abs(gapPercent) > 2) {
+                        gapInfo = {
+                            type: gapPercent > 0 ? 'GAP_UP' : 'GAP_DOWN',
+                            percent: gapPercent,
+                            preMarketClose: pmData.price
+                        };
+                    }
+                }
+                
+                // Get opening range info
+                const orRange = openingRanges.get(symbol);
+                
                 rockets.push({
                     symbol: symbol,
                     price: price,
@@ -1629,6 +1646,9 @@ app.get('/api/rockets/scan', async (req, res) => {
                     halted: stock.halted || false,
                     level: getRocketLevel(stock, accel),
                     session: stock.session || marketSession.session,
+                    gap: gapInfo,
+                    orbSignal: orbSignal,
+                    openingRange: orRange,
                     timestamp: new Date().toISOString()
                 });
             }
