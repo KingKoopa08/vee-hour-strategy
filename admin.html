@@ -602,6 +602,21 @@
                     </div>
                 </div>
 
+                <!-- Price Filter Section -->
+                <div class="setting-group" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255, 100, 50, 0.2);">
+                    <label class="setting-label" style="color: #ff6432;">💰 Max Stock Price for Alerts</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: #888; font-size: 16px;">$</span>
+                        <input type="number" class="setting-input" id="maxPriceThreshold" 
+                               placeholder="100" value="100" min="0" step="10"
+                               style="max-width: 150px;">
+                        <span style="color: #888; font-size: 13px;">Stocks above this price won't trigger alerts</span>
+                    </div>
+                    <div style="color: #888; font-size: 12px; margin-top: 8px;">
+                        Set to 0 to disable price filtering (alert for all prices)
+                    </div>
+                </div>
+
                 <button class="save-button" onclick="saveThresholds()">💾 Save Thresholds</button>
             </div>
 
