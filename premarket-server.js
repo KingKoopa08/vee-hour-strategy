@@ -2324,6 +2324,14 @@ async function sendDiscordAlert(rocket, type = 'rocket') {
     // Check if alerts are enabled
     if (!adminSettings.alertsEnabled) return;
     
+    // Check max price threshold (only for rocket alerts, not news)
+    if (type === 'rocket' && adminSettings.maxPriceThreshold > 0) {
+        if (rocket.price > adminSettings.maxPriceThreshold) {
+            console.log(`⚠️ Skipping alert for ${rocket.symbol}: Price $${rocket.price.toFixed(2)} exceeds threshold $${adminSettings.maxPriceThreshold}`);
+            return;
+        }
+    }
+    
     const webhook = type === 'news' ? adminSettings.webhooks.news : 
                    (rocket.level >= 3 && adminSettings.webhooks.urgent) ? 
                    adminSettings.webhooks.urgent : 
