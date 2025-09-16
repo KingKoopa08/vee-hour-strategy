@@ -1850,7 +1850,10 @@ app.get('/api/rockets/scan', async (req, res) => {
         [...momentumLeaders, ...consolidating, ...pullbacks].forEach(rocket => {
             activeRockets.add(rocket.symbol);
         });
-        console.log(`🎯 Tracking ${activeRockets.size} active rockets for real-time updates`);
+        
+        // Log categorization results
+        const hasAnyMomentum = rockets.some(r => r.momentum?.priceChange1m !== undefined && Math.abs(r.momentum.priceChange1m) > 0.01);
+        console.log(`🎯 Categorized ${activeRockets.size} rockets: Leaders=${momentumLeaders.length}, Consolidating=${consolidating.length}, Pullbacks=${pullbacks.length} | Has momentum data: ${hasAnyMomentum}`);
         
         // Broadcast to all WebSocket clients
         broadcast({
