@@ -5,6 +5,12 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs').promises;
 
+// Load environment variables
+const dotenv = require('dotenv');
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local';
+dotenv.config({ path: envFile });
+console.log(`🔧 Loading environment: ${process.env.NODE_ENV || 'development'} from ${envFile}`);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
