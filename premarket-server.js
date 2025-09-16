@@ -1709,14 +1709,23 @@ app.get('/api/rockets/scan', async (req, res) => {
                 
                 rockets.push(rocketData);
                 
-                // Send Discord alert for significant rockets (not already sent)
+                // Send Discord alert for HIGH QUALITY rockets only (not already sent)
                 const rocketKey = `${symbol}_${Math.floor(stock.changePercent)}_${marketSession.session}`;
                 if (!sentRockets.has(rocketKey) && adminSettings.webhooks.rocket) {
-                    // Alert for level 2+ rockets or any rocket with >15% gain or high volume
-                    if (rocketData.level >= 2 || 
-                        stock.changePercent >= 15 || 
-                        (volume > 5000000 && stock.changePercent > 5)) {
-                        
+                    // STRICT CRITERIA to reduce noise:
+                    // - Must NOT be in downtrend (unless exceptional)
+                    // - Must meet one of these high-quality signals:
+                    const isHighQualityRocket = 
+                        (!isDowntrending && (
+                            rocketData.level >= 3 || // Only URGENT or JACKPOT levels
+                            stock.changePercent >= 30 || // Big gainers only
+                            (stock.changePercent >= 20 && volume > 10000000) || // 20%+ with huge volume
+                            (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent >= 10) || // ORB with gains
+                            (gapInfo && gapInfo.type === 'GAP_UP' && gapInfo.percent >= 10) // Big gap ups
+                        )) ||
+                        (isDowntrending && stock.changePercent >= 50); // Exception for huge movers despite downtrend
+                    
+                    if (isHighQualityRocket) {
                         await sendDiscordAlert(rocketData, 'rocket');
                         sentRockets.add(rocketKey);
                         
