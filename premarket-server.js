@@ -1060,6 +1060,76 @@ function trackAcceleration(symbol, price, volume) {
     priceHistory.set(symbol, priceHist.filter(p => p.time > cutoff));
 }
 
+// Calculate momentum (direction over last few minutes)
+function calculateMomentum(symbol) {
+    const priceHist = priceHistory.get(symbol) || [];
+    
+    if (priceHist.length < 2) return { direction: 'flat', strength: 0, trend: '→' };
+    
+    const now = Date.now();
+    const oneMinAgo = priceHist.find(p => p.time <= now - 60000);
+    const twoMinAgo = priceHist.find(p => p.time <= now - 120000);
+    const currentPrice = priceHist[priceHist.length - 1];
+    
+    if (!currentPrice) return { direction: 'flat', strength: 0, trend: '→' };
+    
+    let momentum = {
+        direction: 'flat',
+        strength: 0,
+        trend: '→',
+        priceChange1m: 0,
+        priceChange2m: 0
+    };
+    
+    // Calculate 1-minute momentum
+    if (oneMinAgo) {
+        momentum.priceChange1m = ((currentPrice.value - oneMinAgo.value) / oneMinAgo.value) * 100;
+    }
+    
+    // Calculate 2-minute momentum
+    if (twoMinAgo) {
+        momentum.priceChange2m = ((currentPrice.value - twoMinAgo.value) / twoMinAgo.value) * 100;
+    }
+    
+    // Determine direction and trend
+    if (momentum.priceChange1m > 0.5) {
+        momentum.direction = 'up';
+        momentum.strength = momentum.priceChange1m;
+        if (momentum.priceChange1m > 2) {
+            momentum.trend = '🚀'; // Rocketing up
+        } else if (momentum.priceChange1m > 1) {
+            momentum.trend = '⬆️'; // Strong up
+        } else {
+            momentum.trend = '↗️'; // Mild up
+        }
+    } else if (momentum.priceChange1m < -0.5) {
+        momentum.direction = 'down';
+        momentum.strength = Math.abs(momentum.priceChange1m);
+        if (momentum.priceChange1m < -2) {
+            momentum.trend = '📉'; // Crashing
+        } else if (momentum.priceChange1m < -1) {
+            momentum.trend = '⬇️'; // Strong down
+        } else {
+            momentum.trend = '↘️'; // Mild down
+        }
+    } else {
+        momentum.direction = 'flat';
+        momentum.trend = '→';
+        momentum.strength = 0;
+    }
+    
+    // Check if accelerating (1m change > 2m change)
+    if (oneMinAgo && twoMinAgo) {
+        const accel1m = currentPrice.value - oneMinAgo.value;
+        const accel2m = oneMinAgo.value - (twoMinAgo ? twoMinAgo.value : oneMinAgo.value);
+        if (accel1m > accel2m * 1.5) {
+            momentum.accelerating = true;
+        }
+    }
+    
+    return momentum;
+}
+
 // Detect acceleration
 function detectAcceleration(symbol) {
     const volHistory = volumeHistory.get(symbol) || [];
