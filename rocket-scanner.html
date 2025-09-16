@@ -960,11 +960,16 @@
                 </span>
             ` : '';
             
-            // Get momentum indicator
-            const momentumIndicator = rocket.trend || '→';
+            // Get momentum indicator (only show if we have data)
+            const momentumIndicator = rocket.trend ? rocket.trend : '';
             const momentumColor = rocket.direction === 'up' ? '#32ff32' : 
-                                 rocket.direction === 'down' ? '#ff3232' : '#888';
+                                 rocket.direction === 'down' ? '#ff3232' : 
+                                 rocket.direction === 'unknown' ? '#666' : '#888';
             const isAccelerating = rocket.accelerating ? '⚡' : '';
+            
+            // Show warning if momentum is unknown but stock shows as rising
+            const momentumWarning = (!rocket.trend && rocket.changePercent > 0) ? 
+                '<span style="font-size: 10px; color: #888; margin-left: 5px;">(no history)</span>' : '';
             
             const card = document.createElement('div');
             card.className = `alert-card ${levelClass}`;
