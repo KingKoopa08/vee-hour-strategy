@@ -12,8 +12,8 @@ RUN npm ci --only=production --legacy-peer-deps
 # Copy all application files
 COPY . .
 
-# Expose ports for API and WebSocket
-EXPOSE 3018 3006 3007
+# Expose port for API and WebSocket (WebSocket uses /ws path on same port in production)
+EXPOSE 3018
 
 # Set environment variables
 ENV NODE_ENV=production
