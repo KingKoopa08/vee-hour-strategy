@@ -2263,6 +2263,8 @@ async function scanAndAlertRockets() {
 
 // Send news alert to Discord
 async function sendNewsAlert(newsItem) {
+    // Check if alerts are enabled
+    if (!adminSettings.alertsEnabled) return;
     if (!adminSettings.webhooks.news) return;
     
     try {
