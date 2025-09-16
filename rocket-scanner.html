@@ -1247,14 +1247,17 @@
             ` : '';
             
             const card = document.createElement('div');
-            card.className = `alert-card ${levelClass}`;
+            card.className = `alert-card rocket-tile ${levelClass}`;
+            card.setAttribute('data-symbol', rocket.symbol);
             card.innerHTML = `
                 <div class="alert-header">
                     <div class="stock-symbol">
                         ${rocket.symbol}
                         ${momentumIndicator ? `<span style="font-size: 20px; color: ${momentumColor}; margin-left: 5px;">${momentumIndicator}</span>` : ''}
                         ${isAccelerating}
-                        ${trend5min}
+                        ${trend5min ? `<span class="momentum-5m ${rocket.momentum.priceChange5m >= 0 ? 'positive' : 'negative'}" style="font-size: 11px; color: #888; margin-left: 8px; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">
+                            5m: ${rocket.momentum.priceChange5m >= 0 ? '+' : ''}${rocket.momentum.priceChange5m.toFixed(1)}%
+                        </span>` : ''}
                         ${momentumWarning}
                         ${newsIndicator}
                         ${gapIndicator}
@@ -1262,10 +1265,10 @@
                     </div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
-                <div class="price-change ${changePercent > 0 ? 'positive' : 'negative'}">
+                <div class="price-change rocket-change ${changePercent > 0 ? 'positive' : 'negative'}">
                     ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%
                     ${rocket.momentum && rocket.momentum.priceChange1m !== undefined && rocket.momentum.priceChange1m !== 0 ? 
-                        `<span style="font-size: 12px; color: ${rocket.momentum.priceChange1m > 0 ? '#32ff32' : '#ff3232'}; margin-left: 10px; padding: 2px 6px; background: rgba(0,0,0,0.3); border-radius: 3px; font-weight: 500;">
+                        `<span class="momentum-1m ${rocket.momentum.priceChange1m > 0 ? 'positive' : 'negative'}" style="font-size: 12px; color: ${rocket.momentum.priceChange1m > 0 ? '#32ff32' : '#ff3232'}; margin-left: 10px; padding: 2px 6px; background: rgba(0,0,0,0.3); border-radius: 3px; font-weight: 500;">
                             1m: ${rocket.momentum.priceChange1m > 0 ? '+' : ''}${rocket.momentum.priceChange1m.toFixed(1)}%
                         </span>` 
                         : ''}
@@ -1273,11 +1276,11 @@
                 <div class="alert-stats">
                     <div class="stat">
                         <span class="stat-label">Price</span>
-                        <span>$${rocket.price.toFixed(2)}</span>
+                        <span class="rocket-price">$${rocket.price.toFixed(2)}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Volume</span>
-                        <span>${(rocket.volume / 1000000).toFixed(1)}M</span>
+                        <span class="rocket-volume">${(rocket.volume / 1000000).toFixed(1)}M</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">VWAP</span>

@@ -28,6 +28,7 @@
   "afterhoursEnabled": true,
   "newsEnabled": true,
   "haltEnabled": true,
+  "alertsEnabled": false,
   "alertSettings": {
     "minChangePercent": 30,
     "minLevel": 3,
