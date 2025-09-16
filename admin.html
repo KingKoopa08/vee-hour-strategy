@@ -861,7 +861,7 @@
                 const response = await fetch(`${API_URL}/api/admin/thresholds`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ thresholds })
+                    body: JSON.stringify({ thresholds, alertsEnabled })
                 });
                 
                 const result = await response.json();
