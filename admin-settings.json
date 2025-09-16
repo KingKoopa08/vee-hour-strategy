@@ -22,7 +22,7 @@
       "volume": 2500000
     }
   },
-  "scanInterval": 60,
+  "scanInterval": 20,
   "volumeMultiplier": 10,
   "premarketEnabled": true,
   "afterhoursEnabled": true,
