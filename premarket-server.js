@@ -1776,17 +1776,33 @@ app.get('/api/rockets/scan', async (req, res) => {
         
         for (const rocket of rockets) {
             // Categorize based on 1-minute momentum (most recent trend)
-            const priceChange1m = rocket.momentum?.priceChange1m || 0;
+            const priceChange1m = rocket.momentum?.priceChange1m;
             
-            if (priceChange1m > 0.1) {
-                // Rising: positive momentum in last minute
-                momentumLeaders.push(rocket);
-            } else if (priceChange1m < -0.1) {
-                // Pullback: negative momentum in last minute
-                pullbacks.push(rocket);
+            // If we have valid 1-minute momentum data, use it
+            if (priceChange1m !== undefined && priceChange1m !== null && priceChange1m !== 0) {
+                if (priceChange1m > 0.1) {
+                    // Rising: positive momentum in last minute
+                    momentumLeaders.push(rocket);
+                } else if (priceChange1m < -0.1) {
+                    // Pullback: negative momentum in last minute
+                    pullbacks.push(rocket);
+                } else {
+                    // Consolidating: flat movement
+                    consolidating.push(rocket);
+                }
             } else {
-                // Consolidating: flat movement
-                consolidating.push(rocket);
+                // Fallback: use day change percentage when momentum data is not available
+                const dayChange = rocket.changePercent || 0;
+                if (dayChange > 20) {
+                    // Big gainers likely have momentum
+                    momentumLeaders.push(rocket);
+                } else if (dayChange < -5) {
+                    // Stocks down for the day
+                    pullbacks.push(rocket);
+                } else {
+                    // Moderate moves or flat
+                    consolidating.push(rocket);
+                }
             }
         }
         
