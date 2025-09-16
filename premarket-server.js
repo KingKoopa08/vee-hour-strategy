@@ -2244,9 +2244,12 @@ async function scanAndAlertRockets() {
                     const isDowntrending = rocket.momentum && (rocket.momentum.isDowntrend || rocket.momentum.is5MinDown);
                     const isCurrentlyFalling = has5MinDown || has2MinDown || isDowntrending;
                     
-                    // Must be actually rising and meet quality criteria
+                    // Require minimum day change to prevent flat stock alerts
+                    const hasMinimumDayChange = rocket.changePercent >= 10;
+                    
+                    // Must be actually moving (not flat) and meet quality criteria
                     const isHighQualityRocket = 
-                        (!isCurrentlyFalling && (
+                        (hasMinimumDayChange && !isCurrentlyFalling && (
                             rocket.level >= 3 || // Only URGENT or JACKPOT levels
                             rocket.changePercent >= 35 || // Higher threshold
                             (rocket.changePercent >= 25 && rocket.volume > 10000000) || // 25%+ with huge volume
