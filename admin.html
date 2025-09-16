@@ -762,6 +762,11 @@
                     updateWebhookStatus('news', settings.webhooks?.news);
                     updateWebhookStatus('urgent', settings.webhooks?.urgent);
                     
+                    // Load alerts enabled status
+                    const alertsEnabled = settings.alertsEnabled !== undefined ? settings.alertsEnabled : true;
+                    document.getElementById('alertsEnabled').checked = alertsEnabled;
+                    updateAlertStatusText(alertsEnabled);
+                    
                     // Load thresholds
                     if (settings.thresholds) {
                         document.getElementById('l1_price').value = settings.thresholds.l1?.price || 10;
