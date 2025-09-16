@@ -1186,12 +1186,17 @@
                     rocket.changePercent = rocket.priceChangePercent;
                 }
                 
-                // Categorize based on momentum
+                // Categorize based on momentum if available, otherwise use smart defaults
                 const priceChange1m = rocket.momentum?.priceChange1m;
+                const priceChange5m = rocket.momentum?.priceChange5m;
+                const dayChange = rocket.changePercent || 0;
                 
-                // If we have 1-minute data, use it
-                if (priceChange1m !== undefined && priceChange1m !== null) {
-                    if (priceChange1m > 0.1) {
+                // Check if we have valid momentum data (not just 0)
+                const hasMomentumData = priceChange1m !== undefined && priceChange1m !== null && Math.abs(priceChange1m) > 0.01;
+                
+                if (hasMomentumData) {
+                    // Use precise momentum-based categorization
+                    if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
                         categorized.momentumLeaders.push(rocket);
                     } else if (priceChange1m < -0.1) {
                         categorized.pullbacks.push(rocket);
@@ -1199,20 +1204,43 @@
                         categorized.consolidating.push(rocket);
                     }
                 } else {
-                    // Fallback: use day change percentage for categorization
-                    const dayChange = rocket.changePercent || 0;
-                    if (dayChange > 20) {
-                        // Big gainers likely have momentum
+                    // Smart initial categorization based on overall performance
+                    // This provides immediate categorization while waiting for momentum data
+                    
+                    if (dayChange >= 50) {
+                        // Extreme gainers (50%+) are momentum leaders
                         categorized.momentumLeaders.push(rocket);
-                    } else if (dayChange > 10) {
-                        // Moderate gainers might be consolidating
+                    } else if (dayChange >= 25) {
+                        // Strong gainers (25-50%) - check volume for categorization
+                        if (rocket.volume > 5000000 || rocket.level >= 3) {
+                            categorized.momentumLeaders.push(rocket);
+                        } else {
+                            categorized.consolidating.push(rocket);
+                        }
+                    } else if (dayChange >= 15) {
+                        // Moderate gainers (15-25%) - likely consolidating unless high volume
+                        if (rocket.volume > 10000000 && rocket.level >= 2) {
+                            categorized.momentumLeaders.push(rocket);
+                        } else {
+                            categorized.consolidating.push(rocket);
+                        }
+                    } else if (dayChange >= 10) {
+                        // Small gainers go to consolidating
                         categorized.consolidating.push(rocket);
+                    } else if (dayChange <= -5) {
+                        // Clear losers are pullbacks
+                        categorized.pullbacks.push(rocket);
                     } else {
-                        // Small moves or negative go to consolidating
+                        // Everything else consolidating
                         categorized.consolidating.push(rocket);
                     }
                 }
             });
+            
+            // Sort each category appropriately
+            categorized.momentumLeaders.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+            categorized.consolidating.sort((a, b) => (b.volume || 0) - (a.volume || 0));
+            categorized.pullbacks.sort((a, b) => (a.changePercent || 0) - (b.changePercent || 0));
             
             updateCategorizedRockets(categorized);
         }
