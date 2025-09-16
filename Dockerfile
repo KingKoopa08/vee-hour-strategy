@@ -15,7 +15,8 @@ COPY . .
 # Expose ports for API and WebSocket
 EXPOSE 3018 3006 3007
 
-# Set environment variable (can be overridden at runtime)
+# Set environment variables
+ENV NODE_ENV=production
 ENV POLYGON_API_KEY=AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW
 
 # Create non-root user
