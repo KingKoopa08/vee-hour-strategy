@@ -1089,10 +1089,126 @@ function detectAcceleration(symbol) {
     };
 }
 
-// Rocket scanner endpoint
+// Get current market session
+function getMarketSession() {
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const hour = easternTime.getHours();
+    const minute = easternTime.getMinutes();
+    const day = easternTime.getDay();
+    
+    // Weekend check
+    if (day === 0 || day === 6) {
+        return { session: 'closed', description: 'Weekend - Markets Closed' };
+    }
+    
+    // Time-based sessions
+    const time = hour * 100 + minute;
+    
+    if (time >= 400 && time < 930) {
+        return { session: 'premarket', description: 'Pre-Market (4:00 AM - 9:30 AM ET)' };
+    } else if (time >= 930 && time < 1600) {
+        return { session: 'regular', description: 'Regular Hours (9:30 AM - 4:00 PM ET)' };
+    } else if (time >= 1600 && time < 2000) {
+        return { session: 'afterhours', description: 'After-Hours (4:00 PM - 8:00 PM ET)' };
+    } else {
+        return { session: 'closed', description: 'Market Closed' };
+    }
+}
+
+// Fetch stocks based on current session
+async function fetchSessionStocks() {
+    const { session } = getMarketSession();
+    
+    switch(session) {
+        case 'premarket':
+            return await fetchPreMarketMovers();
+        case 'afterhours':
+            return await fetchAfterHoursMovers();
+        case 'regular':
+            return await fetchTopStocks();
+        default:
+            // During closed hours, return last session's data
+            return await fetchTopStocks();
+    }
+}
+
+// Fetch pre-market movers
+async function fetchPreMarketMovers() {
+    console.log('🌅 Fetching PRE-MARKET movers...');
+    try {
+        // Get pre-market gainers/losers
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url);
+        
+        const stocks = [];
+        if (response.data && response.data.tickers) {
+            for (const ticker of response.data.tickers) {
+                // Get pre-market data from snapshot
+                const snapshot = await fetchSnapshot(ticker.ticker);
+                if (snapshot && snapshot.preMarket) {
+                    stocks.push({
+                        ...snapshot,
+                        symbol: ticker.ticker,
+                        price: snapshot.preMarket.c || snapshot.price,
+                        volume: snapshot.preMarket.v || 0,
+                        changePercent: ((snapshot.preMarket.c - snapshot.prevClose) / snapshot.prevClose) * 100,
+                        session: 'premarket'
+                    });
+                }
+            }
+        }
+        
+        // Also check our watchlist for pre-market activity
+        const watchlist = await fetchWatchlistStocks();
+        stocks.push(...watchlist.filter(s => s.volume > 100000));
+        
+        return stocks.sort((a, b) => b.volume - a.volume);
+    } catch (error) {
+        console.error('Pre-market fetch error:', error.message);
+        return await fetchTopStocks(); // Fallback
+    }
+}
+
+// Fetch after-hours movers
+async function fetchAfterHoursMovers() {
+    console.log('🌙 Fetching AFTER-HOURS movers...');
+    try {
+        const stocks = [];
+        
+        // Get top volume stocks first
+        const topStocks = await fetchTopStocks();
+        
+        // Check for after-hours data
+        for (const stock of topStocks.slice(0, 50)) {
+            const snapshot = await fetchSnapshot(stock.symbol);
+            if (snapshot && snapshot.afterHours) {
+                stocks.push({
+                    ...stock,
+                    price: snapshot.afterHours.c || stock.price,
+                    volume: snapshot.afterHours.v || stock.volume,
+                    changePercent: ((snapshot.afterHours.c - stock.price) / stock.price) * 100,
+                    session: 'afterhours'
+                });
+            } else {
+                stocks.push({ ...stock, session: 'afterhours' });
+            }
+        }
+        
+        return stocks;
+    } catch (error) {
+        console.error('After-hours fetch error:', error.message);
+        return await fetchTopStocks(); // Fallback
+    }
+}
+
+// Rocket scanner endpoint with session awareness
 app.get('/api/rockets/scan', async (req, res) => {
     try {
-        const stocks = await fetchTopStocks();
+        const marketSession = getMarketSession();
+        console.log(`🚀 Scanning for rockets - ${marketSession.description}`);
+        
+        const stocks = await fetchSessionStocks();
         const rockets = [];
         
         for (const stock of stocks.slice(0, 100)) { // Check top 100 stocks
@@ -1129,6 +1245,7 @@ app.get('/api/rockets/scan', async (req, res) => {
                     float: stock.float || null,
                     halted: stock.halted || false,
                     level: getRocketLevel(stock, accel),
+                    session: stock.session || marketSession.session,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -1140,7 +1257,12 @@ app.get('/api/rockets/scan', async (req, res) => {
             return b.changePercent - a.changePercent;
         });
         
-        res.json({ success: true, rockets: rockets });
+        res.json({ 
+            success: true, 
+            rockets: rockets,
+            marketSession: marketSession,
+            scanTime: new Date().toISOString()
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
