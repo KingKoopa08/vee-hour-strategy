@@ -1209,6 +1209,245 @@ function getMarketSession() {
     }
 }
 
+// Handle market open transition
+async function handleMarketOpen() {
+    console.log('🔔 Market opening detected at 9:30 AM ET');
+    
+    // 1. Save pre-market closing prices
+    for (const [symbol, history] of priceHistory) {
+        if (history.length > 0) {
+            const lastPrice = history[history.length - 1];
+            preMarketCloseData.set(symbol, {
+                price: lastPrice.value,
+                time: lastPrice.time,
+                history: [...history] // Preserve history
+            });
+        }
+    }
+    
+    console.log(`📊 Saved pre-market closing data for ${preMarketCloseData.size} symbols`);
+    
+    // 2. Check for gaps after 30 seconds
+    setTimeout(async () => {
+        await checkForGaps();
+    }, 30000);
+    
+    // 3. Track opening range (first 5 minutes)
+    setTimeout(async () => {
+        await lockInOpeningRanges();
+    }, 300000); // 5 minutes after open
+}
+
+// Check for gap up/down at market open
+async function checkForGaps() {
+    console.log('🔍 Checking for gap up/down stocks...');
+    const gaps = [];
+    
+    for (const [symbol, pmData] of preMarketCloseData) {
+        try {
+            const snapshot = await fetchSnapshot(symbol);
+            if (snapshot && snapshot.price > 0) {
+                const gapPercent = ((snapshot.price - pmData.price) / pmData.price) * 100;
+                
+                // Alert on gaps > 2%
+                if (Math.abs(gapPercent) > 2) {
+                    gaps.push({
+                        symbol,
+                        preMarketClose: pmData.price,
+                        marketOpen: snapshot.price,
+                        gapPercent,
+                        volume: snapshot.volume,
+                        type: gapPercent > 0 ? 'GAP_UP' : 'GAP_DOWN'
+                    });
+                    
+                    // Send Discord alert for significant gaps
+                    if (Math.abs(gapPercent) > 5 && !gapAlertsSent.has(symbol)) {
+                        await sendGapAlert({
+                            symbol,
+                            preMarketClose: pmData.price,
+                            marketOpen: snapshot.price,
+                            gapPercent,
+                            volume: snapshot.volume
+                        });
+                        gapAlertsSent.add(symbol);
+                    }
+                }
+                
+                // Preserve price history through transition
+                if (pmData.history && pmData.history.length > 0) {
+                    const existingHistory = priceHistory.get(symbol) || [];
+                    // Keep last 10 minutes of pre-market history
+                    const cutoff = Date.now() - 600000;
+                    const preservedHistory = pmData.history.filter(h => h.time > cutoff);
+                    priceHistory.set(symbol, [...preservedHistory, ...existingHistory]);
+                }
+            }
+        } catch (error) {
+            console.error(`Error checking gap for ${symbol}:`, error.message);
+        }
+    }
+    
+    if (gaps.length > 0) {
+        console.log(`📈 Found ${gaps.length} gap stocks:`);
+        gaps.sort((a, b) => Math.abs(b.gapPercent) - Math.abs(a.gapPercent));
+        gaps.slice(0, 10).forEach(g => {
+            console.log(`  ${g.symbol}: ${g.type} ${g.gapPercent.toFixed(1)}%`);
+        });
+    }
+    
+    return gaps;
+}
+
+// Lock in opening range for ORB strategy
+async function lockInOpeningRanges() {
+    console.log('📊 Locking in 5-minute opening ranges...');
+    
+    for (const [symbol, history] of priceHistory) {
+        // Get prices from last 5 minutes
+        const cutoff = Date.now() - 300000;
+        const openingPrices = history.filter(h => h.time > cutoff);
+        
+        if (openingPrices.length > 0) {
+            const high = Math.max(...openingPrices.map(p => p.value));
+            const low = Math.min(...openingPrices.map(p => p.value));
+            const range = high - low;
+            
+            openingRanges.set(symbol, {
+                high,
+                low,
+                range,
+                timestamp: Date.now()
+            });
+        }
+    }
+    
+    console.log(`🎯 Locked in opening ranges for ${openingRanges.size} symbols`);
+}
+
+// Check for opening range breakout
+function checkORBreakout(symbol, currentPrice) {
+    const range = openingRanges.get(symbol);
+    if (!range) return null;
+    
+    // Only check after opening range is established (after 9:35 AM)
+    const now = Date.now();
+    if (now - range.timestamp < 0) return null;
+    
+    if (currentPrice > range.high * 1.001) { // 0.1% above high
+        return {
+            type: 'BREAKOUT_UP',
+            level: range.high,
+            percent: ((currentPrice - range.high) / range.high) * 100
+        };
+    } else if (currentPrice < range.low * 0.999) { // 0.1% below low
+        return {
+            type: 'BREAKDOWN',
+            level: range.low,
+            percent: ((range.low - currentPrice) / range.low) * 100
+        };
+    }
+    
+    return null;
+}
+
+// Send gap alert to Discord
+async function sendGapAlert(gapData) {
+    if (!adminSettings.webhooks.rocket) return;
+    
+    const emoji = gapData.gapPercent > 0 ? '🟢' : '🔴';
+    const direction = gapData.gapPercent > 0 ? 'UP' : 'DOWN';
+    
+    const embed = {
+        embeds: [{
+            title: `${emoji} GAP ${direction}: ${gapData.symbol}`,
+            description: `Market open gap detected!`,
+            color: gapData.gapPercent > 0 ? 0x00FF00 : 0xFF0000,
+            fields: [
+                {
+                    name: 'Pre-Market Close',
+                    value: `$${gapData.preMarketClose.toFixed(2)}`,
+                    inline: true
+                },
+                {
+                    name: 'Market Open',
+                    value: `$${gapData.marketOpen.toFixed(2)}`,
+                    inline: true
+                },
+                {
+                    name: 'Gap %',
+                    value: `${gapData.gapPercent > 0 ? '+' : ''}${gapData.gapPercent.toFixed(2)}%`,
+                    inline: true
+                },
+                {
+                    name: 'Volume',
+                    value: formatVolume(gapData.volume),
+                    inline: true
+                }
+            ],
+            footer: {
+                text: 'Market Open Gap Alert'
+            },
+            timestamp: new Date().toISOString()
+        }]
+    };
+    
+    try {
+        await axios.post(adminSettings.webhooks.rocket, embed);
+        console.log(`✅ Gap alert sent for ${gapData.symbol}`);
+    } catch (error) {
+        console.error('Failed to send gap alert:', error.message);
+    }
+}
+
+// Send ORB breakout alert
+async function sendORBAlert(data) {
+    if (!adminSettings.webhooks.rocket) return;
+    
+    const emoji = data.orbSignal.type === 'BREAKOUT_UP' ? '🚀' : '📉';
+    const color = data.orbSignal.type === 'BREAKOUT_UP' ? 0x00FF00 : 0xFF0000;
+    
+    const embed = {
+        embeds: [{
+            title: `${emoji} ORB ${data.orbSignal.type === 'BREAKOUT_UP' ? 'BREAKOUT' : 'BREAKDOWN'}: ${data.symbol}`,
+            description: `Opening range ${data.orbSignal.type === 'BREAKOUT_UP' ? 'breakout' : 'breakdown'} detected!`,
+            color: color,
+            fields: [
+                {
+                    name: 'Current Price',
+                    value: `$${data.price.toFixed(2)}`,
+                    inline: true
+                },
+                {
+                    name: data.orbSignal.type === 'BREAKOUT_UP' ? 'Broke Above' : 'Broke Below',
+                    value: `$${data.orbSignal.level.toFixed(2)}`,
+                    inline: true
+                },
+                {
+                    name: 'Move %',
+                    value: `${data.orbSignal.percent.toFixed(2)}%`,
+                    inline: true
+                },
+                {
+                    name: 'Volume',
+                    value: formatVolume(data.volume),
+                    inline: true
+                }
+            ],
+            footer: {
+                text: 'Opening Range Breakout Alert'
+            },
+            timestamp: new Date().toISOString()
+        }]
+    };
+    
+    try {
+        await axios.post(adminSettings.webhooks.rocket, embed);
+        console.log(`✅ ORB alert sent for ${data.symbol}`);
+    } catch (error) {
+        console.error('Failed to send ORB alert:', error.message);
+    }
+}
+
 // Fetch stocks based on current session
 async function fetchSessionStocks() {
     const { session } = getMarketSession();
