@@ -773,7 +773,9 @@
             const maxPrice = parseFloat(document.getElementById('maxPrice').value);
             const alertLevel = document.getElementById('alertLevel').value;
             
-            if (Math.abs(rocket.priceChangePercent || rocket.changePercent || 0) < minChange) return false;
+            const changePercent = Math.abs(rocket.changePercent || rocket.priceChangePercent || 0);
+            
+            if (changePercent < minChange) return false;
             if (rocket.volume < minVolume) return false;
             if (rocket.price > maxPrice) return false;
             if (alertLevel !== 'all' && rocket.level && rocket.level < parseInt(alertLevel)) return false;
