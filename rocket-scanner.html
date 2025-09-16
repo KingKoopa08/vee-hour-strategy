@@ -868,19 +868,34 @@
         // Scan for rockets
         async function scanForRockets() {
             try {
+                console.log('Scanning for rockets...');
+                console.log('API URL:', `${API_URL}/api/rockets/scan`);
+                
                 // First try rocket scan endpoint
                 const response = await fetch(`${API_URL}/api/rockets/scan`);
+                console.log('Response status:', response.status);
+                
                 const data = await response.json();
+                console.log('Data received:', data);
                 
                 if (data.success && data.rockets) {
                     // Handle categorized rockets
                     if (data.rockets.momentumLeaders || data.rockets.consolidating || data.rockets.pullbacks) {
+                        console.log('Updating categorized rockets');
+                        console.log('Leaders:', data.rockets.momentumLeaders?.length || 0);
+                        console.log('Consolidating:', data.rockets.consolidating?.length || 0);
+                        console.log('Pullbacks:', data.rockets.pullbacks?.length || 0);
                         updateCategorizedRockets(data.rockets);
                     } else if (Array.isArray(data.rockets) && data.rockets.length > 0) {
                         // Fallback for old format
+                        console.log('Using legacy format with', data.rockets.length, 'rockets');
                         updateRockets(data.rockets);
+                    } else {
+                        console.log('No rockets in expected format');
+                        updateCategorizedRockets({ momentumLeaders: [], consolidating: [], pullbacks: [] });
                     }
                 } else {
+                    console.log('No success or no rockets in response');
                     // Fallback to top volume stocks if no rockets
                     const volumeResponse = await fetch(`${API_URL}/api/stocks/top-volume`);
                     const volumeData = await volumeResponse.json();
