@@ -1817,6 +1817,24 @@ app.get('/api/rockets/scan', async (req, res) => {
         consolidating.sort(sortBy1mChange);
         pullbacks.sort(sortBy1mChange);
         
+        // Update active rockets for real-time tracking
+        activeRockets.clear();
+        [...momentumLeaders, ...consolidating, ...pullbacks].forEach(rocket => {
+            activeRockets.add(rocket.symbol);
+        });
+        
+        // Broadcast to all WebSocket clients
+        broadcast({
+            type: 'rocketsUpdate',
+            data: {
+                momentumLeaders: momentumLeaders,
+                consolidating: consolidating,
+                pullbacks: pullbacks
+            },
+            marketSession: marketSession,
+            timestamp: new Date().toISOString()
+        });
+        
         res.json({ 
             success: true, 
             rockets: {
