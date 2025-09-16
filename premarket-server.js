@@ -2185,10 +2185,11 @@ async function scanAndAlertRockets() {
         const response = await axios.get(`http://localhost:3018/api/rockets/scan`);
         
         if (response.data && response.data.rockets) {
-            const rockets = response.data.rockets;
+            // Only process momentum leaders for alerts
+            const momentumLeaders = response.data.rockets.momentumLeaders || [];
             let alertCount = 0;
             
-            for (const rocket of rockets) {
+            for (const rocket of momentumLeaders) {
                 const rocketKey = `${rocket.symbol}_${Math.floor(rocket.changePercent)}_${session.session}`;
                 
                 // Alert for HIGH QUALITY rockets not already sent
