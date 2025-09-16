@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Rocket Scanner</title>
+</head>
+<body>
+    <h1>Testing Rocket Scanner API</h1>
+    <div id="status">Loading...</div>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                statusEl.textContent = 'Fetching from API...';
+                console.log('Fetching from:', 'http://localhost:3018/api/rockets/scan');
+                
+                const response = await fetch('http://localhost:3018/api/rockets/scan');
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                
+                if (data.success && data.rockets) {
+                    statusEl.textContent = 'Success! Data structure:';
+                    
+                    let html = '<pre>';
+                    html += 'Response success: ' + data.success + '\n';
+                    html += 'Rockets type: ' + typeof data.rockets + '\n';
+                    
+                    if (data.rockets.momentumLeaders) {
+                        html += '\nMomentum Leaders: ' + data.rockets.momentumLeaders.length + ' stocks\n';
+                        data.rockets.momentumLeaders.forEach(r => {
+                            html += '  - ' + r.symbol + ': ' + r.changePercent + '%\n';
+                        });
+                    }
+                    
+                    if (data.rockets.consolidating) {
+                        html += '\nConsolidating: ' + data.rockets.consolidating.length + ' stocks\n';
+                        data.rockets.consolidating.forEach(r => {
+                            html += '  - ' + r.symbol + ': ' + r.changePercent + '%\n';
+                        });
+                    }
+                    
+                    if (data.rockets.pullbacks) {
+                        html += '\nPullbacks: ' + data.rockets.pullbacks.length + ' stocks\n';
+                        data.rockets.pullbacks.forEach(r => {
+                            html += '  - ' + r.symbol + ': ' + r.changePercent + '%\n';
+                        });
+                    }
+                    
+                    html += '</pre>';
+                    resultsEl.innerHTML = html;
+                } else {
+                    statusEl.textContent = 'Error: Invalid response structure';
+                    resultsEl.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                statusEl.textContent = 'Error: ' + error.message;
+                resultsEl.innerHTML = '<p>Check browser console for details</p>';
+            }
+        }
+        
+        // Test on load
+        testAPI();
+        
+        // Refresh every 5 seconds
+        setInterval(testAPI, 5000);
+    </script>
+</body>
+</html>
