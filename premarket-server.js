@@ -1620,6 +1620,10 @@ app.get('/api/rockets/scan', async (req, res) => {
             // Check acceleration
             const accel = detectAcceleration(symbol);
             
+            // Calculate momentum FIRST to check if stock is in downtrend
+            const momentum = calculateMomentum(symbol);
+            const hasValidMomentum = momentum && priceHistory.get(symbol)?.length > 2;
+            
             // Check for ORB breakout during regular hours
             let orbSignal = null;
             if (marketSession.session === 'regular') {
@@ -1627,13 +1631,22 @@ app.get('/api/rockets/scan', async (req, res) => {
             }
             
             // Check for rocket conditions
-            // More lenient: high % move OR high volume spike OR ORB breakout
-            const isRocket = 
-                (stock.changePercent > 20) || // >20% move alone is enough
+            // EXCLUDE stocks in 5-minute downtrend unless they have exceptional signals
+            const isDowntrending = momentum.isDowntrend || momentum.is5MinDown;
+            
+            // More strict for downtrending stocks
+            const isRocket = isDowntrending ? 
+                // For downtrending stocks, require EXCEPTIONAL signals
+                (stock.changePercent > 50 || // Huge day move despite recent dip
+                (stock.changePercent > 30 && volume > 5000000) || // Big move with massive volume
+                (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent > 10)) // ORB breakout with good day gain
+                :
+                // Normal criteria for non-downtrending stocks
+                ((stock.changePercent > 20) || // >20% move alone is enough
                 (stock.changePercent > 10 && volume > 1000000) || // >10% with good volume
                 (stock.changePercent > 5 && accel && accel.volumeAcceleration > 10) || // moderate move with huge volume
                 (volume > 500000 && accel && accel.volumeAcceleration > 5) || // volume spike
-                (orbSignal && orbSignal.type === 'BREAKOUT_UP'); // ORB breakout
+                (orbSignal && orbSignal.type === 'BREAKOUT_UP')); // ORB breakout
             
             if (isRocket) {
                 // Send ORB alert if detected
