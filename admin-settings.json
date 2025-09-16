@@ -1,29 +1,29 @@
 {
   "webhooks": {
-    "rocket": "https://discord.com/api/webhooks/test123",
-    "news": "https://discord.com/api/webhooks/testnews",
-    "urgent": ""
+    "rocket": "https://discord.com/api/webhooks/123456789/abcdefghijk",
+    "news": "https://discord.com/api/webhooks/987654321/zyxwvutsrqp",
+    "urgent": "https://discord.com/api/webhooks/555555555/mnopqrstuv"
   },
   "thresholds": {
     "l1": {
-      "price": 10,
-      "volume": 500000
+      "price": 5,
+      "volume": 100000
     },
     "l2": {
-      "price": 20,
-      "volume": 500000
+      "price": 15,
+      "volume": 250000
     },
     "l3": {
-      "price": 50,
-      "volume": 1000000
+      "price": 30,
+      "volume": 750000
     },
     "l4": {
-      "price": 100,
-      "volume": 5000000
+      "price": 75,
+      "volume": 2500000
     }
   },
-  "scanInterval": 30,
-  "volumeMultiplier": 5,
+  "scanInterval": 60,
+  "volumeMultiplier": 10,
   "premarketEnabled": true,
   "afterhoursEnabled": true,
   "newsEnabled": true,

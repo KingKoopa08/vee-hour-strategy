@@ -1381,7 +1381,7 @@ app.post('/api/admin/test-webhook', async (req, res) => {
 
 // Admin API: Get stats
 app.get('/api/admin/stats', (req, res) => {
-    adminStats.activeMonitoring = monitoring.size;
+    adminStats.activeMonitoring = 0; // Will track active monitoring when rockets feature is active
     res.json({ success: true, stats: adminStats });
 });
 
