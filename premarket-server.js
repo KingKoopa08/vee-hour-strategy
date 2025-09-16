@@ -1326,8 +1326,9 @@ app.get('/api/rockets/scan', async (req, res) => {
                 // Try to get news
                 const news = await fetchLatestNews(symbol);
                 
-                // Calculate momentum
+                // Calculate momentum (only if we have enough history)
                 const momentum = calculateMomentum(symbol);
+                const hasValidMomentum = momentum && priceHistory.get(symbol)?.length > 5;
                 
                 rockets.push({
                     symbol: symbol,
@@ -1337,10 +1338,10 @@ app.get('/api/rockets/scan', async (req, res) => {
                     vwap: stock.vwap || price,
                     rsi: stock.rsi || 50,
                     acceleration: accel,
-                    momentum: momentum,
-                    trend: momentum.trend,
-                    direction: momentum.direction,
-                    accelerating: momentum.accelerating || false,
+                    momentum: hasValidMomentum ? momentum : null,
+                    trend: hasValidMomentum ? momentum.trend : null,
+                    direction: hasValidMomentum ? momentum.direction : 'unknown',
+                    accelerating: hasValidMomentum ? (momentum.accelerating || false) : false,
                     news: news ? news.headline : null,
                     newsDescription: news ? news.description : null,
                     newsTime: news ? news.timestamp : null,
