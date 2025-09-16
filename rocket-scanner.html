@@ -483,6 +483,10 @@
 
             <div class="alerts-grid" id="alertsContainer">
                 <!-- Alert cards will be inserted here -->
+                <div id="loadingMessage" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
+                    <div>Scanning for rockets...</div>
+                </div>
             </div>
         </div>
 
@@ -678,11 +682,34 @@
         // Scan for rockets
         async function scanForRockets() {
             try {
+                // First try rocket scan endpoint
                 const response = await fetch(`${API_URL}/api/rockets/scan`);
                 const data = await response.json();
                 
-                if (data.success && data.rockets) {
+                if (data.success && data.rockets && data.rockets.length > 0) {
                     updateRockets(data.rockets);
+                } else {
+                    // Fallback to top volume stocks if no rockets
+                    const volumeResponse = await fetch(`${API_URL}/api/stocks/top-volume`);
+                    const volumeData = await volumeResponse.json();
+                    
+                    if (volumeData.success && volumeData.stocks) {
+                        // Filter for potential rockets
+                        const potentialRockets = volumeData.stocks.filter(stock => 
+                            Math.abs(stock.priceChangePercent) >= 10 || stock.volume >= 1000000
+                        );
+                        
+                        // Add level based on change percentage
+                        potentialRockets.forEach(stock => {
+                            const change = Math.abs(stock.priceChangePercent);
+                            if (change >= 75) stock.level = 4;
+                            else if (change >= 30) stock.level = 3;
+                            else if (change >= 15) stock.level = 2;
+                            else stock.level = 1;
+                        });
+                        
+                        updateRockets(potentialRockets);
+                    }
                 }
             } catch (error) {
                 console.error('Scan error:', error);
@@ -693,6 +720,10 @@
         function updateRockets(rocketsList) {
             const container = document.getElementById('alertsContainer');
             container.innerHTML = '';
+            
+            // Remove loading message
+            const loadingMsg = document.getElementById('loadingMessage');
+            if (loadingMsg) loadingMsg.remove();
             
             let topGainer = null;
             let topVolume = null;
@@ -726,10 +757,10 @@
             const maxPrice = parseFloat(document.getElementById('maxPrice').value);
             const alertLevel = document.getElementById('alertLevel').value;
             
-            if (Math.abs(rocket.changePercent) < minChange) return false;
+            if (Math.abs(rocket.priceChangePercent || rocket.changePercent || 0) < minChange) return false;
             if (rocket.volume < minVolume) return false;
             if (rocket.price > maxPrice) return false;
-            if (alertLevel !== 'all' && rocket.level < parseInt(alertLevel)) return false;
+            if (alertLevel !== 'all' && rocket.level && rocket.level < parseInt(alertLevel)) return false;
             
             return true;
         }
@@ -754,8 +785,8 @@
                     <div class="stock-symbol">${rocket.symbol}</div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
-                <div class="price-change ${rocket.changePercent > 0 ? 'positive' : 'negative'}">
-                    ${rocket.changePercent > 0 ? '+' : ''}${rocket.changePercent.toFixed(1)}%
+                <div class="price-change ${(rocket.priceChangePercent || rocket.changePercent) > 0 ? 'positive' : 'negative'}">
+                    ${(rocket.priceChangePercent || rocket.changePercent) > 0 ? '+' : ''}${(rocket.priceChangePercent || rocket.changePercent || 0).toFixed(1)}%
                 </div>
                 <div class="alert-stats">
                     <div class="stat">
