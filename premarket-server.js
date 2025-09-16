@@ -2107,19 +2107,28 @@ async function scanAndAlertRockets() {
             for (const rocket of rockets) {
                 const rocketKey = `${rocket.symbol}_${Math.floor(rocket.changePercent)}_${session.session}`;
                 
-                // Alert for significant rockets not already sent
+                // Alert for HIGH QUALITY rockets not already sent
                 if (!sentRockets.has(rocketKey)) {
-                    // Alert criteria: level 2+, >15% gain, or high volume movers
-                    if (rocket.level >= 2 || 
-                        rocket.changePercent >= 15 || 
-                        (rocket.volume > 5000000 && rocket.changePercent > 5)) {
-                        
+                    // STRICT CRITERIA - same as main scan to reduce noise
+                    const isDowntrending = rocket.momentum && (rocket.momentum.isDowntrend || rocket.momentum.is5MinDown);
+                    
+                    const isHighQualityRocket = 
+                        (!isDowntrending && (
+                            rocket.level >= 3 || // Only URGENT or JACKPOT levels
+                            rocket.changePercent >= 30 || // Big gainers only
+                            (rocket.changePercent >= 20 && rocket.volume > 10000000) || // 20%+ with huge volume
+                            (rocket.orbSignal && rocket.orbSignal.type === 'BREAKOUT_UP' && rocket.changePercent >= 10) || // ORB with gains
+                            (rocket.gap && rocket.gap.type === 'GAP_UP' && rocket.gap.percent >= 10) // Big gap ups
+                        )) ||
+                        (isDowntrending && rocket.changePercent >= 50); // Exception for huge movers
+                    
+                    if (isHighQualityRocket) {
                         await sendDiscordAlert(rocket, 'rocket');
                         sentRockets.add(rocketKey);
                         alertCount++;
                         
                         // Log the alert
-                        console.log(`🚀 Alert sent: ${rocket.symbol} +${rocket.changePercent.toFixed(1)}% Vol: ${(rocket.volume/1000000).toFixed(1)}M`);
+                        console.log(`🚀 Alert sent: ${rocket.symbol} +${rocket.changePercent.toFixed(1)}% Vol: ${(rocket.volume/1000000).toFixed(1)}M Level: ${rocket.level}`);
                     }
                 }
             }
