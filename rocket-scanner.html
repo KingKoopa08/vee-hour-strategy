@@ -881,6 +881,7 @@
                 
                 if (data.type === 'priceUpdates') {
                     // Real-time price updates for individual stocks
+                    console.log(`📈 Received price updates for ${data.data.length} stocks`);
                     updateRealTimePrices(data.data);
                 } else if (data.type === 'rocketsUpdate') {
                     // Full rockets categorization update
