@@ -837,6 +837,7 @@
         
         // Save thresholds
         async function saveThresholds() {
+            const alertsEnabled = document.getElementById('alertsEnabled').checked;
             const thresholds = {
                 l1: {
                     price: parseFloat(document.getElementById('l1_price').value),
