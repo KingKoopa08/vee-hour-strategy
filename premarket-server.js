@@ -2016,14 +2016,15 @@ app.post('/api/admin/webhooks', async (req, res) => {
 
 // Admin API: Save thresholds
 app.post('/api/admin/thresholds', async (req, res) => {
-    const { thresholds } = req.body;
+    const { thresholds, alertsEnabled } = req.body;
     if (thresholds) {
         adminSettings.thresholds = { ...adminSettings.thresholds, ...thresholds };
-        await saveSettings();
-        res.json({ success: true, message: 'Thresholds saved successfully' });
-    } else {
-        res.status(400).json({ success: false, error: 'Invalid thresholds' });
     }
+    if (alertsEnabled !== undefined) {
+        adminSettings.alertsEnabled = alertsEnabled;
+    }
+    await saveSettings();
+    res.json({ success: true, message: 'Settings saved successfully' });
 });
 
 // Admin API: Save general settings
