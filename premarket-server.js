@@ -2640,28 +2640,76 @@ function startRealTimePriceUpdates() {
                     if (history.length > 0) {
                         const now = Date.now();
                         
-                        // Find the closest entries to 1 minute and 5 minutes ago
-                        // Sort by how close they are to the target time
-                        const oneMinTarget = now - 60000;
-                        const fiveMinTarget = now - 300000;
+                        // Find the closest entries to target times with more flexible ranges
+                        // First try exact windows, then expand if needed
                         
-                        // Find entry closest to 1 minute ago (between 50-70 seconds)
-                        const oneMinAgo = history.find(h => {
+                        // For 1-minute: Start with 50-70s, expand to 40-90s if needed
+                        let oneMinAgo = history.find(h => {
                             const age = now - h.timestamp;
                             return age >= 50000 && age <= 70000;
                         });
                         
-                        // Find entry closest to 5 minutes ago (between 280-320 seconds)
-                        const fiveMinAgo = history.find(h => {
+                        // If no exact match, try wider range
+                        if (!oneMinAgo) {
+                            oneMinAgo = history.find(h => {
+                                const age = now - h.timestamp;
+                                return age >= 40000 && age <= 90000;
+                            });
+                        }
+                        
+                        // For 5-minute: Start with 280-320s, expand to 240-360s if needed
+                        let fiveMinAgo = history.find(h => {
                             const age = now - h.timestamp;
                             return age >= 280000 && age <= 320000;
                         });
                         
+                        // If no exact match, try wider range
+                        if (!fiveMinAgo) {
+                            fiveMinAgo = history.find(h => {
+                                const age = now - h.timestamp;
+                                return age >= 240000 && age <= 360000;
+                            });
+                        }
+                        
+                        // As last resort, find closest available entries if still no matches
+                        if (!oneMinAgo && history.length > 5) {
+                            // Find entry closest to 60 seconds ago
+                            const targetTime = now - 60000;
+                            oneMinAgo = history.reduce((closest, entry) => {
+                                const age = now - entry.timestamp;
+                                if (age < 30000 || age > 120000) return closest; // Skip if too recent or too old
+                                
+                                if (!closest) return entry;
+                                const closestAge = now - closest.timestamp;
+                                return Math.abs(age - 60000) < Math.abs(closestAge - 60000) ? entry : closest;
+                            }, null);
+                        }
+                        
+                        if (!fiveMinAgo && history.length > 20) {
+                            // Find entry closest to 300 seconds ago
+                            const targetTime = now - 300000;
+                            fiveMinAgo = history.reduce((closest, entry) => {
+                                const age = now - entry.timestamp;
+                                if (age < 180000 || age > 420000) return closest; // Skip if too recent or too old
+                                
+                                if (!closest) return entry;
+                                const closestAge = now - closest.timestamp;
+                                return Math.abs(age - 300000) < Math.abs(closestAge - 300000) ? entry : closest;
+                            }, null);
+                        }
+                        
+                        // Calculate momentum if we found suitable entries
                         if (oneMinAgo && oneMinAgo.price > 0) {
                             priceChange1m = ((snapshot.price - oneMinAgo.price) / oneMinAgo.price) * 100;
                         }
                         if (fiveMinAgo && fiveMinAgo.price > 0) {
                             priceChange5m = ((snapshot.price - fiveMinAgo.price) / fiveMinAgo.price) * 100;
+                        }
+                        
+                        // Debug logging for momentum calculation
+                        if ((priceChange1m === 0 && priceChange5m === 0) && history.length > 10) {
+                            const ages = history.slice(0, 20).map(h => Math.floor((now - h.timestamp) / 1000));
+                            console.log(`⚠️ ${symbol}: No momentum calculated. History ages (seconds): ${ages.join(', ')}`);
                         }
                     }
                     
