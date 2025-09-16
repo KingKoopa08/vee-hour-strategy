@@ -9,6 +9,7 @@ docker build --no-cache -t premarket-strategy .
 docker run -d --name premarket-strategy \
   -e NODE_ENV=production \
   -p 3018:3018 \
+  -p 3006:3006 \
   --restart unless-stopped \
   premarket-strategy
 echo "✅ Deployment complete!"
