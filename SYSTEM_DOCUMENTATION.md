@@ -359,7 +359,44 @@ Test Discord webhook connectivity
 
 ## Recent Updates & Fixes
 
-### 1. Momentum Values Clearing Fix (Latest)
+### 1. Flexible Momentum Calculation (Latest - Current Session)
+**Problem**: Momentum values showing 0.0% in WebSocket updates despite price changes
+
+**Root Cause**: Narrow time windows (50-70s for 1m, 280-320s for 5m) often didn't match any entries in price history
+
+**Solution**: Implemented progressive search with fallback mechanisms:
+```javascript
+// Progressive search strategy:
+// 1. Try exact window (50-70s for 1m)
+// 2. Expand to wider range (40-90s for 1m)  
+// 3. Find closest available entry as last resort
+
+// For 1-minute momentum
+let oneMinAgo = history.find(h => {
+    const age = now - h.timestamp;
+    return age >= 50000 && age <= 70000; // Exact window
+});
+
+if (!oneMinAgo) {
+    // Try wider range
+    oneMinAgo = history.find(h => {
+        const age = now - h.timestamp;
+        return age >= 40000 && age <= 90000;
+    });
+}
+
+if (!oneMinAgo && history.length > 5) {
+    // Find closest to 60 seconds
+    oneMinAgo = history.reduce((closest, entry) => {
+        const age = now - entry.timestamp;
+        if (age < 30000 || age > 120000) return closest;
+        // Return entry closest to target
+        return Math.abs(age - 60000) < Math.abs(closestAge - 60000) ? entry : closest;
+    }, null);
+}
+```
+
+### 2. Momentum Values Clearing Fix
 **Problem**: 1m and 5m momentum values reset to 0.00 on WebSocket updates
 
 **Solution**: Modified `updateRealTimePrices()` to check for valid data:
@@ -371,16 +408,17 @@ if (momentum1mElement && update.priceChange1m !== undefined && update.priceChang
 // Don't update if undefined/null
 ```
 
-### 2. Max Price Threshold Implementation
-**Feature**: Filter expensive stocks from alerts
+### 3. Max Price Threshold Implementation
+**Feature**: Filter expensive stocks from alerts (default $100)
 
 **Changes**:
 - Added `maxPriceThreshold` to admin settings
 - UI input in admin panel
 - Price check in `sendDiscordAlert()`
 - Console logging when alerts skipped
+- Set to 0 to disable filtering
 
-### 3. Immediate Stock Categorization
+### 4. Immediate Stock Categorization
 **Problem**: Stocks waited for momentum data before categorizing
 
 **Solution**: Smart initial categorization based on day performance:
@@ -389,17 +427,31 @@ if (momentum1mElement && update.priceChange1m !== undefined && update.priceChang
 // Refine with momentum data when available
 if (!hasMomentumData) {
   // Smart defaults based on performance
+  if (dayChange >= 50) momentumLeaders.push(rocket);
+  else if (dayChange >= 25 && volume > 5000000) momentumLeaders.push(rocket);
+  // etc...
 } else {
   // Precise momentum-based categorization
+  if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
+    momentumLeaders.push(rocket);
+  }
 }
 ```
 
-### 4. WebSocket Production Fix
-**Problem**: WebSocket failed on port 3006 in production
+### 5. WebSocket Production Fix
+**Problem**: WebSocket failed on port 3006 in production (firewall issues)
 
 **Solution**: Path-based WebSocket on same port:
-- Development: `ws://localhost:3006`
-- Production: `ws://server:3018/ws`
+- Development: `ws://localhost:3006` (separate port)
+- Production: `ws://server:3018/ws` (path-based)
+
+### 6. Flat Stock Alert Prevention
+**Problem**: Stocks like FGI and TURB triggered alerts despite being flat
+
+**Solution**: Added minimum requirements for alerts:
+- Require at least 10% day change
+- Verify positive momentum (1m > 0.1%)
+- Check price history depth before alerting
 
 ---
 
