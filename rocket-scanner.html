@@ -955,21 +955,23 @@
                         dayChangeElement.classList.toggle('negative', update.changePercent < 0);
                     }
                     
-                    // Update 1m momentum
+                    // Update 1m momentum - only if we have valid data
                     const momentum1mElement = tile.querySelector('.momentum-1m');
-                    if (momentum1mElement && update.priceChange1m !== undefined) {
+                    if (momentum1mElement && update.priceChange1m !== undefined && update.priceChange1m !== null) {
                         momentum1mElement.textContent = `1m: ${update.priceChange1m >= 0 ? '+' : ''}${update.priceChange1m.toFixed(1)}%`;
                         momentum1mElement.classList.toggle('positive', update.priceChange1m >= 0);
                         momentum1mElement.classList.toggle('negative', update.priceChange1m < 0);
                     }
+                    // Don't clear momentum if no data provided
                     
-                    // Update 5m momentum (if exists as separate element)
+                    // Update 5m momentum - only if we have valid data
                     const momentum5mElement = tile.querySelector('.momentum-5m');
-                    if (momentum5mElement && update.priceChange5m !== undefined) {
+                    if (momentum5mElement && update.priceChange5m !== undefined && update.priceChange5m !== null) {
                         momentum5mElement.textContent = `5m: ${update.priceChange5m >= 0 ? '+' : ''}${update.priceChange5m.toFixed(1)}%`;
                         momentum5mElement.classList.toggle('positive', update.priceChange5m >= 0);
                         momentum5mElement.classList.toggle('negative', update.priceChange5m < 0);
                     }
+                    // Don't clear momentum if no data provided
                     
                     // Update volume if changed significantly
                     const volumeElement = tile.querySelector('.rocket-volume');
