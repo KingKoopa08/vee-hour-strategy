@@ -1942,6 +1942,7 @@ let adminSettings = {
         l3: { price: 50, volume: 1000000 },
         l4: { price: 100, volume: 5000000 }
     },
+    maxPriceThreshold: 100,  // Max stock price for alerts (0 = disabled)
     scanInterval: 30,
     volumeMultiplier: 5,
     premarketEnabled: true,
@@ -2031,12 +2032,15 @@ app.post('/api/admin/webhooks', async (req, res) => {
 
 // Admin API: Save thresholds
 app.post('/api/admin/thresholds', async (req, res) => {
-    const { thresholds, alertsEnabled } = req.body;
+    const { thresholds, alertsEnabled, maxPriceThreshold } = req.body;
     if (thresholds) {
         adminSettings.thresholds = { ...adminSettings.thresholds, ...thresholds };
     }
     if (alertsEnabled !== undefined) {
         adminSettings.alertsEnabled = alertsEnabled;
+    }
+    if (maxPriceThreshold !== undefined) {
+        adminSettings.maxPriceThreshold = maxPriceThreshold;
     }
     await saveSettings();
     res.json({ success: true, message: 'Settings saved successfully' });
