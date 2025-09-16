@@ -1591,6 +1591,9 @@ app.listen(PORT, async () => {
     console.log('🎯 VEE/HOUR/ISPC Strategy Active with Live Market Data');
     console.log('📊 Loading current most active stocks from live market...');
     
+    // Load admin settings from file
+    await loadSettings();
+    
     // Load initial data
     await fetchTopStocks();
 });
