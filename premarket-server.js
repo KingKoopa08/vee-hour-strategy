@@ -1775,36 +1775,29 @@ app.get('/api/rockets/scan', async (req, res) => {
         const pullbacks = [];       // Declining stocks
         
         for (const rocket of rockets) {
-            // Categorize based on 1-minute momentum (most recent trend)
+            // Categorize based on 1-minute and 5-minute momentum (most recent trends)
             const priceChange1m = rocket.momentum?.priceChange1m;
+            const priceChange5m = rocket.momentum?.priceChange5m;
             const hasValidMomentum = priceChange1m !== undefined && priceChange1m !== null;
             const hasMomentumMovement = hasValidMomentum && Math.abs(priceChange1m) > 0.01; // Check if there's actual movement
             
-            // If we have valid momentum data with actual movement, use it
+            // Only use actual momentum data if available
             if (hasMomentumMovement) {
-                if (priceChange1m > 0.1) {
-                    // Rising: positive momentum in last minute
+                // For Momentum Leaders: require positive movement in BOTH 1m and 5m
+                if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
+                    // Rising: positive momentum in last minute AND not down in 5 minutes
                     momentumLeaders.push(rocket);
                 } else if (priceChange1m < -0.1) {
                     // Pullback: negative momentum in last minute
                     pullbacks.push(rocket);
                 } else {
-                    // Consolidating: flat movement
+                    // Consolidating: flat or mixed movement
                     consolidating.push(rocket);
                 }
             } else {
-                // Fallback: use day change percentage when momentum data is not available or is 0
-                const dayChange = rocket.changePercent || 0;
-                if (dayChange > 20) {
-                    // Big gainers likely have momentum
-                    momentumLeaders.push(rocket);
-                } else if (dayChange < -5) {
-                    // Stocks down for the day
-                    pullbacks.push(rocket);
-                } else {
-                    // Moderate moves or flat
-                    consolidating.push(rocket);
-                }
+                // When no momentum data is available, put in consolidating
+                // Don't assume momentum just because of day gains
+                consolidating.push(rocket);
             }
         }
         
