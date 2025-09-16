@@ -787,6 +787,9 @@
         function addRocketCard(rocket) {
             const container = document.getElementById('alertsContainer');
             
+            // Get change percentage (handle both field names)
+            const changePercent = rocket.changePercent || rocket.priceChangePercent || 0;
+            
             const levelClass = rocket.level === 4 ? 'jackpot' : 
                               rocket.level === 3 ? 'urgent' : 
                               rocket.level === 2 ? 'alert' : '';
@@ -803,8 +806,8 @@
                     <div class="stock-symbol">${rocket.symbol}</div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
-                <div class="price-change ${(rocket.priceChangePercent || rocket.changePercent) > 0 ? 'positive' : 'negative'}">
-                    ${(rocket.priceChangePercent || rocket.changePercent) > 0 ? '+' : ''}${(rocket.priceChangePercent || rocket.changePercent || 0).toFixed(1)}%
+                <div class="price-change ${changePercent > 0 ? 'positive' : 'negative'}">
+                    ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%
                 </div>
                 <div class="alert-stats">
                     <div class="stat">
