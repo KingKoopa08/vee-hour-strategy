@@ -1111,6 +1111,49 @@
             audio.play();
         }
         
+        // Show news modal
+        function showNewsModal(symbol, headline, description, source, timestamp) {
+            const modal = document.getElementById('newsModal');
+            const titleEl = document.getElementById('newsModalTitle');
+            const bodyEl = document.getElementById('newsModalBody');
+            const metaEl = document.getElementById('newsModalMeta');
+            
+            titleEl.innerHTML = `📰 ${symbol} - Breaking News`;
+            
+            bodyEl.innerHTML = `
+                <h3 style="color: #ff6432; margin-bottom: 15px;">${headline}</h3>
+                ${description ? `<p>${description}</p>` : '<p style="color: #888;">Full article content not available. Click source to read more.</p>'}
+            `;
+            
+            const timeStr = timestamp ? formatTime(new Date(timestamp)) : 'Unknown';
+            metaEl.innerHTML = `
+                <span><strong>Source:</strong> ${source || 'Unknown'}</span>
+                <span><strong>Published:</strong> ${timeStr}</span>
+            `;
+            
+            modal.classList.add('active');
+        }
+        
+        // Close news modal
+        function closeNewsModal() {
+            const modal = document.getElementById('newsModal');
+            modal.classList.remove('active');
+        }
+        
+        // Close modal on outside click
+        document.getElementById('newsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNewsModal();
+            }
+        });
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeNewsModal();
+            }
+        });
+        
         // Start the application
         init();
     </script>
