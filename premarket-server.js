@@ -2516,8 +2516,81 @@ app.listen(PORT, async () => {
 const WS_PORT = 3006;
 const wss = new WebSocketServer({ port: WS_PORT });
 
+// Track active rockets for real-time updates
+let activeRockets = new Set();
+let priceUpdateInterval = null;
+
+// Broadcast function to send data to all connected clients
+function broadcast(data) {
+    const message = JSON.stringify(data);
+    wss.clients.forEach((client) => {
+        if (client.readyState === client.OPEN) {
+            client.send(message);
+        }
+    });
+}
+
+// Start real-time price updates
+function startRealTimePriceUpdates() {
+    if (priceUpdateInterval) return;
+    
+    priceUpdateInterval = setInterval(async () => {
+        if (activeRockets.size === 0) return;
+        
+        const updates = [];
+        for (const symbol of activeRockets) {
+            const snapshot = await fetchSnapshot(symbol);
+            if (snapshot) {
+                // Calculate momentum
+                const history = priceHistory.get(symbol) || [];
+                let priceChange1m = 0;
+                let priceChange5m = 0;
+                
+                if (history.length > 0) {
+                    const oneMinAgo = history.find(h => (Date.now() - h.timestamp) >= 60000);
+                    const fiveMinAgo = history.find(h => (Date.now() - h.timestamp) >= 300000);
+                    
+                    if (oneMinAgo) {
+                        priceChange1m = ((snapshot.price - oneMinAgo.price) / oneMinAgo.price) * 100;
+                    }
+                    if (fiveMinAgo) {
+                        priceChange5m = ((snapshot.price - fiveMinAgo.price) / fiveMinAgo.price) * 100;
+                    }
+                }
+                
+                updates.push({
+                    symbol,
+                    price: snapshot.price,
+                    changePercent: snapshot.changePercent,
+                    volume: snapshot.volume,
+                    priceChange1m,
+                    priceChange5m,
+                    timestamp: Date.now()
+                });
+            }
+        }
+        
+        if (updates.length > 0) {
+            broadcast({
+                type: 'priceUpdates',
+                data: updates,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }, 1000); // Update every second for real-time feel
+}
+
 wss.on('connection', (ws) => {
     console.log('📡 Client connected');
+    
+    // Send current active rockets immediately
+    if (activeRockets.size > 0) {
+        ws.send(JSON.stringify({
+            type: 'activeRockets',
+            data: Array.from(activeRockets),
+            timestamp: new Date().toISOString()
+        }));
+    }
     
     ws.on('message', async (message) => {
         try {
@@ -2571,7 +2644,7 @@ wss.on('connection', (ws) => {
                             }));
                         }
                     }
-                }, 10000); // Update every 10 seconds
+                }, 2000); // Update every 2 seconds for faster updates
                 
                 ws.on('close', () => {
                     clearInterval(interval);
@@ -2588,3 +2661,6 @@ wss.on('connection', (ws) => {
 });
 
 console.log(`📡 WebSocket running on ws://localhost:${WS_PORT}`);
+
+// Start real-time price updates
+startRealTimePriceUpdates();
