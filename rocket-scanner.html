@@ -971,6 +971,20 @@
             const momentumWarning = (!rocket.trend && rocket.changePercent > 0) ? 
                 '<span style="font-size: 10px; color: #888; margin-left: 5px;">(no history)</span>' : '';
             
+            // Add gap indicator
+            const gapIndicator = rocket.gap ? `
+                <span style="font-size: 14px; margin-left: 8px; padding: 2px 6px; background: ${rocket.gap.type === 'GAP_UP' ? 'rgba(0,255,0,0.2)' : 'rgba(255,0,0,0.2)'}; border: 1px solid ${rocket.gap.type === 'GAP_UP' ? '#00ff00' : '#ff0000'}; border-radius: 4px;">
+                    ${rocket.gap.type === 'GAP_UP' ? '📈' : '📉'} ${rocket.gap.type === 'GAP_UP' ? 'GAP UP' : 'GAP DOWN'} ${rocket.gap.percent.toFixed(1)}%
+                </span>
+            ` : '';
+            
+            // Add ORB indicator
+            const orbIndicator = rocket.orbSignal ? `
+                <span style="font-size: 14px; margin-left: 8px; padding: 2px 6px; background: ${rocket.orbSignal.type === 'BREAKOUT_UP' ? 'rgba(255,200,0,0.2)' : 'rgba(255,0,100,0.2)'}; border: 1px solid ${rocket.orbSignal.type === 'BREAKOUT_UP' ? '#ffc800' : '#ff0064'}; border-radius: 4px;">
+                    ${rocket.orbSignal.type === 'BREAKOUT_UP' ? '🎯' : '❌'} ORB ${rocket.orbSignal.type === 'BREAKOUT_UP' ? 'BREAK' : 'BREAKDOWN'}
+                </span>
+            ` : '';
+            
             const card = document.createElement('div');
             card.className = `alert-card ${levelClass}`;
             card.innerHTML = `
@@ -981,6 +995,8 @@
                         ${isAccelerating}
                         ${momentumWarning}
                         ${newsIndicator}
+                        ${gapIndicator}
+                        ${orbIndicator}
                     </div>
                     <div class="level-badge">${levelEmoji}</div>
                 </div>
