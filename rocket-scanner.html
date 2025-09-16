@@ -967,9 +967,17 @@
                                  rocket.direction === 'unknown' ? '#666' : '#888';
             const isAccelerating = rocket.accelerating ? '⚡' : '';
             
-            // Show warning if momentum is unknown but stock shows as rising
+            // Show 5-minute change if available
+            const trend5min = (rocket.momentum && rocket.momentum.priceChange5m !== undefined) ? 
+                `<span style="font-size: 11px; color: ${rocket.momentum.priceChange5m >= 0 ? '#32ff32' : '#ff3232'}; margin-left: 8px; padding: 2px 4px; background: rgba(0,0,0,0.3); border-radius: 3px;">
+                    5m: ${rocket.momentum.priceChange5m >= 0 ? '+' : ''}${rocket.momentum.priceChange5m.toFixed(2)}%
+                </span>` : '';
+            
+            // Show warning if momentum is unknown or if using shorter timeframe
             const momentumWarning = (!rocket.trend && rocket.changePercent > 0) ? 
-                '<span style="font-size: 10px; color: #888; margin-left: 5px;">(no history)</span>' : '';
+                '<span style="font-size: 10px; color: #888; margin-left: 5px;">(no history)</span>' : 
+                (rocket.momentum && rocket.momentum.trendPeriod && rocket.momentum.trendPeriod !== '5m') ?
+                `<span style="font-size: 10px; color: #888; margin-left: 5px;">(${rocket.momentum.trendPeriod})</span>` : '';
             
             // Add gap indicator
             const gapIndicator = rocket.gap ? `
