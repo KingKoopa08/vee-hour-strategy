@@ -1071,6 +1071,25 @@
             }, 3000);
         }
         
+        // Update alert status text
+        function updateAlertStatusText(enabled) {
+            const statusText = document.getElementById('alertStatusText');
+            if (statusText) {
+                statusText.textContent = enabled ? 'Alerts Enabled' : 'Alerts Disabled';
+                statusText.style.color = enabled ? '#32ff32' : '#ff3232';
+            }
+        }
+        
+        // Handle alert toggle change
+        document.addEventListener('DOMContentLoaded', () => {
+            const alertToggle = document.getElementById('alertsEnabled');
+            if (alertToggle) {
+                alertToggle.addEventListener('change', (e) => {
+                    updateAlertStatusText(e.target.checked);
+                });
+            }
+        });
+        
         // Refresh stats every 30 seconds
         setInterval(loadStats, 30000);
         
