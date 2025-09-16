@@ -1,142 +1,290 @@
-# VEE/HOUR/ISPC Trading Strategy Platform - Complete System Documentation
+# PreMarket Strategy - Rocket Scanner System Documentation
 
 ## Table of Contents
 1. [System Overview](#system-overview)
-2. [Infrastructure & Ports](#infrastructure--ports)
-3. [Trading Strategies & Calculations](#trading-strategies--calculations)
-4. [API Endpoints](#api-endpoints)
-5. [Dashboard Features](#dashboard-features)
-6. [Data Sources & Caching](#data-sources--caching)
-7. [Deployment Guide](#deployment-guide)
-8. [Technical Architecture](#technical-architecture)
+2. [Architecture & Infrastructure](#architecture--infrastructure)
+3. [Rocket Scanner Features](#rocket-scanner-features)
+4. [Real-Time Updates](#real-time-updates)
+5. [Stock Categorization Logic](#stock-categorization-logic)
+6. [Alert System](#alert-system)
+7. [Admin Configuration](#admin-configuration)
+8. [API Endpoints](#api-endpoints)
+9. [Recent Updates & Fixes](#recent-updates--fixes)
+10. [Deployment Guide](#deployment-guide)
+11. [Troubleshooting](#troubleshooting)
+12. [Technical Details](#technical-details)
 
 ---
 
 ## System Overview
 
-This is a comprehensive real-time trading analysis platform that monitors pre-market, regular market, and after-hours trading sessions. It provides multiple specialized dashboards for different market periods and implements the VEE/HOUR/ISPC trading strategy.
+The PreMarket Strategy Rocket Scanner is a real-time stock market monitoring system that identifies significant price movements ("rockets") during pre-market, regular, and after-hours trading. It features:
+
+- **Real-time WebSocket updates** for live price tracking
+- **Intelligent stock categorization** (Momentum Leaders, Consolidating, Pullbacks)
+- **Discord alert integration** with customizable thresholds
+- **Admin panel** for configuration management
+- **Momentum tracking** with 1-minute and 5-minute intervals
 
 ### Core Components
-- **Main Server**: `premarket-server.js` - Node.js/Express server handling all API requests
-- **WebSocket Servers**: Real-time data streaming on ports 3006 (market), 3007 (after-hours)
-- **Data Provider**: Polygon.io API for real-time and historical market data
-- **Multiple Dashboards**: Specialized interfaces for different trading sessions
+
+1. **Backend Server** (`premarket-server.js`)
+   - Express API server on port 3018
+   - WebSocket server for real-time updates
+   - Polygon.io API integration
+   - Discord webhook integration
+   - Settings persistence with JSON file storage
+
+2. **Frontend Dashboard** (`rocket-scanner.html`)
+   - Real-time stock monitoring interface
+   - Three-category display system
+   - Live WebSocket price updates
+   - Momentum and trend indicators
+   - News integration
+
+3. **Admin Panel** (`admin.html`)
+   - Password-protected configuration
+   - Discord webhook management
+   - Alert threshold settings
+   - Max price filtering ($100 default)
+   - Master alert toggle
 
 ---
 
-## Infrastructure & Ports
+## Architecture & Infrastructure
 
-### Local Development
-```
-Main API Server:     http://localhost:3018
-WebSocket (Market):  ws://localhost:3006
-WebSocket (AH):      ws://localhost:3007
-```
+### Port Configuration
 
-### Production/VPS Deployment
+#### Development
 ```
-Main API Server:     http://[VPS-IP]:3018
-WebSocket (Market):  ws://[VPS-IP]:3006
-WebSocket (AH):      ws://[VPS-IP]:3007
+Main API:     http://localhost:3018
+WebSocket:    ws://localhost:3006  (separate port)
+Admin Panel:  http://localhost:3018/admin.html
 ```
 
-### Port Allocation
-- **3018**: Main Express API server (previously 3011, 3012)
-- **3006**: WebSocket server for live market data
-- **3007**: WebSocket server for after-hours data
-- **80**: Nginx serves static HTML files (dashboards)
+#### Production
+```
+Main API:     http://[SERVER_IP]:3018
+WebSocket:    ws://[SERVER_IP]:3018/ws  (same port, /ws path)
+Admin Panel:  http://[SERVER_IP]:3018/admin.html
+```
 
-### Docker Configuration
-The application runs in a Docker container with:
-- Node.js 18 Alpine base image
-- Exposed ports: 3018, 3006, 3007
-- Auto-restart policy
-- Environment variable: POLYGON_API_KEY
+### WebSocket Implementation
+
+The system uses different WebSocket configurations for development and production:
+
+```javascript
+// Development: Separate port
+ws://localhost:3006
+
+// Production: Path-based on same port
+ws://production-server:3018/ws
+```
+
+This prevents firewall issues in production environments.
 
 ---
 
-## Trading Strategies & Calculations
+## Rocket Scanner Features
 
-### 1. VEE/HOUR/ISPC Strategy
+### Dashboard Components
 
-#### Core Concept
-Identifies stocks with specific volume and price patterns during pre-market that indicate potential day trading opportunities.
+1. **Header Statistics**
+   - Total rockets count
+   - Top gainer display
+   - Top volume display
+   - Last scan timestamp
 
-#### Selection Criteria
+2. **Category Sections**
+   - **🚀 Momentum Leaders**: Rising stocks with positive momentum
+   - **⏸️ Consolidating**: Sideways movement, potential breakout candidates
+   - **📉 Pullbacks**: Declining stocks, potential reversal opportunities
+
+3. **Stock Cards Display**
+   - Symbol and company name
+   - Current price with real-time updates
+   - Day change percentage
+   - Volume with formatting (K/M/B)
+   - 1-minute and 5-minute momentum
+   - Alert level indicators
+   - News catalyst badges
+
+### Real-Time Features
+
+- **Price Updates**: Every 2 seconds via WebSocket
+- **Rocket Scans**: Every 30 seconds for new movers
+- **Visual Feedback**: Price flash animation on update
+- **Momentum Preservation**: Values persist between updates
+
+---
+
+## Real-Time Updates
+
+### WebSocket Events
+
+#### Server → Client Events
+
+1. **`rocketsUpdate`** (every 30 seconds)
 ```javascript
-// VEE Pattern Detection
-- Pre-market volume > 500,000 shares
-- Price change > 5% from previous close
-- Volume acceleration in last 30 minutes before market open
-- RSI between 30-70 (not overbought/oversold)
-```
-
-#### Calculations
-
-**Volume Weighted Average Price (VWAP)**
-```javascript
-VWAP = Σ(Price × Volume) / Σ(Volume)
-// Calculated cumulatively throughout the trading day
-// Reset at market open (9:30 AM ET)
-```
-
-**Relative Strength Index (RSI)**
-```javascript
-// 14-period RSI calculation
-RS = Average Gain / Average Loss
-RSI = 100 - (100 / (1 + RS))
-// Values > 70 = Overbought
-// Values < 30 = Oversold
-```
-
-**Bollinger Bands**
-```javascript
-Middle Band = 20-period SMA
-Upper Band = Middle Band + (2 × Standard Deviation)
-Lower Band = Middle Band - (2 × Standard Deviation)
-// Used for volatility assessment
-```
-
-### 2. Pre-Market Analysis
-
-#### Volume Leaders Detection
-```javascript
-// Fetches top 50 most active stocks
-// Then retrieves pre-market data (4:00 AM - 9:30 AM ET)
-// Sorts by actual pre-market volume, not regular hours volume
-
-preMarketVolume = aggregateMinuteBars(symbol, '04:00', '09:30')
-// Fetches minute-by-minute data and sums volume
-```
-
-#### Gap Analysis
-```javascript
-gapPercent = ((preMarketPrice - previousClose) / previousClose) * 100
-// Categorizes:
-// - Gap Up: > 2%
-// - Gap Down: < -2%
-// - Neutral: -2% to 2%
-```
-
-### 3. Signal Generation
-
-#### Buy Signals
-```javascript
-conditions = {
-  vwapCross: price > vwap && previousPrice <= vwap,
-  volumeSpike: currentVolume > averageVolume * 1.5,
-  rsiRange: rsi > 30 && rsi < 70,
-  bbPosition: price > lowerBand && price < upperBand
+{
+  type: 'rocketsUpdate',
+  data: {
+    momentumLeaders: [...],
+    consolidating: [...],
+    pullbacks: [...]
+  }
 }
 ```
 
-#### Sell Signals
+2. **`priceUpdates`** (every 2 seconds)
 ```javascript
-conditions = {
-  vwapResistance: price < vwap && previousPrice >= vwap,
-  volumeDrop: currentVolume < averageVolume * 0.7,
-  rsiExtreme: rsi > 70 || rsi < 30,
-  bbBreakout: price > upperBand || price < lowerBand
+{
+  type: 'priceUpdates',
+  data: [{
+    symbol: 'AAPL',
+    price: 150.25,
+    changePercent: 2.5,
+    priceChange1m: 0.15,
+    priceChange5m: 0.48
+  }]
+}
+```
+
+### Update Mechanisms
+
+1. **Initial Load**: Fetches from `/api/rockets/scan`
+2. **WebSocket Updates**: Continuous real-time streaming
+3. **Fallback**: Auto-refresh every 30 seconds if WebSocket fails
+
+---
+
+## Stock Categorization Logic
+
+### Initial Categorization (No Momentum Data)
+
+When stocks first load without momentum history:
+
+```javascript
+// Momentum Leaders (immediate classification)
+- Stocks up 50%+ → Always momentum leaders
+- Stocks up 25-50% + volume > 5M → Momentum leaders  
+- Stocks up 15-25% + volume > 10M + level ≥ 2 → Momentum leaders
+
+// Consolidating
+- Stocks up 10-25% with normal volume
+- Small moves (< 10% change)
+
+// Pullbacks
+- Stocks down 5% or more
+```
+
+### Refined Categorization (With Momentum Data)
+
+Once 1-minute and 5-minute data accumulates:
+
+```javascript
+// Check for valid momentum data
+hasMomentumData = Math.abs(priceChange1m) > 0.01
+
+// Momentum Leaders
+if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0))
+
+// Pullbacks  
+if (priceChange1m < -0.1)
+
+// Consolidating
+// Everything else
+```
+
+### Why Categorization Matters
+
+- **Momentum Leaders**: Best candidates for continuation trades
+- **Consolidating**: Watch for breakout/breakdown
+- **Pullbacks**: Potential reversal or further decline
+
+---
+
+## Alert System
+
+### Alert Levels
+
+| Level | Name | Price Change | Volume | Discord Color |
+|-------|------|-------------|--------|---------------|
+| 1 | WATCH | 10% | 500K | Blue |
+| 2 | ALERT | 20% | 500K | Yellow |
+| 3 | URGENT | 50% | 1M | Orange |
+| 4 | JACKPOT | 100% | 5M | Red |
+
+### Alert Filtering
+
+1. **Max Price Threshold**
+   - Default: $100
+   - Stocks above threshold won't trigger alerts
+   - Set to 0 to disable filtering
+   - Configured in admin panel
+
+2. **Master Toggle**
+   - Global on/off for all Discord alerts
+   - Preserves webhook settings when disabled
+
+3. **Duplicate Prevention**
+   - Tracks sent alerts by symbol + date + level
+   - Prevents spam for same stock
+   - Cache cleared periodically (keeps last 250)
+
+### Discord Integration
+
+```javascript
+// Webhook Priority
+1. News alerts → News webhook
+2. Level 3+ alerts → Urgent webhook (if configured)
+3. All other alerts → Rocket webhook
+```
+
+---
+
+## Admin Configuration
+
+### Access Credentials
+- URL: `/admin.html`
+- Default Password: `rocket123` (change in production!)
+- Session-based authentication
+
+### Configurable Settings
+
+1. **Discord Webhooks**
+   - Rocket alerts webhook
+   - News alerts webhook  
+   - Urgent alerts webhook (optional)
+
+2. **Alert Thresholds**
+   - Four levels with price % and volume
+   - Max price threshold for filtering
+
+3. **Scanner Settings**
+   - Scan interval (default 30s)
+   - Volume multiplier
+   - Pre-market/after-hours toggles
+   - News monitoring toggle
+
+### Settings Persistence
+
+Settings are saved to `admin-settings.json`:
+```json
+{
+  "webhooks": {
+    "rocket": "https://discord.com/api/webhooks/...",
+    "news": "https://discord.com/api/webhooks/...",
+    "urgent": ""
+  },
+  "maxPriceThreshold": 100,
+  "alertsEnabled": true,
+  "thresholds": {
+    "l1": { "price": 10, "volume": 500000 },
+    "l2": { "price": 20, "volume": 500000 },
+    "l3": { "price": 50, "volume": 1000000 },
+    "l4": { "price": 100, "volume": 5000000 }
+  }
 }
 ```
 
@@ -144,341 +292,321 @@ conditions = {
 
 ## API Endpoints
 
-### Market Data Endpoints
+### Public Endpoints
+
+#### GET `/api/rockets/scan`
+Returns categorized rockets with momentum data
+```javascript
+{
+  success: true,
+  rockets: {
+    momentumLeaders: [...],
+    consolidating: [...],
+    pullbacks: [...]
+  }
+}
+```
 
 #### GET `/api/stocks/top-volume`
-Returns top 20 stocks by volume
+High volume stocks for fallback
 ```javascript
-Query Parameters:
-- type: 'premarket' | 'regular' | 'afterhours'
-
-Response:
 {
   success: true,
   stocks: [{
-    rank: 1,
     symbol: "AAPL",
-    companyName: "Apple Inc",
-    volume: 50000000,
     price: 150.25,
-    change: 2.5,
-    changePercent: 1.68,
-    premarketVolume: 2000000,
-    hasPremarketData: true
+    changePercent: 2.5,
+    volume: 50000000
   }]
 }
 ```
 
-#### GET `/api/premarket/top-stocks`
-Pre-market specific endpoint with detailed metrics
+#### GET `/api/news`
+Market news with filtering
 ```javascript
-Response includes:
-- Pre-market volume leaders
-- Gap up/down stocks
-- Unusual volume alerts
-- Price momentum indicators
-```
-
-#### GET `/api/afterhours/top-movers`
-After-hours trading analysis
-```javascript
-Response includes:
-- Extended hours volume
-- Price movement from close
-- Institutional activity indicators
-```
-
-### Real-Time WebSocket Events
-
-#### Market Data Stream (Port 3006)
-```javascript
-Events:
-- 'price_update': Real-time price changes
-- 'volume_alert': Unusual volume detected
-- 'signal': Buy/sell signal generated
-- 'market_status': Open/close notifications
-```
-
-#### After-Hours Stream (Port 3007)
-```javascript
-Events:
-- 'ah_price': After-hours price updates
-- 'ah_volume': Extended hours volume
-- 'earnings_alert': Earnings-related movements
-```
-
----
-
-## Dashboard Features
-
-### 1. Landing Page (index.html)
-- **URL**: `/`
-- **Purpose**: Hub for accessing all specialized dashboards
-- **Features**: 
-  - Quick navigation to all dashboards
-  - Market status indicator
-  - Time zone display (ET/MT)
-
-### 2. Pre-Market Dashboard (premarket-dashboard.html)
-- **URL**: `/premarket-dashboard.html`
-- **Active Hours**: 4:00 AM - 9:30 AM ET
-- **Features**:
-  - Top pre-market volume leaders
-  - Gap up/down scanners
-  - VEE pattern detection
-  - Volume acceleration tracking
-  - News catalyst integration
-
-### 3. Market Dashboard (market-dashboard.html)
-- **URL**: `/market-dashboard.html`
-- **Active Hours**: 9:30 AM - 4:00 PM ET
-- **Features**:
-  - Real-time top volume stocks
-  - VWAP tracking
-  - RSI indicators
-  - Bollinger Bands visualization
-  - Auto-refresh every 10 seconds during market hours
-
-### 4. Live Trading Dashboard (live-dashboard.html)
-- **URL**: `/live-dashboard.html`
-- **Purpose**: Real-time trading signals and analysis
-- **Features**:
-  - WebSocket live price feeds
-  - Signal generation (buy/sell)
-  - Technical indicator overlay
-  - Volume profile analysis
-  - Multi-timeframe analysis
-
-### 5. After-Hours Dashboard (afterhours-dashboard.html)
-- **URL**: `/afterhours-dashboard.html`
-- **Active Hours**: 4:00 PM - 8:00 PM ET
-- **Features**:
-  - Extended hours movers
-  - Earnings reaction tracking
-  - Institutional activity detection
-  - Next-day gap predictions
-
----
-
-## Data Sources & Caching
-
-### Polygon.io Integration
-```javascript
-API_KEY: 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW'
-Base URL: 'https://api.polygon.io'
-
-Main Endpoints Used:
-- /v2/snapshot/locale/us/markets/stocks/tickers (Market snapshot)
-- /v2/aggs/ticker/{symbol}/range/1/minute/{from}/{to} (Minute bars)
-- /v1/open-close/{symbol}/{date} (Daily OHLC)
-- /v2/reference/tickers (Stock metadata)
-```
-
-### Caching Strategy
-```javascript
-// Market snapshot cache
-snapshotCache: {
-  data: Object,
-  timestamp: Date,
-  TTL: 30000ms (30 seconds)
+{
+  success: true,
+  news: [{
+    headline: "...",
+    symbol: "AAPL",
+    timestamp: "2024-01-01T10:00:00Z"
+  }]
 }
-
-// Pre-market data cache
-premarketDataCache: Map<symbol, data>
-TTL: 120000ms (2 minutes)
-// Refreshes automatically during pre-market hours
-
-// Company info cache
-companyInfoCache: Map<symbol, info>
-TTL: 86400000ms (24 hours)
-// Rarely changes, long cache time
 ```
 
-### Rate Limiting Protection
+### Admin Endpoints
+
+#### GET `/api/admin/settings`
+Retrieve all configuration
+
+#### POST `/api/admin/thresholds`
+Save alert thresholds and max price
 ```javascript
-// Batch processing for API calls
-batchSize: 10 symbols
-delayBetweenBatches: 200ms
-
-// Request queuing
-maxConcurrentRequests: 5
-requestDelay: 100ms
+{
+  thresholds: {...},
+  alertsEnabled: true,
+  maxPriceThreshold: 100
+}
 ```
+
+#### POST `/api/admin/webhooks`
+Update Discord webhooks
+
+#### POST `/api/admin/test-webhook`
+Test Discord webhook connectivity
+
+---
+
+## Recent Updates & Fixes
+
+### 1. Momentum Values Clearing Fix (Latest)
+**Problem**: 1m and 5m momentum values reset to 0.00 on WebSocket updates
+
+**Solution**: Modified `updateRealTimePrices()` to check for valid data:
+```javascript
+// Only update when valid data present
+if (momentum1mElement && update.priceChange1m !== undefined && update.priceChange1m !== null) {
+    momentum1mElement.textContent = `1m: ${update.priceChange1m >= 0 ? '+' : ''}${update.priceChange1m.toFixed(1)}%`;
+}
+// Don't update if undefined/null
+```
+
+### 2. Max Price Threshold Implementation
+**Feature**: Filter expensive stocks from alerts
+
+**Changes**:
+- Added `maxPriceThreshold` to admin settings
+- UI input in admin panel
+- Price check in `sendDiscordAlert()`
+- Console logging when alerts skipped
+
+### 3. Immediate Stock Categorization
+**Problem**: Stocks waited for momentum data before categorizing
+
+**Solution**: Smart initial categorization based on day performance:
+```javascript
+// Use day change % and volume for immediate categorization
+// Refine with momentum data when available
+if (!hasMomentumData) {
+  // Smart defaults based on performance
+} else {
+  // Precise momentum-based categorization
+}
+```
+
+### 4. WebSocket Production Fix
+**Problem**: WebSocket failed on port 3006 in production
+
+**Solution**: Path-based WebSocket on same port:
+- Development: `ws://localhost:3006`
+- Production: `ws://server:3018/ws`
 
 ---
 
 ## Deployment Guide
 
 ### Local Development
+
 ```bash
 # Install dependencies
 npm install
 
-# Run locally
-node premarket-server.js
+# Start development server
+./start-local.sh
+# OR
+NODE_ENV=development node premarket-server.js
 
-# Access at http://localhost:3018
+# Access
+Dashboard: http://localhost:3018
+Admin: http://localhost:3018/admin.html
 ```
 
-### VPS/Production Deployment
-```bash
-# On VPS server
-cd /path/to/vee-hour-strategy
-git pull origin main
+### Production Deployment
 
-# Deploy with Docker (recommended)
+#### Using Docker (Recommended)
+
+```bash
+# Quick deploy
 ./deploy.sh
 
 # Manual Docker commands
-docker build --no-cache -t premarket-strategy .
-docker run -d \
-  --name premarket-strategy \
+docker build -t premarket-strategy .
+docker run -d --name premarket-strategy \
   -p 3018:3018 \
-  -p 3006:3006 \
-  -p 3007:3007 \
-  -e POLYGON_API_KEY=$POLYGON_API_KEY \
+  -e NODE_ENV=production \
   --restart unless-stopped \
   premarket-strategy
-
-# Check logs
-docker logs -f premarket-strategy
 ```
 
-### Deploy Script Features
-- Stops existing containers
-- Removes old Docker images (forces fresh build)
-- Builds with --no-cache flag
-- Auto-restart policy
-- Health check after deployment
+#### Docker Configuration (`Dockerfile`)
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production --legacy-peer-deps
+COPY . .
+EXPOSE 3018
+ENV NODE_ENV=production
+CMD ["node", "premarket-server.js"]
+```
+
+#### Deployment Script (`deploy.sh`)
+```bash
+#!/bin/bash
+cd /opt/vee-hour-strategy
+git pull origin main
+docker stop premarket-strategy
+docker rm premarket-strategy  
+docker build --no-cache -t premarket-strategy .
+docker run -d --name premarket-strategy \
+  -e NODE_ENV=production \
+  -p 3018:3018 \
+  --restart unless-stopped \
+  premarket-strategy
+```
 
 ---
 
-## Technical Architecture
+## Troubleshooting
+
+### Common Issues & Solutions
+
+#### WebSocket Not Connecting
+```bash
+# Check if port is accessible
+curl http://server:3018/ws
+
+# Verify NODE_ENV
+docker exec premarket-strategy env | grep NODE_ENV
+
+# Check logs
+docker logs premarket-strategy | grep WebSocket
+```
+
+#### Stocks Not Categorizing
+- Allow 1-2 minutes for momentum data
+- Check browser console for errors
+- Verify `/api/rockets/scan` returns data
+
+#### Discord Alerts Not Working
+1. Check webhook URL format
+2. Verify alerts enabled in admin
+3. Check price vs threshold
+4. View server logs for errors
+
+#### Momentum Shows 0.00
+- Fixed in latest update
+- Clear browser cache if persists
+- Check WebSocket data structure
+
+### Log Monitoring
+
+```bash
+# Docker logs
+docker logs --tail 100 -f premarket-strategy
+
+# Important log patterns
+✅ Success operations
+⚠️ Warnings (price threshold skips)
+❌ Errors needing attention
+🚀 Rocket alerts sent
+📈 Price updates broadcast
+```
+
+---
+
+## Technical Details
 
 ### File Structure
 ```
-/
-├── premarket-server.js      # Main API server
-├── index.html               # Landing page
-├── premarket-dashboard.html # Pre-market scanner
-├── market-dashboard.html    # Market hours dashboard
-├── live-dashboard.html      # Live trading interface
-├── afterhours-dashboard.html # After-hours tracker
-├── real-dashboard.html      # Alternative trading view
-├── package.json            # Node dependencies
-├── Dockerfile              # Docker configuration
-├── deploy.sh              # Deployment script
-├── premarket-api-test.js  # API testing utility
-├── find-premarket-leaders.js # Pre-market scanner script
-└── VPS_DEPLOYMENT.md      # Deployment instructions
+/PreMarket_Strategy/
+├── premarket-server.js        # Backend server
+├── rocket-scanner.html        # Main dashboard
+├── admin.html                 # Admin panel
+├── index.html                 # Landing page
+├── package.json              # Dependencies
+├── Dockerfile                # Docker config
+├── deploy.sh                 # Deploy script
+├── start-local.sh            # Dev startup
+├── admin-settings.json       # Settings file
+├── .env.local               # Dev environment
+├── .env.production          # Prod environment
+└── SYSTEM_DOCUMENTATION.md   # This file
 ```
 
 ### Dependencies
 ```json
 {
-  "express": "^4.18.2",
+  "express": "^4.19.2",
   "cors": "^2.8.5",
-  "ws": "^8.13.0",
-  "axios": "^1.4.0",
-  "dotenv": "^16.3.1"
+  "ws": "^8.18.0",
+  "axios": "^1.7.7",
+  "dotenv": "^16.4.5"
 }
 ```
 
 ### Environment Variables
 ```bash
-POLYGON_API_KEY=AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW
-PORT=3018  # Optional, defaults to 3018
+# Development (.env.local)
+NODE_ENV=development
+DISCORD_WEBHOOK_ROCKET=https://discord.com/api/webhooks/...
+DISCORD_WEBHOOK_NEWS=https://discord.com/api/webhooks/...
+
+# Production (.env.production)  
+NODE_ENV=production
+# Same structure
 ```
 
-### Dynamic URL Handling
-All dashboards use dynamic hostname detection:
-```javascript
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3018' 
-  : `http://${window.location.hostname}:3018`;
-```
+### Performance Optimizations
 
-### Error Handling
-- Automatic reconnection for WebSocket disconnections
-- Fallback to cached data when API fails
-- Rate limit retry with exponential backoff
-- Graceful degradation for missing data
+1. **WebSocket Throttling**: Updates every 2 seconds
+2. **Scan Intervals**: Rockets scan every 30 seconds
+3. **DOM Batching**: Updates grouped for efficiency
+4. **Alert Deduplication**: Prevents spam
+5. **Smart Caching**: Different TTLs for data types
 
----
-
-## Common Issues & Solutions
-
-### Issue: Dashboard shows "localhost" error on VPS
-**Solution**: Clear browser cache (Ctrl+F5), dashboards now use dynamic hostnames
-
-### Issue: Pre-market volumes showing low/incorrect
-**Solution**: Server now fetches actual pre-market data (4-9:30 AM ET) for top 50 stocks
-
-### Issue: Docker container using old code
-**Solution**: Deploy script now uses `--no-cache` flag to force fresh builds
-
-### Issue: WebSocket connection fails
-**Solution**: Ensure ports 3006/3007 are open in firewall/security groups
-
-### Issue: API rate limits
-**Solution**: Implemented batching and caching to minimize API calls
+### Resource Usage
+- Memory: ~100-200MB typical
+- CPU: Low, spikes during scans
+- Network: Lightweight WebSocket traffic
+- Storage: Minimal (settings file only)
 
 ---
 
-## Performance Optimizations
+## Quick Reference
 
-1. **Batch API Requests**: Groups symbols in batches of 10
-2. **Smart Caching**: Different TTL for different data types
-3. **WebSocket Efficiency**: Only sends updates on significant changes
-4. **Lazy Loading**: Dashboards load data on-demand
-5. **Auto-refresh Logic**: Only during active trading hours
+### Key URLs
+- Production: `http://15.204.86.6:3018`
+- Admin Panel: `http://15.204.86.6:3018/admin.html`
+- Local Dev: `http://localhost:3018`
 
----
-
-## Future Enhancements Roadmap
-
-1. **Database Integration**: Historical data storage
-2. **User Authentication**: Personal watchlists and alerts
-3. **Advanced Strategies**: ML-based pattern recognition
-4. **Mobile App**: React Native companion app
-5. **Backtesting Engine**: Strategy performance validation
-6. **Alert System**: Email/SMS notifications
-7. **Options Flow**: Unusual options activity tracking
-
----
-
-## Quick Reference Commands
-
+### Essential Commands
 ```bash
-# Check if server is running
+# Check status
 docker ps | grep premarket
 
-# View real-time logs
+# View logs
 docker logs -f premarket-strategy
 
-# Restart container
+# Restart
 docker restart premarket-strategy
 
-# Pull latest changes and redeploy
-git pull origin main && ./deploy.sh
+# Redeploy
+git pull && ./deploy.sh
 
-# Test API endpoint
-curl http://localhost:3018/api/stocks/top-volume
-
-# Check port usage
-lsof -i :3018
+# Test API
+curl http://localhost:3018/api/rockets/scan
 ```
 
----
-
-## Contact & Support
-
-- GitHub Repository: https://github.com/KingKoopa08/vee-hour-strategy
-- Primary API: Polygon.io
-- Deployment Platform: Docker on Linux VPS
-- Node Version: 18 Alpine
+### Important Notes
+1. **Always** test in development first
+2. **Change** default admin password in production
+3. **Monitor** Discord webhook rate limits
+4. **Check** logs after deployment
+5. **Backup** admin-settings.json regularly
 
 ---
 
-*Last Updated: September 2025*
-*Version: 1.0.0*
+*Last Updated: Current Session*
+*Version: 2.1 - Real-time WebSocket with Smart Categorization*
+*Repository: /mnt/d/Cursor Ideas/PreMarket_Stratedy/*
