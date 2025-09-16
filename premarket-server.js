@@ -1211,7 +1211,29 @@ app.get('/api/rockets/scan', async (req, res) => {
         const stocks = await fetchSessionStocks();
         const rockets = [];
         
-        for (const stock of stocks.slice(0, 100)) { // Check top 100 stocks
+        // Also fetch top gainers to catch stocks like IMTE
+        try {
+            const gainersUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
+            const gainersResponse = await axios.get(gainersUrl);
+            
+            if (gainersResponse.data && gainersResponse.data.tickers) {
+                for (const ticker of gainersResponse.data.tickers) {
+                    const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
+                    stocks.push({
+                        symbol: ticker.ticker,
+                        price: ticker.day.c,
+                        changePercent: changePercent,
+                        volume: ticker.day.v,
+                        vwap: ticker.day.vw,
+                        session: marketSession.session
+                    });
+                }
+            }
+        } catch (error) {
+            console.log('Could not fetch gainers:', error.message);
+        }
+        
+        for (const stock of stocks.slice(0, 200)) { // Check top 200 stocks + all gainers
             const symbol = stock.symbol;
             const price = stock.price;
             const volume = stock.volume;
