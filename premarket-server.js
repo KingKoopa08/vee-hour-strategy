@@ -2071,51 +2071,64 @@ async function scanForNews() {
 
 // Start rocket scanner
 function startRocketScanner() {
-    // Check for rockets every minute during market hours
+    // Initial scan
+    scanAndAlertRockets();
+    
+    // Check for rockets every 2 minutes during market hours
     setInterval(async () => {
-        const session = getMarketSession();
-        if (!session || !adminSettings.webhooks.rocket) return;
+        await scanAndAlertRockets();
+    }, 120000); // Every 2 minutes
+}
+
+// Scan for rockets and send Discord alerts
+async function scanAndAlertRockets() {
+    const session = getMarketSession();
+    if (!session || session.session === 'closed' || !adminSettings.webhooks.rocket) return;
+    
+    try {
+        console.log('🔍 Scanning for rocket alerts...');
         
-        try {
-            // Get top movers
-            const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
-            const response = await axios.get(url);
+        // Use the same logic as the main scan endpoint
+        const response = await axios.get(`http://localhost:3018/api/rockets/scan`);
+        
+        if (response.data && response.data.rockets) {
+            const rockets = response.data.rockets;
+            let alertCount = 0;
             
-            if (response.data && response.data.tickers) {
-                for (const ticker of response.data.tickers.slice(0, 10)) {
-                    const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
-                    
-                    // Check if it's a rocket (>20% move)
-                    if (Math.abs(changePercent) >= 20) {
-                        const rocketKey = `${ticker.ticker}_${Math.floor(changePercent)}`;
+            for (const rocket of rockets) {
+                const rocketKey = `${rocket.symbol}_${Math.floor(rocket.changePercent)}_${session.session}`;
+                
+                // Alert for significant rockets not already sent
+                if (!sentRockets.has(rocketKey)) {
+                    // Alert criteria: level 2+, >15% gain, or high volume movers
+                    if (rocket.level >= 2 || 
+                        rocket.changePercent >= 15 || 
+                        (rocket.volume > 5000000 && rocket.changePercent > 5)) {
                         
-                        if (!sentRockets.has(rocketKey)) {
-                            const rocket = {
-                                symbol: ticker.ticker,
-                                price: ticker.day.c,
-                                changePercent: changePercent,
-                                volume: ticker.day.v,
-                                level: changePercent >= 100 ? 4 : 
-                                       changePercent >= 50 ? 3 : 
-                                       changePercent >= 30 ? 2 : 1,
-                                session: session.session
-                            };
-                            
-                            await sendDiscordAlert(rocket, 'rocket');
-                            sentRockets.add(rocketKey);
-                            
-                            // Keep set size manageable
-                            if (sentRockets.size > 500) {
-                                sentRockets.clear();
-                            }
-                        }
+                        await sendDiscordAlert(rocket, 'rocket');
+                        sentRockets.add(rocketKey);
+                        alertCount++;
+                        
+                        // Log the alert
+                        console.log(`🚀 Alert sent: ${rocket.symbol} +${rocket.changePercent.toFixed(1)}% Vol: ${(rocket.volume/1000000).toFixed(1)}M`);
                     }
                 }
             }
-        } catch (error) {
-            console.error('Rocket scan error:', error.message);
+            
+            if (alertCount > 0) {
+                console.log(`✅ Sent ${alertCount} rocket alerts`);
+            }
+            
+            // Clean up old entries periodically
+            if (sentRockets.size > 500) {
+                const keysArray = Array.from(sentRockets);
+                sentRockets.clear();
+                keysArray.slice(-250).forEach(key => sentRockets.add(key));
+            }
         }
-    }, 60000); // Every minute
+    } catch (error) {
+        console.error('Rocket alert scan error:', error.message);
+    }
 }
 
 // Send news alert to Discord
