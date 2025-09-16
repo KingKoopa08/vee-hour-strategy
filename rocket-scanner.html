@@ -1047,8 +1047,17 @@
         }
         
         // Add rocket card
+        function addRocketCardToContainer(rocket, containerId) {
+            const container = document.getElementById(containerId);
+            _createRocketCard(rocket, container);
+        }
+        
         function addRocketCard(rocket) {
             const container = document.getElementById('alertsContainer');
+            _createRocketCard(rocket, container);
+        }
+        
+        function _createRocketCard(rocket, container) {
             
             // Get change percentage (handle both field names)
             const changePercent = rocket.changePercent || rocket.priceChangePercent || 0;
