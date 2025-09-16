@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Rocket Scanner - Explosive Mover Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f3a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(20, 25, 45, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-bottom: 2px solid rgba(255, 100, 50, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff6b35, #ff9558);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .status-badges {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .badge.active {
+            background: rgba(50, 255, 50, 0.2);
+            border: 1px solid #32ff32;
+            color: #32ff32;
+        }
+        
+        .badge.scanning {
+            background: rgba(255, 200, 50, 0.2);
+            border: 1px solid #ffc832;
+            color: #ffc832;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Alert Levels */
+        .alert-levels {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(30, 35, 55, 0.5);
+            border-radius: 10px;
+        }
+        
+        .level {
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .level-1 { background: rgba(100, 100, 255, 0.2); color: #6464ff; }
+        .level-2 { background: rgba(255, 200, 50, 0.2); color: #ffc832; }
+        .level-3 { background: rgba(255, 100, 50, 0.2); color: #ff6432; }
+        .level-4 { background: rgba(255, 50, 50, 0.2); color: #ff3232; }
+        
+        /* Main Content */
+        .main-container {
+            max-width: 1800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        /* Rocket Alerts Section */
+        .rocket-alerts {
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 100, 50, 0.2);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-count {
+            background: rgba(255, 100, 50, 0.2);
+            color: #ff6432;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Alert Cards */
+        .alert-card {
+            background: rgba(30, 35, 55, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-card.urgent {
+            border: 2px solid #ff3232;
+            background: rgba(255, 50, 50, 0.1);
+            animation: urgentPulse 2s infinite;
+        }
+        
+        @keyframes urgentPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 50, 50, 0.6); }
+        }
+        
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .stock-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .stock-symbol {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+        }
+        
+        .price-change {
+            font-size: 20px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+        
+        .price-change.positive {
+            background: rgba(50, 255, 50, 0.2);
+            color: #32ff32;
+        }
+        
+        .alert-time {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .alert-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .metric {
+            background: rgba(40, 45, 65, 0.5);
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .metric-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .metric-value.highlight {
+            color: #ff6432;
+        }
+        
+        .news-section {
+            background: rgba(40, 45, 65, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .news-label {
+            font-size: 11px;
+            color: #ffc832;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .news-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #ddd;
+        }
+        
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Stats Panel */
+        .stats-panel {
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #888;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        /* Settings Panel */
+        .settings-panel {
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 200, 50, 0.2);
+        }
+        
+        .setting-row {
+            margin-bottom: 15px;
+        }
+        
+        .setting-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .setting-input {
+            width: 100%;
+            padding: 8px;
+            background: rgba(40, 45, 65, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #ff6432;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Discord Integration */
+        .discord-panel {
+            background: rgba(88, 101, 242, 0.1);
+            border: 1px solid rgba(88, 101, 242, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .discord-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .discord-icon {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #32ff32;
+            animation: pulse 2s infinite;
+        }
+        
+        /* News Feed */
+        .news-feed {
+            background: rgba(20, 25, 45, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .news-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(40, 45, 65, 0.3);
+            border-radius: 8px;
+            border-left: 3px solid #ffc832;
+        }
+        
+        .news-timestamp {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .news-headline {
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 3px;
+        }
+        
+        .news-ticker {
+            display: inline-block;
+            background: rgba(100, 100, 255, 0.2);
+            color: #6464ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        /* Float and halt badges */
+        .float-badge {
+            display: inline-block;
+            background: rgba(255, 100, 255, 0.2);
+            color: #ff64ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .halt-badge {
+            display: inline-block;
+            background: rgba(255, 50, 50, 0.3);
+            color: #ff3232;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Financial Disclaimer -->
+    <div class="disclaimer-banner" style="
+        background: linear-gradient(90deg, rgba(255,59,48,0.15), rgba(255,149,0,0.15));
+        border: 1px solid rgba(255,149,0,0.5);
+        border-radius: 8px;
+        padding: 12px 20px;
+        margin: 20px auto;
+        max-width: 1800px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    ">
+        <p style="color: rgba(255,255,255,0.9); font-size: 13px; line-height: 1.5; margin: 0;">
+            <strong style="color: #ff9500; font-weight: 600;">⚠️ IMPORTANT DISCLAIMER:</strong> This platform is for informational and educational purposes only. 
+            Nothing presented here constitutes financial, investment, legal, or tax advice. 
+            Trading stocks involves substantial risk of loss and is not suitable for every investor. 
+            Past performance does not guarantee future results. Always conduct your own research and consult with qualified professionals before making any investment decisions.
+            <strong style="color: #ff9500;">USE AT YOUR OWN RISK.</strong>
+        </p>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="title-section">
+                <div class="logo">🚀 Rocket Scanner</div>
+                <div class="status-badges">
+                    <div class="badge active">
+                        <span class="pulse-dot"></span>
+                        Live
+                    </div>
+                    <div class="badge scanning">
+                        Scanning...
+                    </div>
+                    <div id="timeDisplay">--:--:-- --</div>
+                </div>
+            </div>
+            <div class="alert-levels">
+                <div class="level level-1">L1: Watch</div>
+                <div class="level level-2">L2: Alert</div>
+                <div class="level level-3">L3: Urgent</div>
+                <div class="level level-4">L4: JACKPOT</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel - Rocket Alerts -->
+        <div class="rocket-alerts">
+            <div class="section-header">
+                <div class="section-title">
+                    🎯 Active Rockets
+                    <span class="alert-count" id="alertCount">0</span>
+                </div>
+                <button id="clearAlerts" style="background: rgba(255,50,50,0.2); color: #ff3232; border: 1px solid #ff3232; padding: 5px 15px; border-radius: 5px; cursor: pointer;">
+                    Clear All
+                </button>
+            </div>
+            <div id="alertsContainer">
+                <!-- Alerts will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Stats Panel -->
+            <div class="stats-panel">
+                <div class="section-title">📊 Session Stats</div>
+                <div class="stat-row">
+                    <span class="stat-label">Rockets Detected</span>
+                    <span class="stat-value" id="totalRockets">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">News Alerts</span>
+                    <span class="stat-value" id="newsAlerts">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Avg Gain</span>
+                    <span class="stat-value" id="avgGain">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Stocks Monitoring</span>
+                    <span class="stat-value" id="stocksMonitoring">0</span>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="settings-panel">
+                <div class="section-title">⚙️ Alert Settings</div>
+                <div class="setting-row">
+                    <div class="setting-label">Min Volume Spike</div>
+                    <input type="number" class="setting-input" id="minVolume" value="100000" />
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Min Price Change %</div>
+                    <input type="number" class="setting-input" id="minPrice" value="10" />
+                </div>
+                <div class="setting-row">
+                    <div class="toggle-switch">
+                        <span>News Alerts</span>
+                        <label class="switch">
+                            <input type="checkbox" id="newsToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="toggle-switch">
+                        <span>Sound Alerts</span>
+                        <label class="switch">
+                            <input type="checkbox" id="soundToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discord Panel -->
+            <div class="discord-panel">
+                <div class="section-title">💬 Discord Integration</div>
+                <div class="discord-status">
+                    <span class="status-dot"></span>
+                    <span>Connected</span>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Webhook URL</div>
+                    <input type="text" class="setting-input" id="discordWebhook" placeholder="Enter Discord webhook URL" />
+                </div>
+                <button id="testDiscord" style="width: 100%; background: #5865F2; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                    Test Discord Alert
+                </button>
+            </div>
+
+            <!-- News Feed -->
+            <div class="news-feed">
+                <div class="section-title">📰 Breaking News</div>
+                <div id="newsFeed">
+                    <!-- News items will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3018' : `http://${window.location.hostname}:3018`;
+        const WS_URL = window.location.hostname === 'localhost' ? 'ws://localhost:3006' : `ws://${window.location.hostname}:3006`;
+        
+        // State
+        let rockets = new Map();
+        let newsCache = new Set();
+        let monitoring = new Map();
+        let ws = null;
+        let scanInterval = null;
+        
+        // Stats
+        let stats = {
+            totalRockets: 0,
+            newsAlerts: 0,
+            avgGain: 0,
+            stocksMonitoring: 0
+        };
+        
+        // Initialize
+        async function init() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            connectWebSocket();
+            startScanning();
+            loadSettings();
+        }
+        
+        // Update time display
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'America/New_York'
+            });
+            document.getElementById('timeDisplay').textContent = timeString + ' ET';
+        }
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected for rocket detection');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+        
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            if (data.type === 'price_update') {
+                checkForRocket(data);
+            } else if (data.type === 'news') {
+                handleNews(data);
+            } else if (data.type === 'halt') {
+                handleHalt(data);
+            }
+        }
+        
+        // Start scanning for rockets
+        async function startScanning() {
+            // Initial scan
+            await scanForRockets();
+            
+            // Scan every 30 seconds
+            scanInterval = setInterval(scanForRockets, 30000);
+        }
+        
+        // Scan for rockets
+        async function scanForRockets() {
+            try {
+                const response = await fetch(`${API_URL}/api/rockets/scan`);
+                const data = await response.json();
+                
+                if (data.success && data.rockets) {
+                    data.rockets.forEach(rocket => {
+                        if (shouldAlert(rocket)) {
+                            addRocketAlert(rocket);
+                        }
+                    });
+                }
+                
+                updateStats();
+            } catch (error) {
+                console.error('Scan error:', error);
+            }
+        }
+        
+        // Check if should alert
+        function shouldAlert(rocket) {
+            const minVolume = parseInt(document.getElementById('minVolume').value);
+            const minPrice = parseFloat(document.getElementById('minPrice').value);
+            
+            return rocket.volume >= minVolume && 
+                   Math.abs(rocket.changePercent) >= minPrice &&
+                   !rockets.has(rocket.symbol);
+        }
+        
+        // Add rocket alert
+        function addRocketAlert(rocket) {
+            rockets.set(rocket.symbol, rocket);
+            
+            const alertLevel = getAlertLevel(rocket);
+            const alertCard = createAlertCard(rocket, alertLevel);
+            
+            const container = document.getElementById('alertsContainer');
+            container.insertBefore(alertCard, container.firstChild);
+            
+            // Update count
+            document.getElementById('alertCount').textContent = rockets.size;
+            
+            // Send Discord alert if enabled
+            if (alertLevel >= 3) {
+                sendDiscordAlert(rocket);
+            }
+            
+            // Play sound if enabled
+            if (document.getElementById('soundToggle').checked) {
+                playAlertSound(alertLevel);
+            }
+            
+            stats.totalRockets++;
+            updateStats();
+        }
+        
+        // Get alert level
+        function getAlertLevel(rocket) {
+            const change = Math.abs(rocket.changePercent);
+            const volume = rocket.volume;
+            
+            if (change >= 100 && volume >= 5000000) return 4; // JACKPOT
+            if (change >= 50 && volume >= 1000000) return 3;  // URGENT
+            if (change >= 20 && volume >= 500000) return 2;   // ALERT
+            return 1; // WATCH
+        }
+        
+        // Create alert card
+        function createAlertCard(rocket, level) {
+            const card = document.createElement('div');
+            card.className = `alert-card ${level >= 3 ? 'urgent' : ''}`;
+            card.innerHTML = `
+                <div class="alert-header">
+                    <div class="stock-info">
+                        <span class="stock-symbol">${rocket.symbol}</span>
+                        <span class="price-change positive">+${rocket.changePercent.toFixed(1)}%</span>
+                        ${rocket.halted ? '<span class="halt-badge">HALTED</span>' : ''}
+                        ${rocket.float ? `<span class="float-badge">${formatFloat(rocket.float)} Float</span>` : ''}
+                    </div>
+                    <span class="alert-time">${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div class="alert-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Price</div>
+                        <div class="metric-value">$${rocket.price.toFixed(2)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Volume</div>
+                        <div class="metric-value highlight">${formatVolume(rocket.volume)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">VWAP</div>
+                        <div class="metric-value">$${rocket.vwap.toFixed(2)}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">RSI</div>
+                        <div class="metric-value">${rocket.rsi.toFixed(1)}</div>
+                    </div>
+                </div>
+                ${rocket.news ? `
+                <div class="news-section">
+                    <div class="news-label">📰 Catalyst</div>
+                    <div class="news-text">${rocket.news}</div>
+                </div>
+                ` : ''}
+            `;
+            return card;
+        }
+        
+        // Handle news
+        function handleNews(news) {
+            if (!newsCache.has(news.id)) {
+                newsCache.add(news.id);
+                
+                const newsItem = document.createElement('div');
+                newsItem.className = 'news-item';
+                newsItem.innerHTML = `
+                    <div class="news-timestamp">${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div class="news-headline">${news.headline}</div>
+                    ${news.symbol ? `<span class="news-ticker">${news.symbol}</span>` : ''}
+                `;
+                
+                const feed = document.getElementById('newsFeed');
+                feed.insertBefore(newsItem, feed.firstChild);
+                
+                // Keep only last 20 news items
+                while (feed.children.length > 20) {
+                    feed.removeChild(feed.lastChild);
+                }
+                
+                stats.newsAlerts++;
+                updateStats();
+            }
+        }
+        
+        // Handle halt
+        function handleHalt(data) {
+            const card = document.querySelector(`[data-symbol="${data.symbol}"]`);
+            if (card) {
+                const haltBadge = card.querySelector('.halt-badge');
+                if (data.halted && !haltBadge) {
+                    const badge = document.createElement('span');
+                    badge.className = 'halt-badge';
+                    badge.textContent = 'HALTED';
+                    card.querySelector('.stock-info').appendChild(badge);
+                } else if (!data.halted && haltBadge) {
+                    haltBadge.remove();
+                }
+            }
+        }
+        
+        // Send Discord alert
+        async function sendDiscordAlert(rocket) {
+            const webhook = document.getElementById('discordWebhook').value;
+            if (!webhook) return;
+            
+            const embed = {
+                embeds: [{
+                    title: `🚀 ROCKET DETECTED: ${rocket.symbol}`,
+                    color: rocket.changePercent >= 100 ? 0xff0000 : 0xff6432,
+                    fields: [
+                        { name: "Price", value: `$${rocket.price.toFixed(2)}`, inline: true },
+                        { name: "Change", value: `+${rocket.changePercent.toFixed(1)}%`, inline: true },
+                        { name: "Volume", value: formatVolume(rocket.volume), inline: true },
+                        { name: "VWAP", value: `$${rocket.vwap.toFixed(2)}`, inline: true },
+                        { name: "RSI", value: rocket.rsi.toFixed(1), inline: true },
+                        { name: "Alert Level", value: `Level ${getAlertLevel(rocket)}`, inline: true }
+                    ],
+                    description: rocket.news || "No news catalyst detected",
+                    timestamp: new Date().toISOString()
+                }]
+            };
+            
+            try {
+                await fetch(webhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(embed)
+                });
+            } catch (error) {
+                console.error('Discord webhook error:', error);
+            }
+        }
+        
+        // Play alert sound
+        function playAlertSound(level) {
+            // Create audio context and play beep
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = level >= 3 ? 800 : 600;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + (level >= 3 ? 0.5 : 0.2));
+        }
+        
+        // Format helpers
+        function formatVolume(volume) {
+            if (volume >= 1000000) return (volume / 1000000).toFixed(1) + 'M';
+            if (volume >= 1000) return (volume / 1000).toFixed(0) + 'K';
+            return volume.toString();
+        }
+        
+        function formatFloat(float) {
+            if (float >= 1000000) return (float / 1000000).toFixed(1) + 'M';
+            return (float / 1000).toFixed(0) + 'K';
+        }
+        
+        // Update stats
+        function updateStats() {
+            document.getElementById('totalRockets').textContent = stats.totalRockets;
+            document.getElementById('newsAlerts').textContent = stats.newsAlerts;
+            document.getElementById('stocksMonitoring').textContent = monitoring.size;
+            
+            // Calculate average gain
+            if (rockets.size > 0) {
+                const gains = Array.from(rockets.values()).map(r => r.changePercent);
+                const avg = gains.reduce((a, b) => a + b, 0) / gains.length;
+                document.getElementById('avgGain').textContent = avg.toFixed(1) + '%';
+            }
+        }
+        
+        // Load settings
+        function loadSettings() {
+            const webhook = localStorage.getItem('discordWebhook');
+            if (webhook) {
+                document.getElementById('discordWebhook').value = webhook;
+            }
+        }
+        
+        // Save webhook
+        document.getElementById('discordWebhook').addEventListener('change', (e) => {
+            localStorage.setItem('discordWebhook', e.target.value);
+        });
+        
+        // Test Discord
+        document.getElementById('testDiscord').addEventListener('click', () => {
+            sendDiscordAlert({
+                symbol: 'TEST',
+                price: 10.50,
+                changePercent: 125.5,
+                volume: 5000000,
+                vwap: 10.25,
+                rsi: 75,
+                news: 'This is a test alert from Rocket Scanner'
+            });
+        });
+        
+        // Clear alerts
+        document.getElementById('clearAlerts').addEventListener('click', () => {
+            rockets.clear();
+            document.getElementById('alertsContainer').innerHTML = '';
+            document.getElementById('alertCount').textContent = '0';
+        });
+        
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
