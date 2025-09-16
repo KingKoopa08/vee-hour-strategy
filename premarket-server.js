@@ -1514,6 +1514,136 @@ app.post('/api/admin/stats/clear', (req, res) => {
     res.json({ success: true });
 });
 
+// Track sent news to avoid duplicates
+const sentNewsIds = new Set();
+const sentRockets = new Set();
+
+// Start news scanner
+function startNewsScanner() {
+    // Check for breaking news every 2 minutes
+    setInterval(async () => {
+        if (!adminSettings.webhooks.news) return;
+        
+        try {
+            const polygonUrl = `${POLYGON_BASE_URL}/v2/reference/news?limit=10&apiKey=${POLYGON_API_KEY}`;
+            const response = await axios.get(polygonUrl);
+            
+            if (response.data && response.data.results) {
+                for (const newsItem of response.data.results) {
+                    // Skip if already sent
+                    if (sentNewsIds.has(newsItem.id)) continue;
+                    
+                    // Check if news is recent (last 30 minutes)
+                    const newsTime = new Date(newsItem.published_utc);
+                    const now = new Date();
+                    const ageMinutes = (now - newsTime) / 60000;
+                    
+                    if (ageMinutes <= 30) {
+                        // Send to Discord
+                        await sendNewsAlert(newsItem);
+                        sentNewsIds.add(newsItem.id);
+                        
+                        // Keep set size manageable
+                        if (sentNewsIds.size > 1000) {
+                            const idsArray = Array.from(sentNewsIds);
+                            sentNewsIds.clear();
+                            idsArray.slice(-500).forEach(id => sentNewsIds.add(id));
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('News scan error:', error.message);
+        }
+    }, 120000); // Every 2 minutes
+}
+
+// Start rocket scanner
+function startRocketScanner() {
+    // Check for rockets every minute during market hours
+    setInterval(async () => {
+        const session = getMarketSession();
+        if (!session || !adminSettings.webhooks.rocket) return;
+        
+        try {
+            // Get top movers
+            const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
+            const response = await axios.get(url);
+            
+            if (response.data && response.data.tickers) {
+                for (const ticker of response.data.tickers.slice(0, 10)) {
+                    const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
+                    
+                    // Check if it's a rocket (>20% move)
+                    if (Math.abs(changePercent) >= 20) {
+                        const rocketKey = `${ticker.ticker}_${Math.floor(changePercent)}`;
+                        
+                        if (!sentRockets.has(rocketKey)) {
+                            const rocket = {
+                                symbol: ticker.ticker,
+                                price: ticker.day.c,
+                                changePercent: changePercent,
+                                volume: ticker.day.v,
+                                level: changePercent >= 100 ? 4 : 
+                                       changePercent >= 50 ? 3 : 
+                                       changePercent >= 30 ? 2 : 1,
+                                session: session.session
+                            };
+                            
+                            await sendDiscordAlert(rocket, 'rocket');
+                            sentRockets.add(rocketKey);
+                            
+                            // Keep set size manageable
+                            if (sentRockets.size > 500) {
+                                sentRockets.clear();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Rocket scan error:', error.message);
+        }
+    }, 60000); // Every minute
+}
+
+// Send news alert to Discord
+async function sendNewsAlert(newsItem) {
+    if (!adminSettings.webhooks.news) return;
+    
+    try {
+        const embed = {
+            embeds: [{
+                title: `📰 ${newsItem.title}`,
+                description: newsItem.description ? newsItem.description.substring(0, 500) : '',
+                url: newsItem.article_url,
+                color: 0x0099FF,
+                fields: [
+                    {
+                        name: 'Symbols',
+                        value: newsItem.tickers ? newsItem.tickers.join(', ') : 'General Market',
+                        inline: true
+                    },
+                    {
+                        name: 'Publisher',
+                        value: newsItem.publisher.name || 'Unknown',
+                        inline: true
+                    }
+                ],
+                footer: {
+                    text: 'Rocket Scanner News Alert'
+                },
+                timestamp: newsItem.published_utc
+            }]
+        };
+        
+        await axios.post(adminSettings.webhooks.news, embed);
+        console.log(`📰 News alert sent: ${newsItem.title.substring(0, 50)}...`);
+    } catch (error) {
+        console.error('Failed to send news alert:', error.message);
+    }
+}
+
 // Send Discord alert with admin webhooks
 async function sendDiscordAlert(rocket, type = 'rocket') {
     const webhook = type === 'news' ? adminSettings.webhooks.news : 
