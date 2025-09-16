@@ -1807,9 +1807,14 @@ app.get('/api/rockets/scan', async (req, res) => {
         }
         
         // Sort each category by 1-minute percentage change (highest to lowest)
+        // Fallback to day change if no momentum data
         const sortBy1mChange = (a, b) => {
-            const aChange = a.momentum?.priceChange1m || 0;
-            const bChange = b.momentum?.priceChange1m || 0;
+            const aChange = (a.momentum?.priceChange1m !== undefined && a.momentum?.priceChange1m !== 0) 
+                ? a.momentum.priceChange1m 
+                : (a.changePercent || 0);
+            const bChange = (b.momentum?.priceChange1m !== undefined && b.momentum?.priceChange1m !== 0) 
+                ? b.momentum.priceChange1m 
+                : (b.changePercent || 0);
             return bChange - aChange; // Descending order
         };
         
