@@ -1887,10 +1887,36 @@ async function loadSettings() {
         const data = await fs.readFile(SETTINGS_FILE, 'utf8');
         const loadedSettings = JSON.parse(data);
         adminSettings = { ...adminSettings, ...loadedSettings };
-        console.log('✅ Admin settings loaded from file');
+        
+        // Override webhooks with environment variables if they exist (env vars take priority)
+        if (process.env.DISCORD_WEBHOOK_ROCKET) {
+            adminSettings.webhooks.rocket = process.env.DISCORD_WEBHOOK_ROCKET;
+        }
+        if (process.env.DISCORD_WEBHOOK_NEWS) {
+            adminSettings.webhooks.news = process.env.DISCORD_WEBHOOK_NEWS;
+        }
+        if (process.env.DISCORD_WEBHOOK_URGENT) {
+            adminSettings.webhooks.urgent = process.env.DISCORD_WEBHOOK_URGENT;
+        }
+        
+        console.log(`✅ Admin settings loaded (${process.env.NODE_ENV || 'development'} mode)`);
+        console.log(`   Rocket webhook: ${adminSettings.webhooks.rocket ? '✓ configured' : '✗ not set'}`);
+        console.log(`   News webhook: ${adminSettings.webhooks.news ? '✓ configured' : '✗ not set'}`);
     } catch (error) {
         if (error.code === 'ENOENT') {
             console.log('📝 No settings file found, using defaults');
+            
+            // Use environment variables for webhooks
+            if (process.env.DISCORD_WEBHOOK_ROCKET) {
+                adminSettings.webhooks.rocket = process.env.DISCORD_WEBHOOK_ROCKET;
+            }
+            if (process.env.DISCORD_WEBHOOK_NEWS) {
+                adminSettings.webhooks.news = process.env.DISCORD_WEBHOOK_NEWS;
+            }
+            if (process.env.DISCORD_WEBHOOK_URGENT) {
+                adminSettings.webhooks.urgent = process.env.DISCORD_WEBHOOK_URGENT;
+            }
+            
             await saveSettings();
         } else {
             console.error('❌ Error loading settings:', error.message);
