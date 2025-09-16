@@ -1718,6 +1718,14 @@ app.listen(PORT, async () => {
     
     // Load initial data
     await fetchTopStocks();
+    
+    // Start news scanning for Discord alerts
+    console.log('📰 Starting news scanner for Discord alerts...');
+    startNewsScanner();
+    
+    // Start rocket scanner for Discord alerts
+    console.log('🚀 Starting rocket scanner for Discord alerts...');
+    startRocketScanner();
 });
 
 // WebSocket for real-time updates
