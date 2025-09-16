@@ -1220,6 +1220,201 @@ app.get('/api/halts', async (req, res) => {
     }
 });
 
+// Admin settings storage
+const adminSettings = {
+    webhooks: {
+        rocket: '',
+        news: '',
+        urgent: ''
+    },
+    thresholds: {
+        l1: { price: 10, volume: 500000 },
+        l2: { price: 20, volume: 500000 },
+        l3: { price: 50, volume: 1000000 },
+        l4: { price: 100, volume: 5000000 }
+    },
+    scanInterval: 30,
+    volumeMultiplier: 5,
+    premarketEnabled: true,
+    afterhoursEnabled: true,
+    newsEnabled: true,
+    haltEnabled: true
+};
+
+// Admin stats
+const adminStats = {
+    totalAlerts: 0,
+    todayAlerts: 0,
+    activeMonitoring: 0,
+    startTime: new Date().toISOString()
+};
+
+// Admin API: Get settings
+app.get('/api/admin/settings', (req, res) => {
+    res.json({ success: true, settings: adminSettings });
+});
+
+// Admin API: Save webhooks
+app.post('/api/admin/webhooks', (req, res) => {
+    const { webhooks } = req.body;
+    if (webhooks) {
+        adminSettings.webhooks = { ...adminSettings.webhooks, ...webhooks };
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, error: 'Invalid webhooks' });
+    }
+});
+
+// Admin API: Save thresholds
+app.post('/api/admin/thresholds', (req, res) => {
+    const { thresholds } = req.body;
+    if (thresholds) {
+        adminSettings.thresholds = { ...adminSettings.thresholds, ...thresholds };
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, error: 'Invalid thresholds' });
+    }
+});
+
+// Admin API: Save general settings
+app.post('/api/admin/settings', (req, res) => {
+    const { settings } = req.body;
+    if (settings) {
+        Object.assign(adminSettings, settings);
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, error: 'Invalid settings' });
+    }
+});
+
+// Admin API: Test webhook
+app.post('/api/admin/test-webhook', async (req, res) => {
+    const { type, webhookUrl } = req.body;
+    
+    if (!webhookUrl || !webhookUrl.includes('discord.com')) {
+        return res.status(400).json({ success: false, error: 'Invalid webhook URL' });
+    }
+    
+    try {
+        const testData = {
+            rocket: {
+                embeds: [{
+                    title: '🚀 TEST ROCKET ALERT',
+                    description: 'This is a test alert from your Rocket Scanner Admin Panel',
+                    color: 0xFF6432,
+                    fields: [
+                        { name: 'Symbol', value: 'TEST', inline: true },
+                        { name: 'Price', value: '$99.99', inline: true },
+                        { name: 'Change', value: '+999%', inline: true }
+                    ],
+                    timestamp: new Date().toISOString()
+                }]
+            },
+            news: {
+                embeds: [{
+                    title: '📰 TEST NEWS ALERT',
+                    description: 'Breaking: This is a test news alert from your admin panel',
+                    color: 0xFFC832,
+                    fields: [
+                        { name: 'Source', value: 'Admin Test', inline: true },
+                        { name: 'Impact', value: 'High', inline: true }
+                    ],
+                    timestamp: new Date().toISOString()
+                }]
+            },
+            urgent: {
+                embeds: [{
+                    title: '🔥 TEST URGENT ALERT',
+                    description: 'URGENT: This is a test urgent alert - Level 4 JACKPOT simulation',
+                    color: 0xFF0000,
+                    fields: [
+                        { name: 'Level', value: 'JACKPOT', inline: true },
+                        { name: 'Action', value: 'TEST ONLY', inline: true }
+                    ],
+                    timestamp: new Date().toISOString()
+                }]
+            }
+        };
+        
+        const payload = testData[type] || testData.rocket;
+        const response = await axios.post(webhookUrl, payload);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Webhook test error:', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Admin API: Get stats
+app.get('/api/admin/stats', (req, res) => {
+    adminStats.activeMonitoring = monitoring.size;
+    res.json({ success: true, stats: adminStats });
+});
+
+// Admin API: Clear stats
+app.post('/api/admin/stats/clear', (req, res) => {
+    adminStats.totalAlerts = 0;
+    adminStats.todayAlerts = 0;
+    res.json({ success: true });
+});
+
+// Send Discord alert with admin webhooks
+async function sendDiscordAlert(rocket, type = 'rocket') {
+    const webhook = type === 'news' ? adminSettings.webhooks.news : 
+                   (rocket.level >= 3 && adminSettings.webhooks.urgent) ? 
+                   adminSettings.webhooks.urgent : 
+                   adminSettings.webhooks.rocket;
+    
+    if (!webhook || !webhook.includes('discord.com')) return;
+    
+    const color = rocket.level === 4 ? 0xFF0000 :
+                  rocket.level === 3 ? 0xFF6432 :
+                  rocket.level === 2 ? 0xFFC832 :
+                  0x6464FF;
+    
+    const levelText = rocket.level === 4 ? '🚀 JACKPOT' :
+                      rocket.level === 3 ? '🔥 URGENT' :
+                      rocket.level === 2 ? '⚡ ALERT' :
+                      '👀 WATCH';
+    
+    const embed = {
+        embeds: [{
+            title: `${levelText}: ${rocket.symbol}`,
+            description: rocket.news || 'No news catalyst detected',
+            color: color,
+            fields: [
+                { name: 'Price', value: `$${rocket.price.toFixed(2)}`, inline: true },
+                { name: 'Change', value: `+${rocket.changePercent.toFixed(1)}%`, inline: true },
+                { name: 'Volume', value: formatVolume(rocket.volume), inline: true },
+                { name: 'VWAP', value: `$${rocket.vwap.toFixed(2)}`, inline: true },
+                { name: 'RSI', value: rocket.rsi.toFixed(1), inline: true },
+                { name: 'Acceleration', value: rocket.acceleration ? 
+                  `${rocket.acceleration.volumeAcceleration.toFixed(1)}x` : 'N/A', inline: true }
+            ],
+            footer: {
+                text: 'Rocket Scanner Alert • Manage your risk!'
+            },
+            timestamp: new Date().toISOString()
+        }]
+    };
+    
+    try {
+        await axios.post(webhook, embed);
+        adminStats.totalAlerts++;
+        adminStats.todayAlerts++;
+        console.log(`✅ Discord alert sent for ${rocket.symbol} to ${type} webhook`);
+    } catch (error) {
+        console.error('Discord webhook error:', error.message);
+    }
+}
+
+function formatVolume(vol) {
+    if (vol >= 1000000) return (vol / 1000000).toFixed(1) + 'M';
+    if (vol >= 1000) return (vol / 1000).toFixed(0) + 'K';
+    return vol.toString();
+}
+
 app.get('/api/stocks/:symbol/snapshot', async (req, res) => {
     try {
         const { symbol } = req.params;
