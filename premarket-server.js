@@ -1932,7 +1932,8 @@ let adminSettings = {
     premarketEnabled: true,
     afterhoursEnabled: true,
     newsEnabled: true,
-    haltEnabled: true
+    haltEnabled: true,
+    alertsEnabled: true  // Master toggle for all Discord alerts
 };
 
 // Load settings from file on startup
