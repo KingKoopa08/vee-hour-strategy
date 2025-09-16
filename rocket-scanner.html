@@ -1190,8 +1190,10 @@
                 </div>
                 <div class="price-change ${changePercent > 0 ? 'positive' : 'negative'}">
                     ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%
-                    ${rocket.momentum && rocket.momentum.priceChange1m ? 
-                        `<span style="font-size: 12px; color: #888; margin-left: 10px;">(1m: ${rocket.momentum.priceChange1m > 0 ? '+' : ''}${rocket.momentum.priceChange1m.toFixed(2)}%)</span>` 
+                    ${rocket.momentum && rocket.momentum.priceChange1m !== undefined && rocket.momentum.priceChange1m !== 0 ? 
+                        `<span style="font-size: 12px; color: ${rocket.momentum.priceChange1m > 0 ? '#32ff32' : '#ff3232'}; margin-left: 10px; padding: 2px 6px; background: rgba(0,0,0,0.3); border-radius: 3px; font-weight: 500;">
+                            1m: ${rocket.momentum.priceChange1m > 0 ? '+' : ''}${rocket.momentum.priceChange1m.toFixed(1)}%
+                        </span>` 
                         : ''}
                 </div>
                 <div class="alert-stats">
