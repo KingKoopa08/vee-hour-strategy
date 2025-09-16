@@ -966,18 +966,20 @@
             document.getElementById('pullbacksSection').style.display = pullbacks.length > 0 ? 'block' : 'none';
         }
         
-        function updateTopStats(rocket, topGainer, topVolume) {
-            if (!topGainer || Math.abs(rocket.changePercent) > Math.abs(topGainer.changePercent)) {
-                topGainer = rocket;
+        function updateTopStats(rocket, topGainerRef, topVolumeRef) {
+            if (!topGainerRef.value || Math.abs(rocket.changePercent) > Math.abs(topGainerRef.value.changePercent)) {
+                topGainerRef.value = rocket;
                 document.getElementById('topGainer').textContent = 
                     `${rocket.symbol} ${rocket.changePercent >= 0 ? '+' : ''}${rocket.changePercent.toFixed(1)}%`;
             }
             
-            if (!topVolume || rocket.volume > topVolume.volume) {
-                topVolume = rocket;
+            if (!topVolumeRef.value || rocket.volume > topVolumeRef.value.volume) {
+                topVolumeRef.value = rocket;
                 document.getElementById('topVolume').textContent = 
                     `${rocket.symbol} ${formatVolume(rocket.volume)}`;
             }
+            
+            return { topGainer: topGainerRef.value, topVolume: topVolumeRef.value };
         }
         
         // Update rockets display (legacy)
