@@ -2574,49 +2574,60 @@ function startRealTimePriceUpdates() {
     if (priceUpdateInterval) return;
     
     priceUpdateInterval = setInterval(async () => {
-        if (activeRockets.size === 0) return;
+        if (activeRockets.size === 0) {
+            // No active rockets to update
+            return;
+        }
         
         const updates = [];
-        for (const symbol of activeRockets) {
-            const snapshot = await fetchSnapshot(symbol);
-            if (snapshot) {
-                // Calculate momentum
-                const history = priceHistory.get(symbol) || [];
-                let priceChange1m = 0;
-                let priceChange5m = 0;
-                
-                if (history.length > 0) {
-                    const oneMinAgo = history.find(h => (Date.now() - h.timestamp) >= 60000);
-                    const fiveMinAgo = history.find(h => (Date.now() - h.timestamp) >= 300000);
+        const symbols = Array.from(activeRockets).slice(0, 20); // Limit to 20 symbols to avoid rate limits
+        
+        for (const symbol of symbols) {
+            try {
+                const snapshot = await fetchSnapshot(symbol);
+                if (snapshot) {
+                    // Calculate momentum
+                    const history = priceHistory.get(symbol) || [];
+                    let priceChange1m = 0;
+                    let priceChange5m = 0;
                     
-                    if (oneMinAgo) {
-                        priceChange1m = ((snapshot.price - oneMinAgo.price) / oneMinAgo.price) * 100;
+                    if (history.length > 0) {
+                        const oneMinAgo = history.find(h => (Date.now() - h.timestamp) >= 60000);
+                        const fiveMinAgo = history.find(h => (Date.now() - h.timestamp) >= 300000);
+                        
+                        if (oneMinAgo) {
+                            priceChange1m = ((snapshot.price - oneMinAgo.price) / oneMinAgo.price) * 100;
+                        }
+                        if (fiveMinAgo) {
+                            priceChange5m = ((snapshot.price - fiveMinAgo.price) / fiveMinAgo.price) * 100;
+                        }
                     }
-                    if (fiveMinAgo) {
-                        priceChange5m = ((snapshot.price - fiveMinAgo.price) / fiveMinAgo.price) * 100;
-                    }
+                    
+                    updates.push({
+                        symbol,
+                        price: snapshot.price,
+                        changePercent: snapshot.changePercent,
+                        volume: snapshot.volume,
+                        priceChange1m,
+                        priceChange5m,
+                        timestamp: Date.now()
+                    });
                 }
-                
-                updates.push({
-                    symbol,
-                    price: snapshot.price,
-                    changePercent: snapshot.changePercent,
-                    volume: snapshot.volume,
-                    priceChange1m,
-                    priceChange5m,
-                    timestamp: Date.now()
-                });
+            } catch (err) {
+                // Skip failed symbol fetches
+                console.error(`Failed to fetch ${symbol}:`, err.message);
             }
         }
         
         if (updates.length > 0) {
+            console.log(`📊 Broadcasting price updates for ${updates.length} stocks`);
             broadcast({
                 type: 'priceUpdates',
                 data: updates,
                 timestamp: new Date().toISOString()
             });
         }
-    }, 1000); // Update every second for real-time feel
+    }, 2000); // Update every 2 seconds to balance real-time feel with API limits
 }
 
 wss.on('connection', (ws) => {
