@@ -935,11 +935,29 @@
         
         // Update categorized rockets display
         function updateCategorizedRockets(categorizedData) {
+            console.log('updateCategorizedRockets called with:', categorizedData);
+            
+            // Check if elements exist
+            const leadersContainer = document.getElementById('leadersContainer');
+            const consolidatingContainer = document.getElementById('consolidatingContainer');
+            const pullbacksContainer = document.getElementById('pullbacksContainer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            if (!leadersContainer || !consolidatingContainer || !pullbacksContainer) {
+                console.error('Missing container elements!');
+                console.log('leadersContainer:', leadersContainer);
+                console.log('consolidatingContainer:', consolidatingContainer);
+                console.log('pullbacksContainer:', pullbacksContainer);
+                return;
+            }
+            
             // Clear all containers
-            document.getElementById('leadersContainer').innerHTML = '';
-            document.getElementById('consolidatingContainer').innerHTML = '';
-            document.getElementById('pullbacksContainer').innerHTML = '';
-            document.getElementById('loadingMessage').style.display = 'none';
+            leadersContainer.innerHTML = '';
+            consolidatingContainer.innerHTML = '';
+            pullbacksContainer.innerHTML = '';
+            if (loadingMessage) {
+                loadingMessage.style.display = 'none';
+            }
             
             let topGainerRef = { value: null };
             let topVolumeRef = { value: null };
