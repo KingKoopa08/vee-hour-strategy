@@ -3,6 +3,7 @@ const cors = require('cors');
 const { WebSocketServer } = require('ws');
 const axios = require('axios');
 const path = require('path');
+const fs = require('fs').promises;
 
 const app = express();
 app.use(cors());
@@ -1220,8 +1221,10 @@ app.get('/api/halts', async (req, res) => {
     }
 });
 
-// Admin settings storage
-const adminSettings = {
+// Admin settings storage with file persistence
+const SETTINGS_FILE = path.join(__dirname, 'admin-settings.json');
+
+let adminSettings = {
     webhooks: {
         rocket: '',
         news: '',
@@ -1240,6 +1243,33 @@ const adminSettings = {
     newsEnabled: true,
     haltEnabled: true
 };
+
+// Load settings from file on startup
+async function loadSettings() {
+    try {
+        const data = await fs.readFile(SETTINGS_FILE, 'utf8');
+        const loadedSettings = JSON.parse(data);
+        adminSettings = { ...adminSettings, ...loadedSettings };
+        console.log('✅ Admin settings loaded from file');
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.log('📝 No settings file found, using defaults');
+            await saveSettings();
+        } else {
+            console.error('❌ Error loading settings:', error.message);
+        }
+    }
+}
+
+// Save settings to file
+async function saveSettings() {
+    try {
+        await fs.writeFile(SETTINGS_FILE, JSON.stringify(adminSettings, null, 2));
+        console.log('💾 Admin settings saved to file');
+    } catch (error) {
+        console.error('❌ Error saving settings:', error.message);
+    }
+}
 
 // Admin stats
 const adminStats = {
