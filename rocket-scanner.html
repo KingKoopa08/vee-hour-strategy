@@ -1193,8 +1193,8 @@
             
             container.appendChild(card);
             
-            // Play sound if enabled
-            if (settings.sound && rocket.level >= settings.alertThreshold) {
+            // Play sound if enabled (but not on first page load)
+            if (settings.sound && rocket.level >= settings.alertThreshold && !window.isFirstLoad) {
                 playAlertSound();
             }
         }
