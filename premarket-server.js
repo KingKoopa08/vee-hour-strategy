@@ -1777,9 +1777,11 @@ app.get('/api/rockets/scan', async (req, res) => {
         for (const rocket of rockets) {
             // Categorize based on 1-minute momentum (most recent trend)
             const priceChange1m = rocket.momentum?.priceChange1m;
+            const hasValidMomentum = priceChange1m !== undefined && priceChange1m !== null;
+            const hasMomentumMovement = hasValidMomentum && Math.abs(priceChange1m) > 0.01; // Check if there's actual movement
             
-            // If we have valid 1-minute momentum data, use it
-            if (priceChange1m !== undefined && priceChange1m !== null && priceChange1m !== 0) {
+            // If we have valid momentum data with actual movement, use it
+            if (hasMomentumMovement) {
                 if (priceChange1m > 0.1) {
                     // Rising: positive momentum in last minute
                     momentumLeaders.push(rocket);
@@ -1791,7 +1793,7 @@ app.get('/api/rockets/scan', async (req, res) => {
                     consolidating.push(rocket);
                 }
             } else {
-                // Fallback: use day change percentage when momentum data is not available
+                // Fallback: use day change percentage when momentum data is not available or is 0
                 const dayChange = rocket.changePercent || 0;
                 if (dayChange > 20) {
                     // Big gainers likely have momentum
