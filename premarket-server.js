@@ -1722,11 +1722,14 @@ app.get('/api/rockets/scan', async (req, res) => {
                     // Need minimum history to verify trend (at least 2 min of data)
                     const hasEnoughHistory = priceHistory.get(symbol)?.length >= 10; // At least 10 data points
                     
-                    // Check 5-minute trend specifically
+                    // Check momentum trends
                     const has5MinDown = momentum && momentum.priceChange5m !== undefined && momentum.priceChange5m < -1; // Down >1% in 5 min
                     const has2MinDown = momentum && momentum.priceChange2m !== undefined && momentum.priceChange2m < -0.5; // Down >0.5% in 2 min
                     const has1MinDown = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m < -0.3; // Down >0.3% in 1 min
                     const isCurrentlyFalling = has5MinDown || has2MinDown || has1MinDown || isDowntrending;
+                    
+                    // NEW: Only alert on momentum leaders (positive 1-minute momentum)
+                    const isMomentumLeader = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m > 0.1;
                     
                     // If we don't have enough history, only alert on HUGE movers
                     const minPercentForNoHistory = 50; // Need 50%+ gain if no momentum data
