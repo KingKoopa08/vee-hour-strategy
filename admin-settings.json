@@ -1,0 +1,31 @@
+{
+  "webhooks": {
+    "rocket": "https://discord.com/api/webhooks/test123",
+    "news": "https://discord.com/api/webhooks/testnews",
+    "urgent": ""
+  },
+  "thresholds": {
+    "l1": {
+      "price": 10,
+      "volume": 500000
+    },
+    "l2": {
+      "price": 20,
+      "volume": 500000
+    },
+    "l3": {
+      "price": 50,
+      "volume": 1000000
+    },
+    "l4": {
+      "price": 100,
+      "volume": 5000000
+    }
+  },
+  "scanInterval": 30,
+  "volumeMultiplier": 5,
+  "premarketEnabled": true,
+  "afterhoursEnabled": true,
+  "newsEnabled": true,
+  "haltEnabled": true
+}
