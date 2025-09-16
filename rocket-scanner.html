@@ -1055,13 +1055,30 @@
                 }
                 
                 // Categorize based on momentum
-                const priceChange1m = rocket.momentum?.priceChange1m || 0;
-                if (priceChange1m > 0.1) {
-                    categorized.momentumLeaders.push(rocket);
-                } else if (priceChange1m < -0.1) {
-                    categorized.pullbacks.push(rocket);
+                const priceChange1m = rocket.momentum?.priceChange1m;
+                
+                // If we have 1-minute data, use it
+                if (priceChange1m !== undefined && priceChange1m !== null) {
+                    if (priceChange1m > 0.1) {
+                        categorized.momentumLeaders.push(rocket);
+                    } else if (priceChange1m < -0.1) {
+                        categorized.pullbacks.push(rocket);
+                    } else {
+                        categorized.consolidating.push(rocket);
+                    }
                 } else {
-                    categorized.consolidating.push(rocket);
+                    // Fallback: use day change percentage for categorization
+                    const dayChange = rocket.changePercent || 0;
+                    if (dayChange > 20) {
+                        // Big gainers likely have momentum
+                        categorized.momentumLeaders.push(rocket);
+                    } else if (dayChange > 10) {
+                        // Moderate gainers might be consolidating
+                        categorized.consolidating.push(rocket);
+                    } else {
+                        // Small moves or negative go to consolidating
+                        categorized.consolidating.push(rocket);
+                    }
                 }
             });
             
