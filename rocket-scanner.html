@@ -1060,20 +1060,10 @@
             });
             
             updateCategorizedRockets(categorized);
-                    
-                    const changeValue = Math.abs(rocket.changePercent || 0);
-                    if (!topGainer || changeValue > Math.abs(topGainer.changePercent || 0)) {
-                        topGainer = rocket;
-                    }
-                    
-                    if (!topVolume || rocket.volume > topVolume.volume) {
-                        topVolume = rocket;
-                    }
-                }
-            });
-            
-            // Show message if no rockets displayed
-            if (displayedCount === 0) {
+        }
+        
+        // Check if rocket should be shown based on filters
+        function shouldShowRocket(rocket) {
                 container.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">
                         <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
