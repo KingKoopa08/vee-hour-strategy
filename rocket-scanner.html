@@ -721,18 +721,22 @@
             const container = document.getElementById('alertsContainer');
             container.innerHTML = '';
             
-            // Remove loading message
-            const loadingMsg = document.getElementById('loadingMessage');
-            if (loadingMsg) loadingMsg.remove();
-            
             let topGainer = null;
             let topVolume = null;
+            let displayedCount = 0;
             
             rocketsList.forEach(rocket => {
+                // Normalize field names
+                if (rocket.priceChangePercent !== undefined && rocket.changePercent === undefined) {
+                    rocket.changePercent = rocket.priceChangePercent;
+                }
+                
                 if (shouldShowRocket(rocket)) {
                     addRocketCard(rocket);
+                    displayedCount++;
                     
-                    if (!topGainer || Math.abs(rocket.changePercent) > Math.abs(topGainer.changePercent)) {
+                    const changeValue = Math.abs(rocket.changePercent || 0);
+                    if (!topGainer || changeValue > Math.abs(topGainer.changePercent || 0)) {
                         topGainer = rocket;
                     }
                     
@@ -742,10 +746,22 @@
                 }
             });
             
+            // Show message if no rockets displayed
+            if (displayedCount === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
+                        <div>No rockets matching current filters</div>
+                        <div style="font-size: 12px; margin-top: 10px;">Try adjusting your filters or wait for market activity</div>
+                    </div>
+                `;
+            }
+            
             // Update stats
-            document.getElementById('totalRockets').textContent = rocketsList.length;
+            document.getElementById('totalRockets').textContent = displayedCount;
+            const changePercent = topGainer ? (topGainer.changePercent || topGainer.priceChangePercent || 0) : 0;
             document.getElementById('topGainer').textContent = 
-                topGainer ? `${topGainer.symbol} ${topGainer.changePercent > 0 ? '+' : ''}${topGainer.changePercent.toFixed(1)}%` : '-';
+                topGainer ? `${topGainer.symbol} ${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%` : '-';
             document.getElementById('topVolume').textContent = 
                 topVolume ? `${topVolume.symbol} ${(topVolume.volume / 1000000).toFixed(1)}M` : '-';
         }
