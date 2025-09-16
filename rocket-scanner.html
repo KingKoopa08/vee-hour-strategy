@@ -1003,6 +1003,7 @@
         // Scan for rockets
         async function scanForRockets() {
             try {
+                lastScanTime = Date.now();  // Track when we last scanned
                 console.log('Scanning for rockets...');
                 console.log('API URL:', `${API_URL}/api/rockets/scan`);
                 
