@@ -794,6 +794,9 @@
                         document.getElementById('l4_volume').value = settings.thresholds.l4?.volume || 5000000;
                     }
                     
+                    // Load max price threshold
+                    document.getElementById('maxPriceThreshold').value = settings.maxPriceThreshold || 100;
+                    
                     // Load scanner settings
                     document.getElementById('scanInterval').value = settings.scanInterval || 30;
                     document.getElementById('volumeMultiplier').value = settings.volumeMultiplier || 5;
@@ -853,6 +856,7 @@
         // Save thresholds
         async function saveThresholds() {
             const alertsEnabled = document.getElementById('alertsEnabled').checked;
+            const maxPriceThreshold = parseFloat(document.getElementById('maxPriceThreshold').value) || 0;
             const thresholds = {
                 l1: {
                     price: parseFloat(document.getElementById('l1_price').value),
@@ -876,7 +880,7 @@
                 const response = await fetch(`${API_URL}/api/admin/thresholds`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ thresholds, alertsEnabled })
+                    body: JSON.stringify({ thresholds, alertsEnabled, maxPriceThreshold })
                 });
                 
                 const result = await response.json();
@@ -1014,6 +1018,7 @@
                         volume: parseInt(document.getElementById('l4_volume').value)
                     }
                 },
+                maxPriceThreshold: parseFloat(document.getElementById('maxPriceThreshold').value) || 0,
                 scanInterval: parseInt(document.getElementById('scanInterval').value),
                 volumeMultiplier: parseInt(document.getElementById('volumeMultiplier').value),
                 premarketEnabled: document.getElementById('premarketEnabled').checked,
