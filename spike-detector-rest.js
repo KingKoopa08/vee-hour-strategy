@@ -233,7 +233,8 @@ async function checkForSpikes() {
                 spike.currentPrice = stock.price;
                 spike.priceChange = ((stock.price - spike.startPrice) / spike.startPrice) * 100;
                 spike.duration = (Date.now() - spike.startTime) / 1000;
-                spike.highPrice = Math.max(spike.highPrice || spike.currentPrice, spike.currentPrice);
+                if (!spike.highPrice) spike.highPrice = spike.currentPrice;
+                spike.highPrice = Math.max(spike.highPrice, spike.currentPrice);
 
                 // Determine momentum based on recent price action
                 const momentum = spike.priceChange > spike.previousChange ? 'ACCELERATING' :
