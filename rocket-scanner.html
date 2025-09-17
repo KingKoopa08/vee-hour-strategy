@@ -1314,7 +1314,7 @@
             const isAccelerating = rocket.accelerating ? '⚡' : '';
             
             // Show 5-minute change if available (grey color)
-            const trend5min = (rocket.momentum && rocket.momentum.priceChange5m !== undefined) ? 
+            const trend5min = (rocket.momentum && rocket.momentum.priceChange5m !== undefined && rocket.momentum.priceChange5m !== null) ? 
                 `<span style="font-size: 11px; color: #888; margin-left: 8px; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">
                     5m: ${rocket.momentum.priceChange5m >= 0 ? '+' : ''}${rocket.momentum.priceChange5m.toFixed(1)}%
                 </span>` : '';
@@ -1348,8 +1348,8 @@
                         ${rocket.symbol}
                         ${momentumIndicator ? `<span style="font-size: 20px; color: ${momentumColor}; margin-left: 5px;">${momentumIndicator}</span>` : ''}
                         ${isAccelerating}
-                        ${trend5min ? `<span class="momentum-5m ${rocket.momentum.priceChange5m >= 0 ? 'positive' : 'negative'}" style="font-size: 11px; color: #888; margin-left: 8px; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">
-                            5m: ${rocket.momentum.priceChange5m >= 0 ? '+' : ''}${rocket.momentum.priceChange5m.toFixed(1)}%
+                        ${trend5min ? `<span class="momentum-5m ${rocket.momentum && rocket.momentum.priceChange5m >= 0 ? 'positive' : 'negative'}" style="font-size: 11px; color: #888; margin-left: 8px; padding: 2px 6px; background: rgba(255,255,255,0.05); border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">
+                            5m: ${rocket.momentum && rocket.momentum.priceChange5m >= 0 ? '+' : ''}${rocket.momentum && rocket.momentum.priceChange5m !== null ? rocket.momentum.priceChange5m.toFixed(1) : '0.0'}%
                         </span>` : ''}
                         ${momentumWarning}
                         ${newsIndicator}
