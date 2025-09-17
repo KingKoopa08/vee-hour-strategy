@@ -170,7 +170,31 @@ async function checkForSpikes() {
             // Check for spike
             const spike = detectSpike(stock.symbol, stock);
 
-            if (spike && !activeSpikes.has(stock.symbol)) {
+            // ALSO check for high daily movers (already spiking today)
+            if (!spike && !activeSpikes.has(stock.symbol) && Math.abs(stock.changePercent) > 10) {
+                // This stock is already up/down significantly today
+                const highMover = {
+                    symbol: stock.symbol,
+                    startPrice: stock.price * (1 - stock.changePercent/100),
+                    currentPrice: stock.price,
+                    priceChange: stock.changePercent,
+                    volumeBurst: 1, // Unknown
+                    volume: stock.volume,
+                    startTime: Date.now() - 60000, // Assume started earlier
+                    momentum: stock.changePercent > 0 ? 'HOT' : 'FALLING',
+                    duration: 60
+                };
+
+                activeSpikes.set(stock.symbol, highMover);
+                stats.detected++;
+
+                console.log(`🔥 HIGH MOVER: ${stock.symbol} ${stock.changePercent > 0 ? '+' : ''}${stock.changePercent.toFixed(2)}% | Vol: ${(stock.volume/1000000).toFixed(1)}M`);
+
+                broadcast({
+                    type: 'spike',
+                    data: highMover
+                });
+            } else if (spike && !activeSpikes.has(stock.symbol)) {
                 // New spike!
                 activeSpikes.set(stock.symbol, spike);
                 stats.detected++;
