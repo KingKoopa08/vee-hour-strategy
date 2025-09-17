@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const PORT = process.env.SPIKE_PORT || 3019;
-const WS_PORT = process.env.SPIKE_WS_PORT || 3007;
+const PORT = process.env.SPIKE_PORT || 3020;
+const WS_PORT = process.env.SPIKE_WS_PORT || 3008;
 
 // Polygon configuration
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY || 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
