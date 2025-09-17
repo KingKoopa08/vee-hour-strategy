@@ -202,12 +202,13 @@ async function checkForSpikes() {
                     type: 'spike',
                     data: highMover
                 });
-            } else if (spike && !activeSpikes.has(stock.symbol)) {
+            } else if (spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
                 // New spike!
                 activeSpikes.set(stock.symbol, spike);
+                detectedToday.add(stock.symbol); // Mark as detected
                 stats.detected++;
 
-                console.log(`🚨 SPIKE: ${spike.symbol} ${spike.priceChange > 0 ? '+' : ''}${spike.priceChange.toFixed(2)}% with ${spike.volumeBurst.toFixed(1)}x volume`);
+                console.log(`🚨 SPIKE: ${spike.symbol} +${spike.priceChange.toFixed(2)}% with ${spike.volumeBurst.toFixed(1)}x volume`);
 
                 broadcast({
                     type: 'spike',
