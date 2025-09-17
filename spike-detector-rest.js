@@ -138,11 +138,30 @@ function detectSpike(symbol, currentData) {
     return null;
 }
 
+// Track debug info
+let checkCount = 0;
+let topMovers = [];
+
 // Check for spikes
 async function checkForSpikes() {
     try {
         const stocks = await getActiveStocks();
-        console.log(`📊 Checking ${stocks.length} stocks...`);
+        checkCount++;
+
+        // Log top movers every 10 checks
+        if (checkCount % 10 === 0) {
+            topMovers = stocks
+                .filter(s => Math.abs(s.changePercent) > 1)
+                .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+                .slice(0, 5);
+
+            if (topMovers.length > 0) {
+                console.log(`\n📈 Top movers:`);
+                topMovers.forEach(s => {
+                    console.log(`  ${s.symbol}: ${s.changePercent > 0 ? '+' : ''}${s.changePercent.toFixed(2)}% | Vol: ${(s.volume/1000000).toFixed(1)}M`);
+                });
+            }
+        }
 
         for (const stock of stocks) {
             // Store price point
