@@ -575,7 +575,7 @@ async function fetchAfterHoursStocks() {
         console.log(`📋 Fetched ${validWatchlistTickers.length} after-hours watchlist stocks`);
         
         // Also get general most active stocks
-        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=500`;
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=1000`;
         const response = await axios.get(url);
         
         if (response.data && response.data.tickers) {
