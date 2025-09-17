@@ -283,6 +283,24 @@ app.get('/api/spikes/stats', (req, res) => {
     });
 });
 
+app.post('/api/spikes/config', (req, res) => {
+    const { maxPrice, minVolumeBurst } = req.body;
+    if (maxPrice) config.maxPrice = maxPrice;
+    if (minVolumeBurst) config.minVolumeBurst = minVolumeBurst;
+
+    console.log(`⚙️ Config updated: maxPrice=$${config.maxPrice}, minVolumeBurst=${config.minVolumeBurst}x`);
+
+    res.json({
+        success: true,
+        config: {
+            maxPrice: config.maxPrice,
+            minVolumeBurst: config.minVolumeBurst,
+            minPriceChange: config.minPriceChange,
+            minVolume: config.minVolume
+        }
+    });
+});
+
 // WebSocket handling
 wss.on('connection', (ws) => {
     console.log('👤 Client connected');
