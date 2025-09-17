@@ -766,7 +766,7 @@
 
                 <div class="volume-burst">
                     <span class="volume-label">Volume Burst:</span>
-                    <span class="volume-value">${spike.volumeBurst.toFixed(1)}x normal</span>
+                    <span class="volume-value">${(spike.volumeBurst || 1).toFixed(1)}x normal</span>
                 </div>
 
                 ${!isCompleted ? `
