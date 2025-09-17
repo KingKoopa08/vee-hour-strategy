@@ -1991,9 +1991,19 @@ app.get('/api/rockets/scan', async (req, res) => {
             activeRockets.add(rocket.symbol);
         });
         
-        // Log categorization results
+        // Log categorization results with more detail
         const hasAnyMomentum = rockets.some(r => r.momentum?.priceChange1m !== undefined && Math.abs(r.momentum.priceChange1m) > 0.01);
-        console.log(`🎯 Categorized ${activeRockets.size} rockets: Leaders=${momentumLeaders.length}, Consolidating=${consolidating.length}, Pullbacks=${pullbacks.length} | Has momentum data: ${hasAnyMomentum}`);
+        console.log(`\n🎯 CATEGORIZATION COMPLETE:`);
+        console.log(`  📈 Momentum Leaders: ${momentumLeaders.length} stocks`);
+        if (momentumLeaders.length > 0) {
+            const topLeaders = momentumLeaders.slice(0, 3).map(r =>
+                `${r.symbol} (+${r.changePercent.toFixed(1)}%, 1m:${r.priceChange1m?.toFixed(2) || 'N/A'}%)`
+            );
+            console.log(`     Top: ${topLeaders.join(', ')}`);
+        }
+        console.log(`  ⏸️  Consolidating: ${consolidating.length} stocks`);
+        console.log(`  📉 Pullbacks: ${pullbacks.length} stocks`);
+        console.log(`  📊 Total tracked: ${activeRockets.size} | Has momentum: ${hasAnyMomentum}`);
         
         // Broadcast to all WebSocket clients
         broadcast({
