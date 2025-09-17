@@ -751,10 +751,10 @@
                 </div>
 
                 <div class="price-movement">
-                    <span class="price-from">$${spike.startPrice.toFixed(2)}</span>
+                    <span class="price-from">$${(spike.startPrice || 0).toFixed(2)}</span>
                     <span class="price-arrow">→</span>
-                    <span class="price-to">$${spike.highPrice.toFixed(2)}</span>
-                    <span class="price-change">+${spike.priceChange.toFixed(1)}%</span>
+                    <span class="price-to">$${(spike.highPrice || spike.currentPrice || 0).toFixed(2)}</span>
+                    <span class="price-change">${spike.priceChange >= 0 ? '+' : ''}${(spike.priceChange || 0).toFixed(1)}%</span>
                 </div>
 
                 <div class="momentum-meter">
