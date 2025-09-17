@@ -295,11 +295,15 @@ wss.on('connection', (ws) => {
     console.log('👤 Client connected');
     clients.add(ws);
 
+    // Filter out any negative/falling stocks before sending
+    const filteredActiveSpikes = Array.from(activeSpikes.values()).filter(s => s.priceChange >= 0);
+    const filteredCompletedSpikes = completedSpikes.filter(s => s.priceChange >= 0);
+
     ws.send(JSON.stringify({
         type: 'init',
         data: {
-            activeSpikes: Array.from(activeSpikes.values()),
-            completedSpikes: completedSpikes,
+            activeSpikes: filteredActiveSpikes,
+            completedSpikes: filteredCompletedSpikes,
             stats: {
                 spikesDetected: stats.detected,
                 bestSpike: stats.bestGain > 0 ? { priceChange: stats.bestGain } : null
