@@ -66,6 +66,15 @@ class PolygonRealtimeClient extends EventEmitter {
         if (message[0]) {
             const event = message[0];
 
+            // Debug: Log message types
+            if (!this.messageTypesLogged) {
+                this.messageTypesLogged = new Set();
+            }
+            if (!this.messageTypesLogged.has(event.ev)) {
+                console.log(`📨 Received message type: ${event.ev}`, event);
+                this.messageTypesLogged.add(event.ev);
+            }
+
             switch(event.ev) {
                 case 'status':
                     this.handleStatus(event);
