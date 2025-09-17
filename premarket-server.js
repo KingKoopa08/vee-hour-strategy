@@ -1673,24 +1673,18 @@ app.get('/api/rockets/scan', async (req, res) => {
                 orbSignal = checkORBreakout(symbol, price);
             }
             
-            // Check for rocket conditions
-            // EXCLUDE stocks in 5-minute downtrend unless they have exceptional signals
-            const isDowntrending = momentum.isDowntrend || momentum.is5MinDown;
+            // Simplified rocket detection - focus on rapid risers with good volume
+            // Check if stock has positive recent momentum (not falling)
+            const hasPositiveMomentum = !momentum || !momentum.isDowntrend || 
+                                        (momentum.priceChange1m > 0 && momentum.priceChange5m > -1);
             
-            // More strict for downtrending stocks
-            const isRocket = isDowntrending ? 
-                // For downtrending stocks, require EXCEPTIONAL signals
-                (stock.changePercent > 50 || // Huge day move despite recent dip
-                (stock.changePercent > 30 && volume > 5000000) || // Big move with massive volume
-                (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent > 10)) // ORB breakout with good day gain
-                :
-                // Normal criteria for non-downtrending stocks - more inclusive for market-wide scan
-                ((stock.changePercent > 15) || // >15% move alone is enough
-                (stock.changePercent > 10 && volume > 500000) || // >10% with moderate volume
-                (stock.changePercent > 5 && volume > 1000000) || // >5% with good volume
-                (stock.changePercent > 3 && accel && accel.volumeAcceleration > 10) || // small move with huge volume spike
-                (volume > 2000000 && stock.changePercent > 2) || // very high volume with any positive move
-                (orbSignal && orbSignal.type === 'BREAKOUT_UP')); // ORB breakout
+            // Only include stocks that are rising quickly with good volume
+            const isRocket = hasPositiveMomentum && (
+                (stock.changePercent > 20 && volume > 500000) || // Strong gainer with volume
+                (stock.changePercent > 10 && volume > 1000000) || // Good gainer with high volume
+                (stock.changePercent > 5 && volume > 3000000 && momentum?.priceChange1m > 0.5) || // Rising with very high volume
+                (accel && accel.volumeAcceleration > 20 && stock.changePercent > 5) // Volume surge on gainer
+            );
             
             if (isRocket) {
                 // Send ORB alert if detected
