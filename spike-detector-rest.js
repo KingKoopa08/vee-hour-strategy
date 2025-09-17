@@ -103,15 +103,15 @@ function storePricePoint(symbol, price, volume) {
 // Detect spike - look for RECENT rapid movement with volume
 function detectSpike(symbol, currentData) {
     const history = priceHistory.get(symbol);
-    if (!history || history.length < 3) return null;
+    if (!history || history.length < 2) return null; // Only need 2 points
 
     const now = Date.now();
 
-    // Get the oldest price point we have (up to 30 seconds ago)
+    // Get the oldest price point we have (up to 60 seconds ago)
     const oldestRelevant = now - config.spikeDetectionWindow;
     const relevantHistory = history.filter(h => h.timestamp > oldestRelevant);
 
-    if (relevantHistory.length < 3) return null;
+    if (relevantHistory.length < 2) return null; // Reduced requirement
 
     // Find the lowest price in our window
     let lowestPrice = relevantHistory[0].price;
