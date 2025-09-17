@@ -23,12 +23,12 @@ const activeSpikes = new Map();
 const completedSpikes = [];
 let stats = { detected: 0, bestGain: 0 };
 
-// Configuration
+// Configuration - VERY sensitive for testing
 const config = {
     maxPrice: 100,
-    minVolumeBurst: 3, // 3x volume
-    minPriceChange: 0.5, // 0.5% in snapshot
-    minVolume: 100000, // Min volume to track
+    minVolumeBurst: 1.5, // Lowered to 1.5x volume
+    minPriceChange: 0.2, // Lowered to 0.2% change
+    minVolume: 50000, // Lowered minimum volume
     checkInterval: 2000, // Check every 2 seconds
     historyDuration: 60000 // Keep 60 seconds
 };
