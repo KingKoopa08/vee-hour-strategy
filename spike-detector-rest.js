@@ -185,37 +185,10 @@ async function checkForSpikes() {
             // Store price point
             storePricePoint(stock.symbol, stock.price, stock.volume);
 
-            // Check for spike
+            // Check for spike - ONLY real-time spikes, not daily gainers
             const spike = detectSpike(stock.symbol, stock);
 
-            // ONLY check for stocks that are UP significantly today AND haven't been detected yet
-            if (!spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol) && stock.changePercent > 5) {
-                // This stock is already UP significantly today
-                const highMover = {
-                    symbol: stock.symbol,
-                    startPrice: stock.price * (1 - stock.changePercent/100),
-                    currentPrice: stock.price,
-                    priceChange: stock.changePercent,
-                    volumeBurst: 1, // Unknown
-                    volume: stock.volume,
-                    startTime: Date.now(), // Start tracking from now
-                    momentum: 'HOT',
-                    duration: 0, // Start at 0
-                    highPrice: stock.price,
-                    previousChange: stock.changePercent
-                };
-
-                activeSpikes.set(stock.symbol, highMover);
-                detectedToday.add(stock.symbol); // Mark as detected
-                stats.detected++;
-
-                console.log(`🚀 NEW RISING STOCK: ${stock.symbol} +${stock.changePercent.toFixed(2)}% | Vol: ${(stock.volume/1000000).toFixed(1)}M`);
-
-                broadcast({
-                    type: 'spike',
-                    data: highMover
-                });
-            } else if (spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
+            if (spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
                 // New spike!
                 activeSpikes.set(stock.symbol, spike);
                 detectedToday.add(stock.symbol); // Mark as detected
