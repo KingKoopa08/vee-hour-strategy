@@ -177,10 +177,10 @@ class PolygonRealtimeClient extends EventEmitter {
         // Check if this is a spike
         const isSpike =
             volumeBurst >= this.config.minVolumeBurst &&
-            priceChange >= 1.0 && // 1% in 10 seconds
+            priceChange >= this.config.minPriceChange && // Use config value
             spikeMetrics.dollarVolume >= this.config.minDollarVolume / 6 && // Pro-rated for 10 seconds
             spikeMetrics.currentPrice <= this.config.maxPrice &&
-            spikeMetrics.upticks > spikeMetrics.downticks * 1.5; // More up than down
+            spikeMetrics.upticks >= spikeMetrics.downticks; // At least equal up/down
 
         // Handle spike detection
         if (isSpike && !this.activeSpikes.has(symbol)) {
