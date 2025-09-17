@@ -50,12 +50,16 @@ async function getActiveStocks() {
         const response = await axios.get(url);
 
         if (response.data && response.data.tickers) {
-            // Filter for liquid stocks under max price
+            // Filter for liquid stocks under max price - ONLY POSITIVE MOVERS
             return response.data.tickers
                 .filter(t => {
                     const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
                     const volume = t.day?.v || t.min?.av || 0;
-                    return price > 0.5 && price < config.maxPrice && volume > config.minVolume;
+                    const changePercent = t.todaysChangePerc || 0;
+                    // Only include stocks that are UP or flat (not down)
+                    return price > 0.5 && price < config.maxPrice &&
+                           volume > config.minVolume &&
+                           changePercent >= -0.5; // Allow tiny dips but not big drops
                 })
                 .sort((a, b) => {
                     const volA = a.day?.v || a.min?.av || 0;
