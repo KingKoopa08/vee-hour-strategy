@@ -132,10 +132,9 @@ function detectSpike(symbol, currentData) {
 
     // Check if this is a real spike:
     // 1. Price increased significantly from recent low
-    // 2. Strong volume
+    // 2. Good volume
     if (priceChangeFromLow >= config.minPriceChange &&
-        currentData.volume > config.minVolume &&
-        volumeRatio >= 1.1) { // At least 10% above average volume
+        currentData.volume > config.minVolume) { // Just need decent volume
 
         return {
             symbol,
