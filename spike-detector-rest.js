@@ -119,9 +119,9 @@ function detectSpike(symbol, currentData) {
     const priceChange = recent.length > 0 ?
         ((currentData.price - recent[0].price) / recent[0].price) * 100 : 0;
 
-    // Check for spike
+    // Check for UPWARD spike only (positive price change)
     if (volumeBurst >= config.minVolumeBurst &&
-        Math.abs(priceChange) >= config.minPriceChange &&
+        priceChange >= config.minPriceChange && // Changed from Math.abs to only positive
         currentData.volume > config.minVolume) {
 
         return {
@@ -131,7 +131,8 @@ function detectSpike(symbol, currentData) {
             priceChange,
             volumeBurst,
             volume: currentData.volume,
-            startTime: now
+            startTime: now,
+            highPrice: currentData.price
         };
     }
 
