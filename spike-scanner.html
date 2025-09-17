@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Spike Scanner - Micro Scalp Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 15px 20px;
+            border-bottom: 2px solid #00ff41;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #00ff41, #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00ff41;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Settings Bar */
+        .settings-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .setting-input {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            width: 80px;
+        }
+
+        .toggle-btn {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #888;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #00ff41;
+            color: #000;
+            border-color: #00ff41;
+        }
+
+        /* Spike Sections */
+        .spike-section {
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .section-icon {
+            font-size: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .section-count {
+            background: #2a2a2a;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #00ff41;
+        }
+
+        /* Spike Cards Grid */
+        .spikes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+
+        /* Spike Card */
+        .spike-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+            border: 2px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 15px;
+            position: relative;
+            transition: all 0.3s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spike-card.active {
+            border-color: #00ff41;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        .spike-card.warning {
+            border-color: #ffaa00;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+        }
+
+        .spike-card.ending {
+            border-color: #ff4444;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+        }
+
+        /* Card Header */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .symbol-price {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .symbol {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .price {
+            font-size: 16px;
+            color: #00ff41;
+        }
+
+        .timer {
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .timer.green { color: #00ff41; }
+        .timer.yellow { color: #ffaa00; }
+        .timer.red { color: #ff4444; }
+
+        /* Price Movement */
+        .price-movement {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .price-from {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .price-arrow {
+            color: #00ff41;
+            font-size: 16px;
+        }
+
+        .price-to {
+            color: #00ff41;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .price-change {
+            background: rgba(0, 255, 65, 0.2);
+            color: #00ff41;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Momentum Meter */
+        .momentum-meter {
+            margin: 10px 0;
+        }
+
+        .momentum-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .momentum-bars {
+            display: flex;
+            gap: 2px;
+            height: 20px;
+        }
+
+        .momentum-bar {
+            flex: 1;
+            background: #2a2a2a;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .momentum-bar.active {
+            background: linear-gradient(90deg, #00ff41, #00ffaa);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+
+        .momentum-bar.warning {
+            background: linear-gradient(90deg, #ffaa00, #ff8800);
+        }
+
+        .momentum-bar.danger {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+        }
+
+        /* Volume Burst */
+        .volume-burst {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 5px;
+        }
+
+        .volume-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .volume-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00ff41;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .entry-btn {
+            background: #00ff41;
+            color: #000;
+        }
+
+        .entry-btn:hover {
+            background: #00cc33;
+            transform: scale(1.05);
+        }
+
+        .exit-btn {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .exit-btn:hover {
+            background: #cc3333;
+            transform: scale(1.05);
+        }
+
+        /* Alert Toast */
+        .alert-toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 255, 65, 0.5);
+            animation: slideInRight 0.3s ease;
+            z-index: 2000;
+            max-width: 300px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .alert-message {
+            font-size: 12px;
+        }
+
+        /* No Data */
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .no-data-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2a2a2a;
+            border-top-color: #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .spikes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .settings-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">⚡ SPIKE SCANNER</div>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="activeCount">0</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="detectedCount">0</div>
+                    <div class="stat-label">Detected</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="bestGain">0%</div>
+                    <div class="stat-label">Best Gain</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="currentTime">00:00:00</div>
+                    <div class="stat-label">Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Settings Bar -->
+        <div class="settings-bar">
+            <div class="setting-item">
+                <span class="setting-label">Max Price:</span>
+                <input type="number" class="setting-input" id="maxPrice" value="100">
+            </div>
+            <div class="setting-item">
+                <span class="setting-label">Min Volume Burst:</span>
+                <input type="number" class="setting-input" id="minVolume" value="5">
+                <span class="setting-label">x</span>
+            </div>
+            <div class="setting-item">
+                <button class="toggle-btn active" id="soundToggle">🔊 Sound</button>
+            </div>
+            <div class="setting-item">
+                <button class="toggle-btn active" id="alertToggle">🔔 Alerts</button>
+            </div>
+            <div class="setting-item">
+                <button class="toggle-btn" id="completedToggle">✅ Show Completed</button>
+            </div>
+        </div>
+
+        <!-- Active Spikes -->
+        <div class="spike-section">
+            <div class="section-header">
+                <span class="section-icon">🔥</span>
+                <span class="section-title">ACTIVE SPIKES</span>
+                <span class="section-count" id="activeSpikesCount">0</span>
+            </div>
+            <div class="spikes-grid" id="activeSpikes">
+                <div class="no-data">
+                    <div class="no-data-icon">⏳</div>
+                    <div>Waiting for spikes...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completed Spikes -->
+        <div class="spike-section" id="completedSection" style="display: none;">
+            <div class="section-header">
+                <span class="section-icon">✅</span>
+                <span class="section-title">COMPLETED SPIKES</span>
+                <span class="section-count" id="completedSpikesCount">0</span>
+            </div>
+            <div class="spikes-grid" id="completedSpikes"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WS_URL = 'ws://localhost:3007';
+        const API_URL = 'http://localhost:3019';
+
+        // State
+        let ws = null;
+        let activeSpikes = new Map();
+        let completedSpikes = [];
+        let settings = {
+            maxPrice: 100,
+            minVolume: 5,
+            sound: true,
+            alerts: true,
+            showCompleted: false
+        };
+        let stats = {
+            detected: 0,
+            bestGain: 0
+        };
+
+        // Initialize
+        function init() {
+            connectWebSocket();
+            loadSettings();
+            setupEventListeners();
+            updateTime();
+            setInterval(updateTime, 1000);
+            setInterval(updateTimers, 100); // Update timers frequently
+        }
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log('✅ Connected to spike server');
+                showAlert('Connected', 'Real-time spike detection active', 'success');
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                showAlert('Connection Error', 'Lost connection to server', 'error');
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleMessage(message) {
+            switch(message.type) {
+                case 'init':
+                    handleInit(message.data);
+                    break;
+                case 'spike':
+                    handleNewSpike(message.data);
+                    break;
+                case 'spikeUpdate':
+                    handleSpikeUpdate(message.data);
+                    break;
+                case 'spikeComplete':
+                    handleSpikeComplete(message.data);
+                    break;
+                case 'alert':
+                    handleAlert(message);
+                    break;
+            }
+        }
+
+        // Handle initialization data
+        function handleInit(data) {
+            activeSpikes.clear();
+            data.activeSpikes.forEach(spike => {
+                activeSpikes.set(spike.symbol, spike);
+            });
+            completedSpikes = data.completedSpikes || [];
+            stats = data.stats || stats;
+            updateDisplay();
+        }
+
+        // Handle new spike
+        function handleNewSpike(spike) {
+            activeSpikes.set(spike.symbol, spike);
+            stats.detected++;
+            updateDisplay();
+
+            if (settings.sound) {
+                playSound('spike');
+            }
+
+            if (settings.alerts) {
+                showAlert(`🚀 ${spike.symbol} SPIKING`,
+                    `+${spike.priceChange.toFixed(1)}% with ${spike.volumeBurst.toFixed(0)}x volume`,
+                    'spike');
+            }
+        }
+
+        // Handle spike update
+        function handleSpikeUpdate(spike) {
+            activeSpikes.set(spike.symbol, spike);
+            updateSpikeCard(spike);
+        }
+
+        // Handle spike completion
+        function handleSpikeComplete(spike) {
+            activeSpikes.delete(spike.symbol);
+            completedSpikes.unshift(spike);
+            if (completedSpikes.length > 20) {
+                completedSpikes.pop();
+            }
+
+            if (spike.priceChange > stats.bestGain) {
+                stats.bestGain = spike.priceChange;
+            }
+
+            updateDisplay();
+        }
+
+        // Handle alerts
+        function handleAlert(alert) {
+            if (settings.alerts) {
+                showAlert(alert.title, alert.message, alert.level);
+            }
+            if (settings.sound && alert.level === 'urgent') {
+                playSound('alert');
+            }
+        }
+
+        // Update display
+        function updateDisplay() {
+            // Update stats
+            document.getElementById('activeCount').textContent = activeSpikes.size;
+            document.getElementById('detectedCount').textContent = stats.detected;
+            document.getElementById('bestGain').textContent = stats.bestGain.toFixed(1) + '%';
+
+            // Update active spikes
+            const activeContainer = document.getElementById('activeSpikes');
+            if (activeSpikes.size === 0) {
+                activeContainer.innerHTML = `
+                    <div class="no-data">
+                        <div class="no-data-icon">⏳</div>
+                        <div>Waiting for spikes...</div>
+                    </div>
+                `;
+            } else {
+                activeContainer.innerHTML = '';
+                activeSpikes.forEach(spike => {
+                    activeContainer.appendChild(createSpikeCard(spike));
+                });
+            }
+
+            // Update completed spikes
+            if (settings.showCompleted) {
+                const completedContainer = document.getElementById('completedSpikes');
+                completedContainer.innerHTML = '';
+                completedSpikes.slice(0, 10).forEach(spike => {
+                    completedContainer.appendChild(createSpikeCard(spike, true));
+                });
+                document.getElementById('completedSpikesCount').textContent = completedSpikes.length;
+            }
+
+            // Update counts
+            document.getElementById('activeSpikesCount').textContent = activeSpikes.size;
+        }
+
+        // Create spike card
+        function createSpikeCard(spike, isCompleted = false) {
+            const card = document.createElement('div');
+            card.className = 'spike-card';
+            card.id = `spike-${spike.symbol}`;
+
+            // Determine card state
+            if (!isCompleted) {
+                if (spike.duration < 20) {
+                    card.classList.add('active');
+                } else if (spike.duration < 45) {
+                    card.classList.add('warning');
+                } else {
+                    card.classList.add('ending');
+                }
+            }
+
+            // Timer color
+            const timerClass = spike.duration < 30 ? 'green' :
+                               spike.duration < 60 ? 'yellow' : 'red';
+
+            // Momentum bars
+            const momentumLevel = spike.momentum === 'ACCELERATING' ? 5 :
+                                 spike.momentum === 'SLOWING' ? 3 :
+                                 spike.momentum === 'REVERSING' ? 1 : 2;
+
+            const momentumBars = Array(5).fill(0).map((_, i) => {
+                const active = i < momentumLevel;
+                const barClass = spike.momentum === 'REVERSING' ? 'danger' :
+                                spike.momentum === 'SLOWING' ? 'warning' : 'active';
+                return `<div class="momentum-bar ${active ? barClass : ''}"></div>`;
+            }).join('');
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="symbol-price">
+                        <span class="symbol">${spike.symbol}</span>
+                        <span class="price">$${spike.currentPrice.toFixed(2)}</span>
+                    </div>
+                    <span class="timer ${timerClass}">⏱ ${spike.duration.toFixed(0)}s</span>
+                </div>
+
+                <div class="price-movement">
+                    <span class="price-from">$${spike.startPrice.toFixed(2)}</span>
+                    <span class="price-arrow">→</span>
+                    <span class="price-to">$${spike.highPrice.toFixed(2)}</span>
+                    <span class="price-change">+${spike.priceChange.toFixed(1)}%</span>
+                </div>
+
+                <div class="momentum-meter">
+                    <div class="momentum-label">MOMENTUM: ${spike.momentum}</div>
+                    <div class="momentum-bars">
+                        ${momentumBars}
+                    </div>
+                </div>
+
+                <div class="volume-burst">
+                    <span class="volume-label">Volume Burst:</span>
+                    <span class="volume-value">${spike.volumeBurst.toFixed(1)}x normal</span>
+                </div>
+
+                ${!isCompleted ? `
+                <div class="action-buttons">
+                    <button class="action-btn entry-btn" onclick="markEntry('${spike.symbol}')">
+                        Entry: $${spike.currentPrice.toFixed(2)}
+                    </button>
+                    <button class="action-btn exit-btn" onclick="markExit('${spike.symbol}')">
+                        Exit Signal
+                    </button>
+                </div>
+                ` : ''}
+            `;
+
+            return card;
+        }
+
+        // Update spike card
+        function updateSpikeCard(spike) {
+            const card = document.getElementById(`spike-${spike.symbol}`);
+            if (card) {
+                const newCard = createSpikeCard(spike);
+                card.replaceWith(newCard);
+            }
+        }
+
+        // Update timers
+        function updateTimers() {
+            activeSpikes.forEach(spike => {
+                const timer = document.querySelector(`#spike-${spike.symbol} .timer`);
+                if (timer) {
+                    const duration = (Date.now() - spike.startTime) / 1000;
+                    timer.textContent = `⏱ ${duration.toFixed(0)}s`;
+
+                    // Update timer color
+                    timer.className = 'timer';
+                    if (duration < 30) timer.classList.add('green');
+                    else if (duration < 60) timer.classList.add('yellow');
+                    else timer.classList.add('red');
+                }
+            });
+        }
+
+        // Show alert toast
+        function showAlert(title, message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'alert-toast';
+            toast.innerHTML = `
+                <div class="alert-title">${title}</div>
+                <div class="alert-message">${message}</div>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Play sound
+        function playSound(type) {
+            // Create audio element and play sound
+            const audio = new Audio();
+            if (type === 'spike') {
+                // High pitch beep for spike
+                audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAAAQAEAQbAAAAC9jwAAAgAQAGRhdGEBBgAA';
+            } else {
+                // Lower pitch for alert
+                audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAAAQAEAQbAAAAC9jwAAAgAQAGRhdGEBBgAA';
+            }
+            audio.play().catch(() => {}); // Ignore errors
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Max price setting
+            document.getElementById('maxPrice').addEventListener('change', (e) => {
+                settings.maxPrice = parseFloat(e.target.value);
+                saveSettings();
+                updateConfig();
+            });
+
+            // Min volume setting
+            document.getElementById('minVolume').addEventListener('change', (e) => {
+                settings.minVolume = parseFloat(e.target.value);
+                saveSettings();
+                updateConfig();
+            });
+
+            // Sound toggle
+            document.getElementById('soundToggle').addEventListener('click', (e) => {
+                settings.sound = !settings.sound;
+                e.target.classList.toggle('active');
+                saveSettings();
+            });
+
+            // Alert toggle
+            document.getElementById('alertToggle').addEventListener('click', (e) => {
+                settings.alerts = !settings.alerts;
+                e.target.classList.toggle('active');
+                saveSettings();
+            });
+
+            // Completed toggle
+            document.getElementById('completedToggle').addEventListener('click', (e) => {
+                settings.showCompleted = !settings.showCompleted;
+                e.target.classList.toggle('active');
+                document.getElementById('completedSection').style.display =
+                    settings.showCompleted ? 'block' : 'none';
+                saveSettings();
+                updateDisplay();
+            });
+        }
+
+        // Update configuration
+        function updateConfig() {
+            fetch(`${API_URL}/api/spikes/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    maxPrice: settings.maxPrice,
+                    minVolumeBurst: settings.minVolume
+                })
+            });
+        }
+
+        // Mark entry
+        function markEntry(symbol) {
+            console.log(`Entry marked for ${symbol}`);
+            showAlert('Entry Marked', `Entered ${symbol} at current price`, 'success');
+        }
+
+        // Mark exit
+        function markExit(symbol) {
+            console.log(`Exit marked for ${symbol}`);
+            showAlert('Exit Signal', `Exit ${symbol} now`, 'warning');
+        }
+
+        // Load settings
+        function loadSettings() {
+            const saved = localStorage.getItem('spikeSettings');
+            if (saved) {
+                settings = { ...settings, ...JSON.parse(saved) };
+                document.getElementById('maxPrice').value = settings.maxPrice;
+                document.getElementById('minVolume').value = settings.minVolume;
+                document.getElementById('soundToggle').classList.toggle('active', settings.sound);
+                document.getElementById('alertToggle').classList.toggle('active', settings.alerts);
+                document.getElementById('completedToggle').classList.toggle('active', settings.showCompleted);
+                if (settings.showCompleted) {
+                    document.getElementById('completedSection').style.display = 'block';
+                }
+            }
+        }
+
+        // Save settings
+        function saveSettings() {
+            localStorage.setItem('spikeSettings', JSON.stringify(settings));
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent =
+                now.toLocaleTimeString('en-US', { hour12: false });
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
