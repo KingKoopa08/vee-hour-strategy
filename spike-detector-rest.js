@@ -101,44 +101,55 @@ function storePricePoint(symbol, price, volume) {
     }
 }
 
-// Detect spike
+// Detect spike - look for RECENT rapid movement with volume
 function detectSpike(symbol, currentData) {
     const history = priceHistory.get(symbol);
-    if (!history || history.length < 5) return null;
+    if (!history || history.length < 3) return null;
 
-    // Get data from 10 seconds ago
     const now = Date.now();
-    const past10s = now - 10000;
-    const past30s = now - 30000;
 
-    const recent = history.filter(h => h.timestamp > past10s);
-    const baseline = history.filter(h => h.timestamp > past30s && h.timestamp <= past10s);
+    // Get the oldest price point we have (up to 30 seconds ago)
+    const oldestRelevant = now - config.spikeDetectionWindow;
+    const relevantHistory = history.filter(h => h.timestamp > oldestRelevant);
 
-    if (recent.length < 2 || baseline.length < 2) return null;
+    if (relevantHistory.length < 3) return null;
 
-    // Calculate metrics
-    const recentAvgVolume = recent.reduce((sum, h) => sum + h.volume, 0) / recent.length;
-    const baselineAvgVolume = baseline.reduce((sum, h) => sum + h.volume, 0) / Math.max(baseline.length, 1);
+    // Find the lowest price in our window
+    let lowestPrice = relevantHistory[0].price;
+    let lowestIndex = 0;
+    for (let i = 0; i < relevantHistory.length; i++) {
+        if (relevantHistory[i].price < lowestPrice) {
+            lowestPrice = relevantHistory[i].price;
+            lowestIndex = i;
+        }
+    }
 
-    const volumeBurst = baselineAvgVolume > 0 ? recentAvgVolume / baselineAvgVolume : 0;
+    // Calculate price change from lowest point to current
+    const priceChangeFromLow = ((currentData.price - lowestPrice) / lowestPrice) * 100;
 
-    const priceChange = recent.length > 0 ?
-        ((currentData.price - recent[0].price) / recent[0].price) * 100 : 0;
+    // Calculate average volume in our window
+    const avgVolume = relevantHistory.reduce((sum, h) => sum + h.volume, 0) / relevantHistory.length;
+    const volumeRatio = currentData.volume / avgVolume;
 
-    // Check for UPWARD spike only (positive price change)
-    if (volumeBurst >= config.minVolumeBurst &&
-        priceChange >= config.minPriceChange && // Changed from Math.abs to only positive
-        currentData.volume > config.minVolume) {
+    // Check if this is a real spike:
+    // 1. Price increased significantly from recent low
+    // 2. Strong volume
+    // 3. Movement happened recently (low point wasn't at the beginning)
+    if (priceChangeFromLow >= config.minPriceChange &&
+        currentData.volume > config.minVolume &&
+        volumeRatio >= 1.2 && // At least 20% above average volume
+        lowestIndex > 0) { // The spike started after we began tracking
 
         return {
             symbol,
-            startPrice: recent[0].price,
+            startPrice: lowestPrice,
             currentPrice: currentData.price,
-            priceChange,
-            volumeBurst,
+            priceChange: priceChangeFromLow,
+            volumeBurst: volumeRatio,
             volume: currentData.volume,
-            startTime: now,
-            highPrice: currentData.price
+            startTime: relevantHistory[lowestIndex].timestamp,
+            highPrice: currentData.price,
+            momentum: 'SPIKING'
         };
     }
 
