@@ -1823,12 +1823,6 @@ app.get('/api/rockets/scan', async (req, res) => {
                     // Everything else goes to consolidating until we have momentum data
                     // This prevents flat stocks from appearing as momentum leaders
                     consolidating.push(rocket);
-                } else if (dayChange <= -5) {
-                    // Clear losers are pullbacks
-                    pullbacks.push(rocket);
-                } else {
-                    // Everything else consolidating
-                    consolidating.push(rocket);
                 }
             }
         }
