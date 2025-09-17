@@ -316,6 +316,26 @@ wss.on('connection', (ws) => {
     });
 });
 
+// Cleanup function to remove any falling stocks
+function cleanupFallingStocks() {
+    // Remove any active spikes that are now negative
+    for (const [symbol, spike] of activeSpikes) {
+        if (spike.priceChange < 0) {
+            console.log(`🗑️ Removing falling stock: ${symbol} (${spike.priceChange.toFixed(2)}%)`);
+            activeSpikes.delete(symbol);
+
+            // Notify clients to remove it
+            broadcast({
+                type: 'spikeComplete',
+                data: { ...spike, reason: 'falling' }
+            });
+        }
+    }
+
+    // Clean completed spikes too
+    completedSpikes = completedSpikes.filter(s => s.priceChange >= 0);
+}
+
 // Start server
 app.listen(PORT, () => {
     console.log(`\n🚀 SPIKE SCANNER (REST API MODE)`);
@@ -323,9 +343,12 @@ app.listen(PORT, () => {
     console.log(`📡 API: http://localhost:${PORT}`);
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`⚠️  Using REST API polling (2 sec intervals)`);
+    console.log(`🚀 Only tracking UPWARD spikes!`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
     // Start checking for spikes
     setInterval(checkForSpikes, config.checkInterval);
+    setInterval(cleanupFallingStocks, 5000); // Clean every 5 seconds
     checkForSpikes(); // Initial check
+    cleanupFallingStocks(); // Initial cleanup
 });
