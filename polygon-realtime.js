@@ -16,11 +16,12 @@ class PolygonRealtimeClient extends EventEmitter {
         this.spikeDetectors = new Map(); // symbol -> spike state
         this.activeSpikes = new Map(); // symbol -> spike data
 
-        // Configuration
+        // Configuration - more sensitive for after-hours
         this.config = {
             maxPrice: 100,
-            minVolumeBurst: 5, // 5x normal volume
-            minDollarVolume: 500000,
+            minVolumeBurst: 2, // Lowered from 5x to 2x for after-hours
+            minDollarVolume: 50000, // Lowered from 500k for after-hours
+            minPriceChange: 0.5, // 0.5% instead of 1%
             spikeWindow: 10000, // 10 seconds
             historyWindow: 60000, // 60 seconds for baseline
             maxTradesStored: 1000 // per symbol
