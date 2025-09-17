@@ -207,8 +207,10 @@ async function checkForSpikes() {
                     type: 'spike',
                     data: {
                         ...spike,
+                        highPrice: spike.highPrice || spike.currentPrice,
                         momentum: 'ACCELERATING',
-                        duration: 0
+                        duration: 0,
+                        previousChange: spike.priceChange
                     }
                 });
             } else if (activeSpikes.has(stock.symbol)) {
