@@ -2626,7 +2626,7 @@ function startRealTimePriceUpdates() {
         }
         
         const updates = [];
-        const symbols = Array.from(activeRockets).slice(0, 20); // Limit to 20 symbols to avoid rate limits
+        const symbols = Array.from(activeRockets).slice(0, 50); // Update up to 50 active rockets
         
         for (const symbol of symbols) {
             try {
