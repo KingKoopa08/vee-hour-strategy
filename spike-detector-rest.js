@@ -189,10 +189,10 @@ async function checkForSpikes() {
             // Check for spike - ONLY real-time spikes, not daily gainers
             const spike = detectSpike(stock.symbol, stock);
 
-            // ALSO check for high momentum stocks (up 5%+ today with strong volume)
-            const isHighMomentum = stock.changePercent > 5 && stock.volume > 1000000;
+            // Skip high momentum check - we only want stocks actively rising NOW
+            // const isHighMomentum = stock.changePercent > 5 && stock.volume > 1000000;
 
-            if ((spike || isHighMomentum) && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
+            if (spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
                 // Create spike object
                 const spikeData = spike || {
                     symbol: stock.symbol,
