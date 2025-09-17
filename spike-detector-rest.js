@@ -235,10 +235,10 @@ async function checkForSpikes() {
                 spike.momentum = momentum;
                 spike.previousChange = spike.priceChange;
 
-                // Check if spike is ending (60 seconds, price reversal, or momentum lost)
-                if (spike.duration > 60 ||
-                    spike.priceChange < 0 || // Price went negative (reversal)
-                    (spike.priceChange < config.minPriceChange / 2 && spike.momentum === 'SLOWING')) {
+                // Check if spike is ending (price reversal or momentum completely lost)
+                // Keep tracking as long as it's still positive and moving
+                if (spike.priceChange < 0 || // Price went negative (reversal)
+                    (spike.priceChange < 0.1 && spike.momentum === 'REVERSING')) { // Almost flat and reversing
 
                     activeSpikes.delete(stock.symbol);
                     completedSpikes.unshift(spike);
