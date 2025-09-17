@@ -57,11 +57,10 @@ async function getActiveStocks() {
                 .filter(t => {
                     const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
                     const volume = t.day?.v || t.min?.av || 0;
-                    const changePercent = t.todaysChangePerc || 0;
-                    // Only include stocks that are UP or flat (not down)
+                    // Include ALL stocks with good volume, regardless of daily change
+                    // We want to catch stocks that might be down but suddenly spiking
                     return price > 0.5 && price < config.maxPrice &&
-                           volume > config.minVolume &&
-                           changePercent >= -0.5; // Allow tiny dips but not big drops
+                           volume > config.minVolume;
                 })
                 .sort((a, b) => {
                     const volA = a.day?.v || a.min?.av || 0;
