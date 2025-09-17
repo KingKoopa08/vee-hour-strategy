@@ -27,9 +27,9 @@ let stats = { detected: 0, bestGain: 0 };
 // Configuration - VERY sensitive for testing
 const config = {
     maxPrice: 100,
-    minVolumeBurst: 1.2, // 20% above average volume
-    minPriceChange: 0.3, // 0.3% change (more sensitive)
-    minVolume: 100000, // Lower threshold for market hours
+    minVolumeBurst: 1.1, // 10% above average volume
+    minPriceChange: 0.2, // 0.2% change (very sensitive)
+    minVolume: 50000, // Lower threshold to catch more stocks
     checkInterval: 2000, // Check every 2 seconds
     historyDuration: 120000, // Keep 2 minutes of history
     spikeDetectionWindow: 60000 // Look for spikes in last 60 seconds
