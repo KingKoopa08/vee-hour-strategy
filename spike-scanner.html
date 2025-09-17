@@ -610,11 +610,16 @@
         // Handle initialization data
         function handleInit(data) {
             activeSpikes.clear();
-            data.activeSpikes.forEach(spike => {
-                activeSpikes.set(spike.symbol, spike);
-            });
+            if (data.activeSpikes && data.activeSpikes.length > 0) {
+                data.activeSpikes.forEach(spike => {
+                    activeSpikes.set(spike.symbol, spike);
+                });
+            }
             completedSpikes = data.completedSpikes || [];
-            stats = data.stats || stats;
+            if (data.stats) {
+                stats.detected = data.stats.spikesDetected || 0;
+                stats.bestGain = data.stats.bestSpike?.priceChange || 0;
+            }
             updateDisplay();
         }
 
