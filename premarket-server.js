@@ -1648,11 +1648,12 @@ app.get('/api/rockets/scan', async (req, res) => {
                 (stock.changePercent > 30 && volume > 5000000) || // Big move with massive volume
                 (orbSignal && orbSignal.type === 'BREAKOUT_UP' && stock.changePercent > 10)) // ORB breakout with good day gain
                 :
-                // Normal criteria for non-downtrending stocks
-                ((stock.changePercent > 20) || // >20% move alone is enough
-                (stock.changePercent > 10 && volume > 1000000) || // >10% with good volume
-                (stock.changePercent > 5 && accel && accel.volumeAcceleration > 10) || // moderate move with huge volume
-                (volume > 500000 && accel && accel.volumeAcceleration > 5) || // volume spike
+                // Normal criteria for non-downtrending stocks - more inclusive for market-wide scan
+                ((stock.changePercent > 15) || // >15% move alone is enough
+                (stock.changePercent > 10 && volume > 500000) || // >10% with moderate volume
+                (stock.changePercent > 5 && volume > 1000000) || // >5% with good volume
+                (stock.changePercent > 3 && accel && accel.volumeAcceleration > 10) || // small move with huge volume spike
+                (volume > 2000000 && stock.changePercent > 2) || // very high volume with any positive move
                 (orbSignal && orbSignal.type === 'BREAKOUT_UP')); // ORB breakout
             
             if (isRocket) {
