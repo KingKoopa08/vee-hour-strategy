@@ -1777,14 +1777,14 @@ app.get('/api/rockets/scan', async (req, res) => {
             
             // Simplified rocket detection - focus on rapid risers with good volume
             // Check if stock has positive recent momentum (not falling)
-            const hasPositiveMomentum = !momentum || !momentum.isDowntrend || 
-                                        (momentum.priceChange1m > 0 && momentum.priceChange5m > -1);
-            
+            const hasPositiveMomentum = !hasValidMomentum ||
+                                        (momentumData.priceChange1m >= 0 || momentumData.priceChange5m > -2);
+
             // Only include stocks that are rising quickly with good volume
             const isRocket = hasPositiveMomentum && (
                 (stock.changePercent > 20 && volume > 500000) || // Strong gainer with volume
                 (stock.changePercent > 10 && volume > 1000000) || // Good gainer with high volume
-                (stock.changePercent > 5 && volume > 3000000 && momentum?.priceChange1m > 0.5) || // Rising with very high volume
+                (stock.changePercent > 5 && volume > 3000000 && momentumData?.priceChange1m > 0.5) || // Rising with very high volume
                 (accel && accel.volumeAcceleration > 20 && stock.changePercent > 5) // Volume surge on gainer
             );
             
