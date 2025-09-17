@@ -194,7 +194,12 @@ async function checkForSpikes() {
                 detectedToday.add(stock.symbol); // Mark as detected
                 stats.detected++;
 
-                console.log(`🚨 SPIKE: ${spike.symbol} +${spike.priceChange.toFixed(2)}% with ${spike.volumeBurst.toFixed(1)}x volume`);
+                const timeSinceStart = ((Date.now() - spike.startTime) / 1000).toFixed(0);
+                console.log(`\n🚨 REAL-TIME SPIKE DETECTED!`);
+                console.log(`   Symbol: ${spike.symbol}`);
+                console.log(`   Move: +${spike.priceChange.toFixed(2)}% in ${timeSinceStart}s`);
+                console.log(`   Price: $${spike.startPrice.toFixed(2)} → $${spike.currentPrice.toFixed(2)}`);
+                console.log(`   Volume: ${(spike.volume/1000000).toFixed(1)}M (${spike.volumeBurst.toFixed(1)}x normal)\n`);
 
                 broadcast({
                     type: 'spike',
