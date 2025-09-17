@@ -1860,13 +1860,12 @@ app.get('/api/rockets/scan', async (req, res) => {
                     const hasEnoughHistory = priceHistory.get(symbol)?.length >= 10; // At least 10 data points
                     
                     // Check momentum trends
-                    const has5MinDown = momentum && momentum.priceChange5m !== undefined && momentum.priceChange5m < -1; // Down >1% in 5 min
-                    const has2MinDown = momentum && momentum.priceChange2m !== undefined && momentum.priceChange2m < -0.5; // Down >0.5% in 2 min
-                    const has1MinDown = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m < -0.3; // Down >0.3% in 1 min
-                    const isCurrentlyFalling = has5MinDown || has2MinDown || has1MinDown || isDowntrending;
-                    
+                    const has5MinDown = hasValidMomentum && momentumData.priceChange5m < -1; // Down >1% in 5 min
+                    const has1MinDown = hasValidMomentum && momentumData.priceChange1m < -0.3; // Down >0.3% in 1 min
+                    const isCurrentlyFalling = has5MinDown || has1MinDown;
+
                     // NEW: Only alert on momentum leaders (positive 1-minute momentum) AND significant day change
-                    const isMomentumLeader = momentum && momentum.priceChange1m !== undefined && momentum.priceChange1m > 0.1;
+                    const isMomentumLeader = hasValidMomentum && momentumData.priceChange1m > 0.1;
                     const hasSignificantDayChange = stock.changePercent >= 10; // Require at least 10% day change
                     const isActuallyMoving = isMomentumLeader && hasSignificantDayChange;
                     
