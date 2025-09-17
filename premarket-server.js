@@ -375,9 +375,17 @@ async function fetchTopStocks() {
                         changePercent = (priceChange / previousClose) * 100;
                     }
                     
+                    // Store price point for momentum tracking
+                    if (currentPrice > 0) {
+                        storePricePoint(t.ticker, currentPrice, currentVolume);
+                    }
+
+                    // Get momentum data
+                    const momentum = getMomentumData(t.ticker);
+
                     // Check if we're in pre-market hours (reuse previously declared variables)
                     // Variables now, hour, minute, isPreMarketTime already declared above
-                    
+
                     return {
                         symbol: t.ticker,
                         price: currentPrice,
@@ -388,7 +396,9 @@ async function fetchTopStocks() {
                         low: currentLow,
                         vwap: currentVWAP,
                         previousClose: previousClose,
-                        isPreMarket: isPreMarketTime
+                        isPreMarket: isPreMarketTime,
+                        priceChange1m: momentum.priceChange1m,
+                        priceChange5m: momentum.priceChange5m
                     };
                 })
                 .sort((a, b) => b.volume - a.volume) // Sort by highest volume
