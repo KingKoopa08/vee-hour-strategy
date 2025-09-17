@@ -217,15 +217,26 @@ async function checkForSpikes() {
                 spike.currentPrice = stock.price;
                 spike.priceChange = ((stock.price - spike.startPrice) / spike.startPrice) * 100;
                 spike.duration = (Date.now() - spike.startTime) / 1000;
+                spike.highPrice = Math.max(spike.highPrice || spike.currentPrice, spike.currentPrice);
 
-                // Check if spike is ending (60 seconds or price reversal)
-                if (spike.duration > 60 || Math.abs(spike.priceChange) < config.minPriceChange / 2) {
+                // Determine momentum based on recent price action
+                const momentum = spike.priceChange > spike.previousChange ? 'ACCELERATING' :
+                                spike.priceChange < 0 ? 'REVERSING' :
+                                spike.priceChange < spike.previousChange ? 'SLOWING' : 'RISING';
+                spike.momentum = momentum;
+                spike.previousChange = spike.priceChange;
+
+                // Check if spike is ending (60 seconds, price reversal, or momentum lost)
+                if (spike.duration > 60 ||
+                    spike.priceChange < 0 || // Price went negative (reversal)
+                    (spike.priceChange < config.minPriceChange / 2 && spike.momentum === 'SLOWING')) {
+
                     activeSpikes.delete(stock.symbol);
                     completedSpikes.unshift(spike);
                     if (completedSpikes.length > 20) completedSpikes.pop();
 
-                    if (Math.abs(spike.priceChange) > stats.bestGain) {
-                        stats.bestGain = Math.abs(spike.priceChange);
+                    if (spike.priceChange > stats.bestGain) {
+                        stats.bestGain = spike.priceChange;
                     }
 
                     broadcast({
@@ -235,10 +246,7 @@ async function checkForSpikes() {
                 } else {
                     broadcast({
                         type: 'spikeUpdate',
-                        data: {
-                            ...spike,
-                            momentum: spike.priceChange > 0 ? 'RISING' : 'FALLING'
-                        }
+                        data: spike
                     });
                 }
             }
