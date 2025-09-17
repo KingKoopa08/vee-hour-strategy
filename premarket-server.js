@@ -2957,5 +2957,46 @@ if (process.env.NODE_ENV === 'production') {
     console.log(`📡 WebSocket running on ws://localhost:3006`);
 }
 
-// Start real-time price updates
-startRealTimePriceUpdates();
+// Periodic price update function
+async function updateActiveStockPrices() {
+    if (activeRockets.size === 0) return;
+
+    const updates = [];
+    const symbols = Array.from(activeRockets);
+
+    // Batch fetch snapshots for active rockets
+    for (const symbol of symbols.slice(0, 50)) { // Limit to 50 symbols at once
+        try {
+            const snapshot = await fetchSnapshot(symbol);
+            if (snapshot) {
+                updates.push({
+                    symbol: snapshot.symbol,
+                    price: snapshot.price,
+                    changePercent: snapshot.changePercent,
+                    volume: snapshot.volume,
+                    priceChange1m: snapshot.priceChange1m || 0,
+                    priceChange5m: snapshot.priceChange5m || 0
+                });
+            }
+        } catch (err) {
+            // Skip on error
+        }
+    }
+
+    // Broadcast price updates if we have any
+    if (updates.length > 0) {
+        broadcast({
+            type: 'priceUpdates',
+            data: updates,
+            timestamp: new Date().toISOString()
+        });
+
+        console.log(`📈 Sent price updates for ${updates.length} stocks with momentum data`);
+    }
+}
+
+// Set up periodic price updates
+setInterval(updateActiveStockPrices, 5000); // Update every 5 seconds
+
+// Start the server to begin tracking
+console.log('🚀 Rocket Scanner initialized - tracking momentum in real-time');
