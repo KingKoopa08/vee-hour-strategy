@@ -32,6 +32,87 @@ const POLYGON_BASE_URL = 'https://api.polygon.io';
 let topStocks = [];
 let stockCache = new Map();
 
+// Price history for momentum calculations
+// Structure: { symbol: [{ price, volume, timestamp }] }
+const priceHistory = new Map();
+const HISTORY_DURATION = 5 * 60 * 1000; // Keep 5 minutes of history
+const HISTORY_INTERVAL = 5000; // Store price every 5 seconds
+
+// Store a price point in history
+function storePricePoint(symbol, price, volume) {
+    if (!priceHistory.has(symbol)) {
+        priceHistory.set(symbol, []);
+    }
+
+    const history = priceHistory.get(symbol);
+    const now = Date.now();
+
+    // Add new price point
+    history.push({ price, volume, timestamp: now });
+
+    // Remove old entries (older than 5 minutes)
+    const cutoffTime = now - HISTORY_DURATION;
+    while (history.length > 0 && history[0].timestamp < cutoffTime) {
+        history.shift();
+    }
+
+    // Limit array size to prevent memory issues
+    if (history.length > 100) {
+        history.splice(0, history.length - 100);
+    }
+}
+
+// Calculate momentum (price change over time period)
+function calculateMomentum(symbol, periodMs) {
+    const history = priceHistory.get(symbol);
+    if (!history || history.length < 2) {
+        return null;
+    }
+
+    const now = Date.now();
+    const targetTime = now - periodMs;
+
+    // Find the price point closest to target time
+    let closestPoint = null;
+    let closestTimeDiff = Infinity;
+
+    for (const point of history) {
+        const timeDiff = Math.abs(point.timestamp - targetTime);
+        if (timeDiff < closestTimeDiff) {
+            closestTimeDiff = timeDiff;
+            closestPoint = point;
+        }
+    }
+
+    // Get current price (most recent)
+    const currentPrice = history[history.length - 1].price;
+
+    // If we found a point within reasonable range (within 30 seconds of target)
+    if (closestPoint && closestTimeDiff < 30000) {
+        const priceChange = ((currentPrice - closestPoint.price) / closestPoint.price) * 100;
+        return {
+            change: priceChange,
+            fromPrice: closestPoint.price,
+            toPrice: currentPrice,
+            duration: now - closestPoint.timestamp
+        };
+    }
+
+    return null;
+}
+
+// Get momentum data for a stock
+function getMomentumData(symbol) {
+    const momentum1m = calculateMomentum(symbol, 60 * 1000);
+    const momentum5m = calculateMomentum(symbol, 5 * 60 * 1000);
+
+    return {
+        priceChange1m: momentum1m ? momentum1m.change : 0,
+        priceChange5m: momentum5m ? momentum5m.change : 0,
+        hasData: momentum1m !== null || momentum5m !== null
+    };
+}
+
 // Get the most recent trading day  
 function getLastTradingDay() {
     const now = new Date();
