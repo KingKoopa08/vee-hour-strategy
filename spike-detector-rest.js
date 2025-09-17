@@ -176,8 +176,8 @@ async function checkForSpikes() {
             // Check for spike
             const spike = detectSpike(stock.symbol, stock);
 
-            // ONLY check for stocks that are UP significantly today (not down!)
-            if (!spike && !activeSpikes.has(stock.symbol) && stock.changePercent > 5) {
+            // ONLY check for stocks that are UP significantly today AND haven't been detected yet
+            if (!spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol) && stock.changePercent > 5) {
                 // This stock is already UP significantly today
                 const highMover = {
                     symbol: stock.symbol,
@@ -193,9 +193,10 @@ async function checkForSpikes() {
                 };
 
                 activeSpikes.set(stock.symbol, highMover);
+                detectedToday.add(stock.symbol); // Mark as detected
                 stats.detected++;
 
-                console.log(`🚀 RISING: ${stock.symbol} +${stock.changePercent.toFixed(2)}% | Vol: ${(stock.volume/1000000).toFixed(1)}M`);
+                console.log(`🚀 NEW RISING STOCK: ${stock.symbol} +${stock.changePercent.toFixed(2)}% | Vol: ${(stock.volume/1000000).toFixed(1)}M`);
 
                 broadcast({
                     type: 'spike',
