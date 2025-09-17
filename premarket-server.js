@@ -136,21 +136,30 @@ async function fetchSnapshot(symbol) {
     try {
         const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
         const response = await axios.get(url);
-        
+
         if (response.data && response.data.ticker) {
             const ticker = response.data.ticker;
-            
+
             // Use prevDay data if day data is not available (weekend/after-hours)
             const dayData = ticker.day || ticker.prevDay || {};
             const price = dayData.c || ticker.min?.c || ticker.prevDay?.c || 0;
-            
+            const volume = dayData.v || ticker.min?.av || 0;
+
+            // Store price point for momentum calculation
+            if (price > 0) {
+                storePricePoint(symbol, price, volume);
+            }
+
+            // Get momentum data
+            const momentum = getMomentumData(symbol);
+
             return {
                 symbol: symbol,
                 price: price,
                 open: dayData.o || 0,
                 high: dayData.h || 0,
                 low: dayData.l || 0,
-                volume: dayData.v || 0,
+                volume: volume,
                 prevClose: ticker.prevDay?.c || 0,
                 change: price - (ticker.prevDay?.c || price),
                 changePercent: ((price - (ticker.prevDay?.c || price)) / (ticker.prevDay?.c || 1)) * 100,
@@ -158,7 +167,9 @@ async function fetchSnapshot(symbol) {
                 timestamp: new Date(),
                 updated: ticker.updated || Date.now(),
                 preMarket: ticker.preMarket || null,
-                afterHours: ticker.afterHours || null
+                afterHours: ticker.afterHours || null,
+                priceChange1m: momentum.priceChange1m,
+                priceChange5m: momentum.priceChange5m
             };
         }
     } catch (error) {
