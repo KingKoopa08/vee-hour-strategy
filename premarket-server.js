@@ -1791,15 +1791,15 @@ app.get('/api/rockets/scan', async (req, res) => {
             
             // Use momentum data if available, otherwise use smart defaults
             if (hasMomentumMovement) {
-                // STRICT CRITERIA for Momentum Leaders - must be actively trading upward
-                // Require BOTH positive 1m momentum AND positive or stable 5m momentum
+                // Momentum Leaders - actively trading upward
+                // Balance between being strict (no flat stocks) and inclusive (catching real movers)
                 const has5MinData = priceChange5m !== undefined && priceChange5m !== null;
                 
-                if (priceChange1m > 0.2 && (!has5MinData || priceChange5m > 0.1)) {
-                    // Strong upward momentum in last minute AND positive 5-minute trend
+                if (priceChange1m > 0.1 && (!has5MinData || priceChange5m > 0)) {
+                    // Positive momentum in last minute AND not declining over 5 minutes
                     momentumLeaders.push(rocket);
-                } else if (priceChange1m > 0.1 && has5MinData && priceChange5m > 0.2) {
-                    // Moderate 1m momentum but strong 5-minute uptrend
+                } else if (priceChange1m > 0.05 && has5MinData && priceChange5m > 0.1) {
+                    // Small 1m momentum but positive 5-minute trend
                     momentumLeaders.push(rocket);
                 } else if (priceChange1m < -0.1) {
                     // Pullback: negative momentum in last minute
