@@ -86,8 +86,8 @@ async function fetchSnapshot(symbol) {
     return null;
 }
 
-// Pre-market watchlist - stocks that often have high pre-market volume
-const PREMARKET_WATCHLIST = ['SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT'];
+// Pre-market watchlist - stocks that often have high pre-market volume + hot movers
+const PREMARKET_WATCHLIST = ['VVOS', 'CWD', 'SOAR', 'SPRC', 'IPM', 'HIND', 'ASTI', 'NFE', 'FGNX', 'SQFT', 'NUAI', 'NAKA', 'CAPS', 'SBLX', 'SLXN', 'YYGH', 'OPEN', 'VNCE', 'TGL', 'SPY', 'QQQ', 'TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'AMZN', 'GOOGL', 'MSFT'];
 
 // Cache for pre-market data
 let premarketDataCache = new Map();
