@@ -213,8 +213,8 @@ async function fetchTopStocks() {
         const validWatchlistTickers = watchlistTickers.filter(t => t !== null);
         console.log(`📋 Fetched ${validWatchlistTickers.length} watchlist stocks`);
         
-        // Use the snapshot endpoint to get live data for all tickers - fetch max to analyze
-        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}&order=desc&sort=volume&limit=1000`;
+        // Fetch ALL tickers snapshot to scan entire market
+        const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
         const response = await axios.get(url);
         
         if (response.data && response.data.tickers) {
