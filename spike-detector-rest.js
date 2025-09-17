@@ -193,29 +193,17 @@ async function checkForSpikes() {
             // const isHighMomentum = stock.changePercent > 5 && stock.volume > 1000000;
 
             if (spike && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
-                // Create spike object
-                const spikeData = spike || {
-                    symbol: stock.symbol,
-                    startPrice: stock.price * (1 - stock.changePercent/100),
-                    currentPrice: stock.price,
-                    priceChange: stock.changePercent,
-                    volumeBurst: 1,
-                    volume: stock.volume,
-                    startTime: Date.now(),
-                    highPrice: stock.price,
-                    momentum: stock.changePercent > 10 ? 'HOT' : 'RISING'
-                };
-
-                activeSpikes.set(stock.symbol, spikeData);
+                // Use the spike data directly
+                activeSpikes.set(stock.symbol, spike);
                 detectedToday.add(stock.symbol); // Mark as detected
                 stats.detected++;
 
-                const timeSinceStart = ((Date.now() - spikeData.startTime) / 1000).toFixed(0);
-                console.log(`\n🚨 ${isHighMomentum ? 'HIGH MOMENTUM' : 'REAL-TIME SPIKE'} DETECTED!`);
-                console.log(`   Symbol: ${spikeData.symbol}`);
-                console.log(`   Move: +${spikeData.priceChange.toFixed(2)}% ${spike ? `in ${timeSinceStart}s` : 'today'}`);
-                console.log(`   Price: $${spikeData.startPrice.toFixed(2)} → $${spikeData.currentPrice.toFixed(2)}`);
-                console.log(`   Volume: ${(spikeData.volume/1000000).toFixed(1)}M${spike ? ` (${spikeData.volumeBurst.toFixed(1)}x normal)` : ''}\n`);
+                const timeSinceStart = ((Date.now() - spike.startTime) / 1000).toFixed(0);
+                console.log(`\n🚨 REAL-TIME SPIKE DETECTED!`);
+                console.log(`   Symbol: ${spike.symbol}`);
+                console.log(`   Move: +${spike.priceChange.toFixed(2)}% in ${timeSinceStart}s`);
+                console.log(`   Price: $${spike.startPrice.toFixed(2)} → $${spike.currentPrice.toFixed(2)}`);
+                console.log(`   Volume: ${(spike.volume/1000000).toFixed(1)}M (${spike.volumeBurst.toFixed(1)}x normal)\n`);
 
                 broadcast({
                     type: 'spike',
