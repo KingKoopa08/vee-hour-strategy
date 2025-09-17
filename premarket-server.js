@@ -1649,7 +1649,10 @@ app.get('/api/rockets/scan', async (req, res) => {
             }
         }
         
-        for (const stock of stocks) { // Check all stocks from market scan
+        const rockets = [];
+        
+        // Process deduplicated stocks
+        for (const stock of stockMap.values()) {
             const symbol = stock.symbol;
             const price = stock.price;
             const volume = stock.volume;
