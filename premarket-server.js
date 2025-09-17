@@ -1791,40 +1791,37 @@ app.get('/api/rockets/scan', async (req, res) => {
             
             // Use momentum data if available, otherwise use smart defaults
             if (hasMomentumMovement) {
-                // For Momentum Leaders: require positive movement
-                if (priceChange1m > 0.1 && (!priceChange5m || priceChange5m > 0)) {
-                    // Rising: positive momentum in last minute AND not down in 5 minutes
+                // STRICT CRITERIA for Momentum Leaders - must be actively trading upward
+                // Require BOTH positive 1m momentum AND positive or stable 5m momentum
+                const has5MinData = priceChange5m !== undefined && priceChange5m !== null;
+                
+                if (priceChange1m > 0.2 && (!has5MinData || priceChange5m > 0.1)) {
+                    // Strong upward momentum in last minute AND positive 5-minute trend
+                    momentumLeaders.push(rocket);
+                } else if (priceChange1m > 0.1 && has5MinData && priceChange5m > 0.2) {
+                    // Moderate 1m momentum but strong 5-minute uptrend
                     momentumLeaders.push(rocket);
                 } else if (priceChange1m < -0.1) {
                     // Pullback: negative momentum in last minute
                     pullbacks.push(rocket);
                 } else {
-                    // Consolidating: flat or mixed movement
+                    // Consolidating: flat, mixed, or insufficient upward movement
+                    // This includes stocks with high day gains but flat recent action
                     consolidating.push(rocket);
                 }
             } else {
-                // Smart initial categorization when no momentum data available
-                // This provides immediate categorization while waiting for momentum data
+                // When no momentum data available, be conservative
+                // Only extreme movers go to momentum leaders without momentum data
                 
-                if (dayChange >= 50) {
-                    // Extreme gainers (50%+) are momentum leaders
+                if (dayChange >= 75 && volume > 5000000) {
+                    // Only extreme gainers (75%+) with high volume are momentum leaders without data
                     momentumLeaders.push(rocket);
-                } else if (dayChange >= 25) {
-                    // Strong gainers (25-50%) - check volume for categorization
-                    if (volume > 5000000 || level >= 3) {
-                        momentumLeaders.push(rocket);
-                    } else {
-                        consolidating.push(rocket);
-                    }
-                } else if (dayChange >= 15) {
-                    // Moderate gainers (15-25%) - likely consolidating unless high volume
-                    if (volume > 10000000 && level >= 2) {
-                        momentumLeaders.push(rocket);
-                    } else {
-                        consolidating.push(rocket);
-                    }
-                } else if (dayChange >= 10) {
-                    // Small gainers go to consolidating
+                } else if (dayChange <= -5) {
+                    // Declining stocks
+                    pullbacks.push(rocket);
+                } else {
+                    // Everything else goes to consolidating until we have momentum data
+                    // This prevents flat stocks from appearing as momentum leaders
                     consolidating.push(rocket);
                 } else if (dayChange <= -5) {
                     // Clear losers are pullbacks
