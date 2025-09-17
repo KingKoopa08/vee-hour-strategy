@@ -1829,10 +1829,13 @@ app.get('/api/rockets/scan', async (req, res) => {
                     vwap: stock.vwap || price,
                     rsi: stock.rsi || 50,
                     acceleration: accel,
-                    momentum: hasValidMomentum ? momentum : null,
-                    trend: hasValidMomentum ? momentum.trend : null,
-                    direction: hasValidMomentum ? momentum.direction : 'unknown',
-                    accelerating: hasValidMomentum ? (momentum.accelerating || false) : false,
+                    priceChange1m: momentumData?.priceChange1m || 0,
+                    priceChange5m: momentumData?.priceChange5m || 0,
+                    momentum: hasValidMomentum ? {
+                        priceChange1m: momentumData.priceChange1m,
+                        priceChange5m: momentumData.priceChange5m,
+                        hasData: true
+                    } : null,
                     news: news ? news.headline : null,
                     newsDescription: news ? news.description : null,
                     newsTime: news ? news.timestamp : null,
