@@ -672,6 +672,18 @@
 
         // Handle spike completion
         function handleSpikeComplete(spike) {
+            // Ensure spike has all required fields with defaults
+            spike = {
+                ...spike,
+                highPrice: spike.highPrice || spike.currentPrice || 0,
+                startPrice: spike.startPrice || 0,
+                currentPrice: spike.currentPrice || 0,
+                priceChange: spike.priceChange || 0,
+                volumeBurst: spike.volumeBurst || 1,
+                duration: spike.duration || 0,
+                momentum: spike.momentum || 'UNKNOWN'
+            };
+
             activeSpikes.delete(spike.symbol);
             completedSpikes.unshift(spike);
             if (completedSpikes.length > 20) {
