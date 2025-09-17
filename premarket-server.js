@@ -1616,7 +1616,7 @@ app.get('/api/rockets/scan', async (req, res) => {
             console.log('Could not fetch gainers:', error.message);
         }
         
-        for (const stock of stocks.slice(0, 200)) { // Check top 200 stocks + all gainers
+        for (const stock of stocks) { // Check all stocks from market scan
             const symbol = stock.symbol;
             const price = stock.price;
             const volume = stock.volume;
