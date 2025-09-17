@@ -744,10 +744,10 @@
             card.innerHTML = `
                 <div class="card-header">
                     <div class="symbol-price">
-                        <span class="symbol">${spike.symbol}</span>
-                        <span class="price">$${spike.currentPrice.toFixed(2)}</span>
+                        <span class="symbol">${spike.symbol || 'N/A'}</span>
+                        <span class="price">$${(spike.currentPrice || 0).toFixed(2)}</span>
                     </div>
-                    <span class="timer ${timerClass}">⏱ ${spike.duration.toFixed(0)}s</span>
+                    <span class="timer ${timerClass}">⏱ ${(spike.duration || 0).toFixed(0)}s</span>
                 </div>
 
                 <div class="price-movement">
