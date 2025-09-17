@@ -163,6 +163,10 @@ async function checkForSpikes() {
         const stocks = await getActiveStocks();
         checkCount++;
 
+        // Log every 5 checks
+        if (checkCount % 5 === 0) {
+            console.log(`✓ Scan #${checkCount}: Monitoring ${stocks.length} stocks, ${priceHistory.size} with history`);
+
         // Log top movers every 10 checks
         if (checkCount % 10 === 0) {
             topMovers = stocks
