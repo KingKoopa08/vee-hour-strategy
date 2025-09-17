@@ -670,8 +670,8 @@
         function updateDisplay() {
             // Update stats
             document.getElementById('activeCount').textContent = activeSpikes.size;
-            document.getElementById('detectedCount').textContent = stats.detected;
-            document.getElementById('bestGain').textContent = stats.bestGain.toFixed(1) + '%';
+            document.getElementById('detectedCount').textContent = stats.detected || 0;
+            document.getElementById('bestGain').textContent = (stats.bestGain || 0).toFixed(1) + '%';
 
             // Update active spikes
             const activeContainer = document.getElementById('activeSpikes');
