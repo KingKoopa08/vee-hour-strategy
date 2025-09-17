@@ -21,6 +21,7 @@ const clients = new Set();
 const priceHistory = new Map(); // symbol -> [{price, volume, timestamp}]
 const activeSpikes = new Map();
 const completedSpikes = [];
+const detectedToday = new Set(); // Track symbols we've already detected today
 let stats = { detected: 0, bestGain: 0 };
 
 // Configuration - VERY sensitive for testing
