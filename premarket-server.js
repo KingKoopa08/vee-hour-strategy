@@ -1706,7 +1706,8 @@ app.get('/api/debug/momentum/:symbol', async (req, res) => {
 app.get('/api/rockets/scan', async (req, res) => {
     try {
         const marketSession = getMarketSession();
-        console.log(`🚀 Scanning for rockets - ${marketSession.description}`);
+        console.log(`\n🚀 ROCKET SCAN STARTED - ${marketSession.description}`);
+        console.log(`📊 Active rockets: ${activeRockets.size} | Price history: ${priceHistory.size} symbols tracked`);
         
         // Use a Map to deduplicate stocks by symbol
         const stockMap = new Map();
