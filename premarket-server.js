@@ -1687,6 +1687,21 @@ async function fetchAfterHoursMovers() {
     }
 }
 
+// Debug endpoint to check momentum data
+app.get('/api/debug/momentum/:symbol', async (req, res) => {
+    const symbol = req.params.symbol.toUpperCase();
+    const history = priceHistory.get(symbol);
+    const momentum = getMomentumData(symbol);
+
+    res.json({
+        symbol,
+        historyLength: history ? history.length : 0,
+        history: history ? history.slice(-10) : [], // Last 10 points
+        momentum,
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Rocket scanner endpoint with session awareness
 app.get('/api/rockets/scan', async (req, res) => {
     try {
