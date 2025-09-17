@@ -1810,18 +1810,16 @@ app.get('/api/rockets/scan', async (req, res) => {
                     consolidating.push(rocket);
                 }
             } else {
-                // When no momentum data available, be conservative
-                // Only extreme movers go to momentum leaders without momentum data
+                // When no momentum data available, ALWAYS put in consolidating
+                // We can't determine momentum without price history
+                // This prevents stocks from appearing as momentum leaders when we don't know their trend
                 
-                if (dayChange >= 75 && volume > 5000000) {
-                    // Only extreme gainers (75%+) with high volume are momentum leaders without data
-                    momentumLeaders.push(rocket);
-                } else if (dayChange <= -5) {
-                    // Declining stocks
+                if (dayChange <= -5) {
+                    // Clear declining stocks go to pullbacks
                     pullbacks.push(rocket);
                 } else {
                     // Everything else goes to consolidating until we have momentum data
-                    // This prevents flat stocks from appearing as momentum leaders
+                    // This includes high gainers - we need to see actual momentum first
                     consolidating.push(rocket);
                 }
             }
