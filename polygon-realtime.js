@@ -108,6 +108,11 @@ class PolygonRealtimeClient extends EventEmitter {
         const size = trade.s;
         const timestamp = trade.t;
 
+        // Debug: Log first few trades
+        if (!this.tradeHistory.has(symbol)) {
+            console.log(`📊 First trade for ${symbol}: $${price} x ${size} shares`);
+        }
+
         // Store trade in history
         if (!this.tradeHistory.has(symbol)) {
             this.tradeHistory.set(symbol, []);
