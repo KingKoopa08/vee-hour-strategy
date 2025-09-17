@@ -193,8 +193,20 @@ async function checkForSpikes() {
             const isHighMomentum = stock.changePercent > 5 && stock.volume > 1000000;
 
             if ((spike || isHighMomentum) && !activeSpikes.has(stock.symbol) && !detectedToday.has(stock.symbol)) {
-                // New spike!
-                activeSpikes.set(stock.symbol, spike);
+                // Create spike object
+                const spikeData = spike || {
+                    symbol: stock.symbol,
+                    startPrice: stock.price * (1 - stock.changePercent/100),
+                    currentPrice: stock.price,
+                    priceChange: stock.changePercent,
+                    volumeBurst: 1,
+                    volume: stock.volume,
+                    startTime: Date.now(),
+                    highPrice: stock.price,
+                    momentum: stock.changePercent > 10 ? 'HOT' : 'RISING'
+                };
+
+                activeSpikes.set(stock.symbol, spikeData);
                 detectedToday.add(stock.symbol); // Mark as detected
                 stats.detected++;
 
