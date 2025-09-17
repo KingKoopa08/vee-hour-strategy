@@ -1591,66 +1591,61 @@ app.get('/api/rockets/scan', async (req, res) => {
         const marketSession = getMarketSession();
         console.log(`🚀 Scanning for rockets - ${marketSession.description}`);
         
-        const stocks = await fetchSessionStocks();
-        const rockets = [];
+        // Use a Map to deduplicate stocks by symbol
+        const stockMap = new Map();
         
-        // Fetch top gainers and losers to catch all major movers
+        // Get base stocks from session
+        const sessionStocks = await fetchSessionStocks();
+        for (const stock of sessionStocks) {
+            stockMap.set(stock.symbol, stock);
+        }
+        
+        // Fetch top gainers to catch rapid risers
         try {
-            // Fetch gainers
             const gainersUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
             const gainersResponse = await axios.get(gainersUrl);
             
             if (gainersResponse.data && gainersResponse.data.tickers) {
                 for (const ticker of gainersResponse.data.tickers) {
                     const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
-                    stocks.push({
-                        symbol: ticker.ticker,
-                        price: ticker.day.c || ticker.min?.c || ticker.prevDay.c,
-                        changePercent: changePercent,
-                        volume: ticker.day.v || ticker.min?.av || 0,
-                        vwap: ticker.day.vw || ticker.min?.vw,
-                        session: marketSession.session
-                    });
-                }
-            }
-            
-            // Also fetch losers
-            const losersUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/losers?apiKey=${POLYGON_API_KEY}`;
-            const losersResponse = await axios.get(losersUrl);
-            
-            if (losersResponse.data && losersResponse.data.tickers) {
-                for (const ticker of losersResponse.data.tickers) {
-                    const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
-                    stocks.push({
-                        symbol: ticker.ticker,
-                        price: ticker.day.c || ticker.min?.c || ticker.prevDay.c,
-                        changePercent: changePercent,
-                        volume: ticker.day.v || ticker.min?.av || 0,
-                        vwap: ticker.day.vw || ticker.min?.vw,
-                        session: marketSession.session
-                    });
+                    const symbol = ticker.ticker;
+                    
+                    // Only add/update if this stock shows significant movement and volume
+                    if (changePercent > 5 && ticker.day.v > 1000000) {
+                        stockMap.set(symbol, {
+                            symbol: symbol,
+                            price: ticker.day.c || ticker.min?.c || ticker.prevDay.c,
+                            changePercent: changePercent,
+                            volume: ticker.day.v || ticker.min?.av || 0,
+                            vwap: ticker.day.vw || ticker.min?.vw,
+                            session: marketSession.session
+                        });
+                    }
                 }
             }
         } catch (error) {
-            console.log('Could not fetch gainers/losers:', error.message);
+            console.log('Could not fetch gainers:', error.message);
         }
         
-        // Manually check watchlist stocks to ensure we don't miss any
-        for (const symbol of PREMARKET_WATCHLIST) {
-            try {
-                const snapshot = await fetchSnapshot(symbol);
-                if (snapshot && !stocks.find(s => s.symbol === symbol)) {
-                    stocks.push({
-                        symbol: symbol,
-                        price: snapshot.price,
-                        changePercent: snapshot.changePercent,
-                        volume: snapshot.volume,
-                        vwap: snapshot.price,
-                        session: marketSession.session
-                    });
+        // Check important watchlist stocks
+        const importantWatchlist = ['VVOS', 'CWD', 'SOAR', 'SPRC', 'IPM'];
+        for (const symbol of importantWatchlist) {
+            if (!stockMap.has(symbol)) {
+                try {
+                    const snapshot = await fetchSnapshot(symbol);
+                    if (snapshot && snapshot.changePercent > 5 && snapshot.volume > 500000) {
+                        stockMap.set(symbol, {
+                            symbol: symbol,
+                            price: snapshot.price,
+                            changePercent: snapshot.changePercent,
+                            volume: snapshot.volume,
+                            vwap: snapshot.price,
+                            session: marketSession.session
+                        });
+                    }
+                } catch (err) {
+                    // Skip if can't fetch
                 }
-            } catch (err) {
-                // Skip if can't fetch
             }
         }
         
