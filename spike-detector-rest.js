@@ -332,8 +332,12 @@ function cleanupFallingStocks() {
         }
     }
 
-    // Clean completed spikes too
-    completedSpikes = completedSpikes.filter(s => s.priceChange >= 0);
+    // Clean completed spikes too - use splice to modify in place
+    for (let i = completedSpikes.length - 1; i >= 0; i--) {
+        if (completedSpikes[i].priceChange < 0) {
+            completedSpikes.splice(i, 1);
+        }
+    }
 }
 
 // Start server
