@@ -186,10 +186,11 @@ async function checkForSpikes() {
                     priceChange: stock.changePercent,
                     volumeBurst: 1, // Unknown
                     volume: stock.volume,
-                    startTime: Date.now() - 60000, // Assume started earlier
+                    startTime: Date.now(), // Start tracking from now
                     momentum: 'HOT',
-                    duration: 60,
-                    highPrice: stock.price
+                    duration: 0, // Start at 0
+                    highPrice: stock.price,
+                    previousChange: stock.changePercent
                 };
 
                 activeSpikes.set(stock.symbol, highMover);
