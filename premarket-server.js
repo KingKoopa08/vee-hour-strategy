@@ -1765,9 +1765,9 @@ app.get('/api/rockets/scan', async (req, res) => {
             // Check acceleration
             const accel = detectAcceleration(symbol);
             
-            // Calculate momentum FIRST to check if stock is in downtrend
-            const momentum = calculateMomentum(symbol);
-            const hasValidMomentum = momentum && priceHistory.get(symbol)?.length > 2;
+            // Get momentum data for the stock
+            const momentumData = getMomentumData(symbol);
+            const hasValidMomentum = momentumData && momentumData.hasData;
             
             // Check for ORB breakout during regular hours
             let orbSignal = null;
