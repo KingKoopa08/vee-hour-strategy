@@ -1594,8 +1594,9 @@ app.get('/api/rockets/scan', async (req, res) => {
         const stocks = await fetchSessionStocks();
         const rockets = [];
         
-        // Also fetch top gainers to catch stocks like IMTE
+        // Fetch top gainers and losers to catch all major movers
         try {
+            // Fetch gainers
             const gainersUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
             const gainersResponse = await axios.get(gainersUrl);
             
@@ -1604,16 +1605,53 @@ app.get('/api/rockets/scan', async (req, res) => {
                     const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
                     stocks.push({
                         symbol: ticker.ticker,
-                        price: ticker.day.c,
+                        price: ticker.day.c || ticker.min?.c || ticker.prevDay.c,
                         changePercent: changePercent,
-                        volume: ticker.day.v,
-                        vwap: ticker.day.vw,
+                        volume: ticker.day.v || ticker.min?.av || 0,
+                        vwap: ticker.day.vw || ticker.min?.vw,
+                        session: marketSession.session
+                    });
+                }
+            }
+            
+            // Also fetch losers
+            const losersUrl = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/losers?apiKey=${POLYGON_API_KEY}`;
+            const losersResponse = await axios.get(losersUrl);
+            
+            if (losersResponse.data && losersResponse.data.tickers) {
+                for (const ticker of losersResponse.data.tickers) {
+                    const changePercent = ((ticker.todaysChange / ticker.prevDay.c) * 100);
+                    stocks.push({
+                        symbol: ticker.ticker,
+                        price: ticker.day.c || ticker.min?.c || ticker.prevDay.c,
+                        changePercent: changePercent,
+                        volume: ticker.day.v || ticker.min?.av || 0,
+                        vwap: ticker.day.vw || ticker.min?.vw,
                         session: marketSession.session
                     });
                 }
             }
         } catch (error) {
-            console.log('Could not fetch gainers:', error.message);
+            console.log('Could not fetch gainers/losers:', error.message);
+        }
+        
+        // Manually check watchlist stocks to ensure we don't miss any
+        for (const symbol of PREMARKET_WATCHLIST) {
+            try {
+                const snapshot = await fetchSnapshot(symbol);
+                if (snapshot && !stocks.find(s => s.symbol === symbol)) {
+                    stocks.push({
+                        symbol: symbol,
+                        price: snapshot.price,
+                        changePercent: snapshot.changePercent,
+                        volume: snapshot.volume,
+                        vwap: snapshot.price,
+                        session: marketSession.session
+                    });
+                }
+            } catch (err) {
+                // Skip if can't fetch
+            }
         }
         
         for (const stock of stocks) { // Check all stocks from market scan
