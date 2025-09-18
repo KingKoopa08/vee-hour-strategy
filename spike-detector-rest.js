@@ -291,21 +291,33 @@ app.get('/api/spikes/stats', (req, res) => {
     });
 });
 
-app.post('/api/spikes/config', (req, res) => {
-    const { maxPrice, minVolumeBurst } = req.body;
-    if (maxPrice) config.maxPrice = maxPrice;
-    if (minVolumeBurst) config.minVolumeBurst = minVolumeBurst;
+// GET current configuration
+app.get('/api/spikes/config', (req, res) => {
+    res.json({
+        success: true,
+        config: config
+    });
+});
 
-    console.log(`⚙️ Config updated: maxPrice=$${config.maxPrice}, minVolumeBurst=${config.minVolumeBurst}x`);
+// UPDATE configuration
+app.post('/api/spikes/config', (req, res) => {
+    const updates = req.body;
+
+    // Update each provided parameter
+    if (updates.maxPrice !== undefined) config.maxPrice = updates.maxPrice;
+    if (updates.minVolumeBurst !== undefined) config.minVolumeBurst = updates.minVolumeBurst;
+    if (updates.minPriceChange !== undefined) config.minPriceChange = updates.minPriceChange;
+    if (updates.minVolume !== undefined) config.minVolume = updates.minVolume;
+    if (updates.spikeDetectionWindow !== undefined) config.spikeDetectionWindow = updates.spikeDetectionWindow;
+
+    // Clear detected today when config changes to re-detect with new settings
+    detectedToday.clear();
+
+    console.log(`⚙️ Config updated:`, config);
 
     res.json({
         success: true,
-        config: {
-            maxPrice: config.maxPrice,
-            minVolumeBurst: config.minVolumeBurst,
-            minPriceChange: config.minPriceChange,
-            minVolume: config.minVolume
-        }
+        config: config
     });
 });
 
