@@ -184,8 +184,8 @@ function detectSpike(symbol, currentData) {
 
     if (priceChangeFromBaseline >= config.minPriceChange && // Must be UP from baseline
         priceChangeFromBaseline > 0 && // MUST be positive (no falling stocks!)
-        recentPriceChange > 0 && // Must STILL be rising NOW
-        dayChangePercent > -2 && // Filter out stocks down more than 2% for the day
+        recentPriceChange > 0.1 && // Must STILL be rising NOW (at least 0.1%)
+        dayChangePercent > 0.5 && // MUST be GREEN for the day (up at least 0.5%)
         currentData.volume > config.minVolume &&
         volumeRatio >= config.minVolumeBurst) { // Must have volume surge
 
