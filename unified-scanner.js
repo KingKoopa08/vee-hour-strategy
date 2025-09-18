@@ -209,9 +209,10 @@ async function getVolumeMovers() {
             // Calculate volume changes for each stock
             let movers = response.data.tickers
                 .filter(t => {
+                    const dayChange = t.todaysChangePerc || 0;
                     const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
                     const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
-                    return volume >= 1000000 && price >= 1; // Min 1M volume and $1 price
+                    return dayChange > 0 && volume > 500000 && price > 0; // Match Top Gainers filter
                 })
                 .map(t => {
                     const symbol = t.ticker;
