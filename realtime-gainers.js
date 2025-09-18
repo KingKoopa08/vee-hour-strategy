@@ -60,70 +60,60 @@ async function fetchTopGainers() {
                            price <= SETTINGS.maxPrice &&
                            change > 0; // Only gainers
                 })
-                .map(t => {
-                    const symbol = t.ticker;
-                    const currentPrice = t.day?.c || t.min?.c || t.prevDay?.c || 0;
-                    const prevClose = t.prevDay?.c || 0;
-                    const dayChange = t.todaysChangePerc || 0;
-
-                    // Get or initialize price history for this symbol
-                    if (!priceHistory.has(symbol)) {
-                        priceHistory.set(symbol, []);
-                    }
-                    const history = priceHistory.get(symbol);
-
-                    // Add current price to history
-                    history.push({
-                        price: currentPrice,
-                        time: Date.now()
-                    });
-
-                    // Keep only last 10 price points
-                    if (history.length > 10) {
-                        history.shift();
-                    }
-
-                    // Determine price direction based on recent trend
-                    let direction = 'flat';
-
-                    if (history.length >= 2) {
-                        const recentPrice = history[history.length - 2].price;
-                        const priceDiff = currentPrice - recentPrice;
-                        const percentDiff = recentPrice > 0 ? (priceDiff / recentPrice) * 100 : 0;
-
-                        // More sensitive thresholds for movement detection
-                        if (percentDiff > 0.01) direction = 'up';
-                        else if (percentDiff < -0.01) direction = 'down';
-                        else direction = 'flat';
-
-                        // Log significant movements
-                        if (Math.abs(percentDiff) > 0.1) {
-                            console.log(`${symbol}: ${recentPrice.toFixed(3)} -> ${currentPrice.toFixed(3)} (${percentDiff.toFixed(3)}%)`);
-                        }
-                    } else if (dayChange > 0) {
-                        // First data point, use day change
-                        direction = 'up';
-                    } else if (dayChange < 0) {
-                        direction = 'down';
-                    }
-
-                    return {
-                        symbol: symbol,
-                        price: currentPrice,
-                        change: t.todaysChangePerc || 0,
-                        changeAmount: t.todaysChange || 0,
-                        volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
-                        dollarVolume: ((t.day?.c || t.min?.c || t.prevDay?.c || 0) * (t.day?.v || t.min?.av || 0)),
-                        high: t.day?.h || t.prevDay?.h || 0,
-                        low: t.day?.l || t.prevDay?.l || 0,
-                        open: t.day?.o || t.prevDay?.o || 0,
-                        prevClose: t.prevDay?.c || 0,
-                        direction: direction,
-                        updated: new Date(t.updated / 1000000).toLocaleTimeString()
-                    };
-                })
+                .map(t => ({
+                    symbol: t.ticker,
+                    price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
+                    change: t.todaysChangePerc || 0,
+                    changeAmount: t.todaysChange || 0,
+                    volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
+                    dollarVolume: ((t.day?.c || t.min?.c || t.prevDay?.c || 0) * (t.day?.v || t.min?.av || 0)),
+                    high: t.day?.h || t.prevDay?.h || 0,
+                    low: t.day?.l || t.prevDay?.l || 0,
+                    open: t.day?.o || t.prevDay?.o || 0,
+                    prevClose: t.prevDay?.c || 0,
+                    updated: new Date(t.updated / 1000000).toLocaleTimeString()
+                }))
                 .sort((a, b) => b.change - a.change) // Sort by % gain
                 .slice(0, SETTINGS.topCount);
+
+            // Track position changes
+            const now = Date.now();
+            const cutoffTime = now - POSITION_TRACKING_WINDOW;
+
+            // Update ranking history for each stock
+            gainers.forEach((stock, index) => {
+                const rank = index + 1;
+                if (!rankingHistory.has(stock.symbol)) {
+                    rankingHistory.set(stock.symbol, []);
+                }
+
+                const history = rankingHistory.get(stock.symbol);
+                history.push({ timestamp: now, rank });
+
+                // Remove old entries outside 5-minute window
+                while (history.length > 0 && history[0].timestamp < cutoffTime) {
+                    history.shift();
+                }
+            });
+
+            // Calculate position changes for each stock
+            gainers = gainers.map((stock, index) => {
+                const currentRank = index + 1;
+                const history = rankingHistory.get(stock.symbol) || [];
+
+                // Find oldest rank in 5-minute window
+                let positionChange = 0;
+                if (history.length > 1) {
+                    const oldestEntry = history[0];
+                    positionChange = oldestEntry.rank - currentRank; // Positive means climbed, negative means fell
+                }
+
+                return {
+                    ...stock,
+                    positionChange,
+                    currentRank
+                };
+            });
 
             topGainers = gainers;
             lastUpdate = Date.now();
