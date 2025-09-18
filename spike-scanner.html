@@ -893,32 +893,9 @@
 
         // Setup event listeners
         function setupEventListeners() {
-            // Max price setting
-            document.getElementById('maxPrice').addEventListener('change', (e) => {
-                settings.maxPrice = parseFloat(e.target.value);
-                saveSettings();
-                updateConfig();
-            });
-
-            // Min volume setting
-            document.getElementById('minVolume').addEventListener('change', (e) => {
-                settings.minVolume = parseFloat(e.target.value);
-                saveSettings();
-                updateConfig();
-            });
-
-            // Sound toggle
-            document.getElementById('soundToggle').addEventListener('click', (e) => {
-                settings.sound = !settings.sound;
-                e.target.classList.toggle('active');
-                saveSettings();
-            });
-
-            // Alert toggle
-            document.getElementById('alertToggle').addEventListener('click', (e) => {
-                settings.alerts = !settings.alerts;
-                e.target.classList.toggle('active');
-                saveSettings();
+            // Apply Filters button
+            document.getElementById('applyFilters').addEventListener('click', () => {
+                updateConfigFromUI();
             });
 
             // Completed toggle
@@ -930,18 +907,63 @@
                 saveSettings();
                 updateDisplay();
             });
+
+            // Load current config on startup
+            loadConfigFromServer();
         }
 
-        // Update configuration
-        function updateConfig() {
-            fetch(`${API_URL}/api/spikes/config`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    maxPrice: settings.maxPrice,
-                    minVolumeBurst: settings.minVolume
-                })
-            });
+        // Load config from server
+        async function loadConfigFromServer() {
+            try {
+                const response = await fetch(`${API_URL}/api/spikes/config`);
+                const data = await response.json();
+                if (data.success && data.config) {
+                    // Update UI with current server config
+                    document.getElementById('minPriceChange').value = data.config.minPriceChange;
+                    document.getElementById('minVolume').value = data.config.minVolume;
+                    document.getElementById('minVolumeBurst').value = data.config.minVolumeBurst;
+                    document.getElementById('maxPrice').value = data.config.maxPrice;
+                    document.getElementById('spikeWindow').value = data.config.spikeDetectionWindow;
+
+                    console.log('📊 Loaded config from server:', data.config);
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        // Update configuration from UI
+        async function updateConfigFromUI() {
+            const config = {
+                minPriceChange: parseFloat(document.getElementById('minPriceChange').value),
+                minVolume: parseInt(document.getElementById('minVolume').value),
+                minVolumeBurst: parseFloat(document.getElementById('minVolumeBurst').value),
+                maxPrice: parseFloat(document.getElementById('maxPrice').value),
+                spikeDetectionWindow: parseInt(document.getElementById('spikeWindow').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/spikes/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showAlert('Filters Applied',
+                        `Price: ${config.minPriceChange}% | Volume: ${config.minVolume} | Burst: ${config.minVolumeBurst}x | Window: ${config.spikeDetectionWindow/1000}s`,
+                        'success'
+                    );
+
+                    // Clear current spikes to re-detect with new settings
+                    activeSpikes.clear();
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error updating config:', error);
+                showAlert('Error', 'Failed to update filters', 'error');
+            }
         }
 
         // Mark entry
