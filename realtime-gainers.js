@@ -573,11 +573,11 @@ app.get('/', (req, res) => {
                 let positionArrow = '';
 
                 if (stock.positionChange > 0) {
-                    positionDisplay = `+${stock.positionChange}`;
+                    positionDisplay = '+' + stock.positionChange;
                     positionClass = 'climbed';
                     positionArrow = '↑';
                 } else if (stock.positionChange < 0) {
-                    positionDisplay = `${stock.positionChange}`;
+                    positionDisplay = '' + stock.positionChange;
                     positionClass = 'fell';
                     positionArrow = '↓';
                 } else if (stock.positionChange === 0) {
