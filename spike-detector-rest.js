@@ -198,7 +198,7 @@ function detectSpike(symbol, currentData) {
     if (symbol === 'SQQQ' || symbol === 'SSG' || symbol === 'AERT') {
         console.log(`\n🔍 PRE-FILTER DEBUG ${symbol}:`);
         console.log(`  API Day Change: ${dayChangePercent.toFixed(2)}% (from Polygon)`);
-        console.log(`  Current Price: $${currentPrice.toFixed(2)}`);
+        console.log(`  Current Price: $${currentData.price.toFixed(2)}`);
         console.log(`  Baseline (45s ago): $${baselinePrice.toFixed(2)}`);
         console.log(`  Price Change from baseline: ${priceChangeFromBaseline.toFixed(2)}%`);
         console.log(`  Recent 20s change: ${recentPriceChange.toFixed(2)}%`);
