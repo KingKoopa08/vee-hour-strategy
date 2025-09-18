@@ -480,6 +480,21 @@ app.get('/', (req, res) => {
                 </div>
             </a>
 
+            <a href="/volume" class="scanner-card">
+                <h2>📈 Volume Movers</h2>
+                <p>Real-time volume surge detection across multiple timeframes</p>
+                <div class="scanner-stats">
+                    <div class="stat">
+                        <div class="stat-label">Timeframes</div>
+                        <div class="stat-value">30s-5m</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Updates</div>
+                        <div class="stat-value">Live</div>
+                    </div>
+                </div>
+            </a>
+
             <a href="/spikes" class="scanner-card">
                 <h2>⚡ Spike Detector</h2>
                 <p>Advanced spike detection with volume burst analysis</p>
