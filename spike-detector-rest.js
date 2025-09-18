@@ -67,7 +67,7 @@ async function getActiveStocks() {
                     const volB = b.day?.v || b.min?.av || 0;
                     return volB - volA;
                 })
-                .slice(0, 1500) // Monitor top 1500 stocks by volume
+                .slice(0, 5000) // Monitor ALL stocks (up to 5000)
                 .map(t => ({
                     symbol: t.ticker,
                     price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
