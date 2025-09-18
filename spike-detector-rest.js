@@ -72,13 +72,22 @@ async function getActiveStocks() {
                     return volB - volA;
                 })
                 .slice(0, 5000) // Monitor ALL stocks (up to 5000)
-                .map(t => ({
-                    symbol: t.ticker,
-                    price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
-                    volume: t.day?.v || t.min?.av || 0,
-                    changePercent: t.todaysChangePerc || 0,
-                    updated: t.updated || Date.now()
-                }));
+                .map(t => {
+                    // Use minute bar for current price in after-hours
+                    const currentPrice = t.min?.c || t.day?.c || t.prevDay?.c || 0;
+                    // Volume: use minute average volume for after-hours
+                    const currentVolume = t.min?.av || t.day?.v || 0;
+                    // IMPORTANT: Use todaysChangePerc which is the REAL day change
+                    const dayChange = t.todaysChangePerc || 0;
+
+                    return {
+                        symbol: t.ticker,
+                        price: currentPrice,
+                        volume: currentVolume,
+                        changePercent: dayChange,  // This is the TRUE day change from API
+                        updated: t.updated || Date.now()
+                    };
+                });
         }
     } catch (error) {
         console.error('Error fetching stocks:', error.message);
