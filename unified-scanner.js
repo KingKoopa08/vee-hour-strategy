@@ -1253,6 +1253,13 @@ app.get('/api/spikes', (req, res) => {
 setInterval(async () => {
     await getTopGainers();
     await getVolumeMovers(); // Update volume movers data
+
+    // Broadcast volume movers to WebSocket clients
+    broadcast({
+        type: 'volumeMovers',
+        data: volumeMoversCache
+    });
+
     console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers`);
 }, 1000);
 
