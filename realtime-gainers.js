@@ -228,6 +228,25 @@ app.get('/', (req, res) => {
         .high-volume { color: #ffaa00; font-weight: bold; }
         .price { color: #fff; }
         .updated { color: #666; font-size: 11px; }
+        .direction {
+            font-size: 16px;
+            font-weight: bold;
+            margin-right: 8px;
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+        }
+        .direction.up { color: #00ff41; animation: blink-up 0.5s; }
+        .direction.down { color: #ff4444; animation: blink-down 0.5s; }
+        .direction.flat { color: #666; }
+        @keyframes blink-up {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        @keyframes blink-down {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
         .refresh-indicator {
             position: fixed;
             top: 10px;
@@ -308,9 +327,23 @@ app.get('/', (req, res) => {
                 // Determine volume class
                 let volumeClass = stock.volume >= 10000000 ? 'high-volume' : 'volume';
 
+                // Determine direction arrow
+                let directionArrow = '';
+                let directionClass = 'flat';
+                if (stock.direction === 'up') {
+                    directionArrow = '↑';
+                    directionClass = 'up';
+                } else if (stock.direction === 'down') {
+                    directionArrow = '↓';
+                    directionClass = 'down';
+                } else {
+                    directionArrow = '→';
+                    directionClass = 'flat';
+                }
+
                 row.innerHTML = \`
                     <td>\${index + 1}</td>
-                    <td class="symbol">\${stock.symbol}</td>
+                    <td class="symbol"><span class="direction \${directionClass}">\${directionArrow}</span>\${stock.symbol}</td>
                     <td class="price">$\${stock.price.toFixed(2)}</td>
                     <td class="\${changeClass}">+\${stock.change.toFixed(2)}%</td>
                     <td class="positive">+$\${Math.abs(stock.changeAmount).toFixed(2)}</td>
