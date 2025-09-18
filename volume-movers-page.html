@@ -259,6 +259,7 @@
         <div class="filter-group">
             <label>Sort By:</label>
             <select id="sortBy">
+                <option value="dayChange">Day Change %</option>
                 <option value="1m">1 Minute Change</option>
                 <option value="30s">30 Second Change</option>
                 <option value="2m">2 Minute Change</option>
@@ -380,6 +381,8 @@
             filteredStocks.sort((a, b) => {
                 if (filters.sortBy === 'volume') {
                     return b.volume - a.volume;
+                } else if (filters.sortBy === 'dayChange') {
+                    return b.dayChange - a.dayChange;
                 } else {
                     return (b.volumeChanges[filters.sortBy] || 0) - (a.volumeChanges[filters.sortBy] || 0);
                 }
