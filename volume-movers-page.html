@@ -387,7 +387,7 @@
             let filteredStocks = stocks
                 .filter(stock =>
                     stock.volume >= filters.minVolume &&
-                    stock.price >= filters.minPrice
+                    stock.dayChange >= filters.minGain
                 );
 
             // Sort
@@ -402,7 +402,7 @@
             });
 
             // Limit
-            filteredStocks = filteredStocks.slice(0, filters.showTop);
+            filteredStocks = filteredStocks.slice(0, filters.stockLimit);
 
             // Count surges
             const surgeCount = filteredStocks.filter(s =>
@@ -443,23 +443,23 @@
         }
 
         // Setup event listeners
-        document.getElementById('minVolume').addEventListener('change', (e) => {
-            filters.minVolume = parseInt(e.target.value) || 0;
+        document.getElementById('stockLimit').addEventListener('change', (e) => {
+            filters.stockLimit = parseInt(e.target.value);
             updateTable(allStocks);
         });
 
-        document.getElementById('minPrice').addEventListener('change', (e) => {
-            filters.minPrice = parseFloat(e.target.value) || 0;
+        document.getElementById('minGain').addEventListener('input', (e) => {
+            filters.minGain = parseFloat(e.target.value) || 0;
+            updateTable(allStocks);
+        });
+
+        document.getElementById('minVolume').addEventListener('change', (e) => {
+            filters.minVolume = parseInt(e.target.value);
             updateTable(allStocks);
         });
 
         document.getElementById('sortBy').addEventListener('change', (e) => {
             filters.sortBy = e.target.value;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('showTop').addEventListener('change', (e) => {
-            filters.showTop = parseInt(e.target.value) || 50;
             updateTable(allStocks);
         });
 
