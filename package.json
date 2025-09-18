@@ -1,4 +1,22 @@
 {
+  "name": "market-scanner-hub",
+  "version": "1.0.0",
+  "description": "Real-time stock market scanner with multiple analysis tools",
+  "main": "unified-scanner.js",
+  "scripts": {
+    "start": "node unified-scanner.js",
+    "dev": "node unified-scanner.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "stocks",
+    "trading",
+    "market-scanner",
+    "real-time",
+    "polygon-api"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.11.0",
     "chrome-aws-lambda": "^10.1.0",
@@ -8,5 +26,8 @@
     "finnhub": "^2.0.7",
     "puppeteer-core": "^24.20.0",
     "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
