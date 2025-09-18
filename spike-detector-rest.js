@@ -24,15 +24,15 @@ const completedSpikes = [];
 const detectedToday = new Set(); // Track symbols we've already detected today
 let stats = { detected: 0, bestGain: 0 };
 
-// Configuration - VERY sensitive for testing
+// Configuration - AGGRESSIVE 1-MINUTE SPIKE DETECTION
 const config = {
     maxPrice: 100,
-    minVolumeBurst: 1.1, // 10% above average volume
-    minPriceChange: 0.2, // 0.2% change (very sensitive)
-    minVolume: 50000, // Lower threshold to catch more stocks
+    minVolumeBurst: 2.0, // Must have 2x volume surge
+    minPriceChange: 1.0, // Minimum 1% change in 1 minute (fast rise)
+    minVolume: 500000, // At least 500k volume (liquid stocks only)
     checkInterval: 2000, // Check every 2 seconds
     historyDuration: 120000, // Keep 2 minutes of history
-    spikeDetectionWindow: 60000 // Look for spikes in last 60 seconds
+    spikeDetectionWindow: 60000 // Look for spikes in last 60 seconds ONLY
 };
 
 // Broadcast to clients
