@@ -249,15 +249,32 @@
 
     <div class="filters">
         <div class="filter-group">
-            <label>Min Volume:</label>
-            <input type="number" id="minVolume" value="1000000" step="100000">
+            <label for="stockLimit">Show Top:</label>
+            <select id="stockLimit">
+                <option value="10">10 Stocks</option>
+                <option value="20">20 Stocks</option>
+                <option value="30">30 Stocks</option>
+                <option value="50" selected>50 Stocks</option>
+                <option value="100">100 Stocks</option>
+            </select>
         </div>
         <div class="filter-group">
-            <label>Min Price:</label>
-            <input type="number" id="minPrice" value="1" step="0.5">
+            <label for="minGain">Min Gain:</label>
+            <input type="number" id="minGain" value="0" step="0.5" style="width: 80px">
+            <span>%</span>
         </div>
         <div class="filter-group">
-            <label>Sort By:</label>
+            <label for="minVolume">Min Volume:</label>
+            <select id="minVolume">
+                <option value="0">Any</option>
+                <option value="500000" selected>500K+</option>
+                <option value="1000000">1M+</option>
+                <option value="5000000">5M+</option>
+                <option value="10000000">10M+</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="sortBy">Sort By:</label>
             <select id="sortBy">
                 <option value="dayChange">Day Change %</option>
                 <option value="1m">1 Minute Change</option>
@@ -267,10 +284,6 @@
                 <option value="5m">5 Minute Change</option>
                 <option value="volume">Total Volume</option>
             </select>
-        </div>
-        <div class="filter-group">
-            <label>Show Top:</label>
-            <input type="number" id="showTop" value="50" min="10" max="200">
         </div>
     </div>
 
