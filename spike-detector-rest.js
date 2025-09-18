@@ -151,13 +151,22 @@ function detectSpike(symbol, currentData) {
         volumeRatio = Math.max(volumeRatio, currentVolumeRatio);
     }
 
+    // Check for RECENT price movement (must be rising in last 20 seconds)
+    let recentPriceChange = 0;
+    if (recentHistory.length > 0) {
+        const oldestRecentPrice = recentHistory[0].price;
+        recentPriceChange = ((currentData.price - oldestRecentPrice) / oldestRecentPrice) * 100;
+    }
+
     // Check if this is a real spike:
-    // 1. Price increased significantly from recent low (1%+ in 60 seconds)
-    // 2. High volume (500k+ minimum)
-    // 3. Volume surge (2x normal)
+    // 1. Price increased significantly from recent low
+    // 2. Price is CURRENTLY rising (positive movement in last 20 seconds)
+    // 3. Has decent volume
+    // 4. Volume is surging compared to previous period
     if (priceChangeFromLow >= config.minPriceChange &&
+        recentPriceChange > 0.1 && // Must be rising NOW (at least 0.1% in last 20 sec)
         currentData.volume > config.minVolume &&
-        volumeRatio >= config.minVolumeBurst) { // Must have volume surge too
+        volumeRatio >= config.minVolumeBurst) { // Must have volume surge
 
         return {
             symbol,
