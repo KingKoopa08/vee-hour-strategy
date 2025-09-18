@@ -183,39 +183,42 @@ function detectSpike(symbol, currentData) {
         recentPriceChange = ((currentData.price - oldestRecentPrice) / oldestRecentPrice) * 100;
     }
 
-    // Check if this is a real spike:
-    // 1. Price MUST BE RISING from baseline (45 seconds ago)
-    // 2. Price is CURRENTLY rising (positive movement in last 20 seconds)
-    // 3. Has decent volume
-    // 4. Volume is surging compared to previous period
-    // 5. MUST be up for the DAY (not down overall)
+    // Check if this is a RECENT spike (FORGET about day change):
+    // 1. Price rising in last 2-3 minutes
+    // 2. Still rising NOW (last 30 seconds)
+    // 3. Volume surging compared to previous period
 
-    // Check if stock is up or down for the day
-    const dayChangePercent = currentData.changePercent || 0;
+    // Get price change over last 2 minutes
+    const twoMinutesAgo = now - 120000;
+    let twoMinPrice = null;
+    for (const h of relevantHistory) {
+        if (h.timestamp <= twoMinutesAgo) {
+            twoMinPrice = h.price;
+            break;
+        }
+    }
+    if (!twoMinPrice) twoMinPrice = relevantHistory[0]?.price || baselinePrice;
 
-    // DEBUG: Log what we're seeing for problem stocks BEFORE filtering
+    const twoMinChange = twoMinPrice ? ((currentData.price - twoMinPrice) / twoMinPrice) * 100 : 0;
+
+    // DEBUG: Show RECENT movement only
     if (symbol === 'SQQQ' || symbol === 'SSG' || symbol === 'AERT') {
-        console.log(`\n🔍 PRE-FILTER DEBUG ${symbol}:`);
-        console.log(`  API Day Change: ${dayChangePercent.toFixed(2)}% (from Polygon)`);
+        console.log(`\n🔍 RECENT MOVEMENT DEBUG ${symbol}:`);
         console.log(`  Current Price: $${currentData.price.toFixed(2)}`);
-        console.log(`  Baseline (45s ago): $${baselinePrice.toFixed(2)}`);
-        console.log(`  Price Change from baseline: ${priceChangeFromBaseline.toFixed(2)}%`);
-        console.log(`  Recent 20s change: ${recentPriceChange.toFixed(2)}%`);
+        console.log(`  2 min ago: $${twoMinPrice ? twoMinPrice.toFixed(2) : 'N/A'}`);
+        console.log(`  2 min change: ${twoMinChange.toFixed(2)}%`);
+        console.log(`  Last 20s change: ${recentPriceChange.toFixed(2)}%`);
         console.log(`  Volume Ratio: ${volumeRatio.toFixed(1)}x`);
-        console.log(`  Will pass filter? ${dayChangePercent > config.minDayChange ? 'YES' : 'NO (day change too low)'}`);
+        console.log(`  Recent Volume: ${currentData.volume}`);
+        const willDetect = twoMinChange >= config.minPriceChange && recentPriceChange > 0 && volumeRatio >= config.minVolumeBurst;
+        console.log(`  Will detect spike? ${willDetect ? 'YES' : 'NO'}`);
     }
 
-    if (priceChangeFromBaseline >= config.minPriceChange && // Must be UP from baseline
-        priceChangeFromBaseline > 0 && // MUST be positive (no falling stocks!)
-        recentPriceChange > config.minRecentChange && // Must STILL be rising NOW
-        dayChangePercent > config.minDayChange && // MUST be GREEN for the day
+    // ONLY care about RECENT movement - ignore day change completely
+    if (twoMinChange >= config.minPriceChange && // Up in last 2 minutes
+        recentPriceChange > 0 && // Still rising NOW
         currentData.volume > config.minVolume &&
-        volumeRatio >= config.minVolumeBurst) { // Must have volume surge
-
-        // Debug suspicious stocks
-        if (symbol === 'SQQQ' || symbol === 'SSG' || dayChangePercent < 0) {
-            console.log(`⚠️ DEBUG ${symbol}: Day: ${dayChangePercent.toFixed(2)}%, 45s: +${priceChangeFromBaseline.toFixed(2)}%, 20s: +${recentPriceChange.toFixed(2)}%, Vol: ${volumeRatio.toFixed(1)}x`);
-        }
+        volumeRatio >= config.minVolumeBurst) { // Volume surge
 
         return {
             symbol,
