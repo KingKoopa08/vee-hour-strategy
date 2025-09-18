@@ -54,15 +54,20 @@ function broadcast(data) {
 // Get top gainers
 async function getTopGainers() {
     try {
-        const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?apiKey=${POLYGON_API_KEY}`;
+        // Fetch ALL tickers to get more gainers
+        const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
         const response = await axios.get(url);
 
         if (response.data && response.data.tickers) {
+            // Filter for gainers with positive day change
             let gainers = response.data.tickers.filter(t => {
+                const dayChange = t.todaysChangePerc || 0;
                 const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
                 const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
-                return volume > 500000 && price > 0;
-            });
+                return dayChange > 0 && volume > 500000 && price > 0;
+            })
+            .sort((a, b) => (b.todaysChangePerc || 0) - (a.todaysChangePerc || 0))
+            .slice(0, 200); // Get top 200 gainers
 
             // Update ranking history
             const cutoff = Date.now() - POSITION_TRACKING_WINDOW;
