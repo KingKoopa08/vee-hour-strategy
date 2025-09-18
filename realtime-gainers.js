@@ -59,19 +59,36 @@ async function fetchTopGainers() {
                            price <= SETTINGS.maxPrice &&
                            change > 0; // Only gainers
                 })
-                .map(t => ({
-                    symbol: t.ticker,
-                    price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
-                    change: t.todaysChangePerc || 0,
-                    changeAmount: t.todaysChange || 0,
-                    volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
-                    dollarVolume: ((t.day?.c || t.min?.c || t.prevDay?.c || 0) * (t.day?.v || t.min?.av || 0)),
-                    high: t.day?.h || t.prevDay?.h || 0,
-                    low: t.day?.l || t.prevDay?.l || 0,
-                    open: t.day?.o || t.prevDay?.o || 0,
-                    prevClose: t.prevDay?.c || 0,
-                    updated: new Date(t.updated / 1000000).toLocaleTimeString()
-                }))
+                .map(t => {
+                    const symbol = t.ticker;
+                    const currentPrice = t.day?.c || t.min?.c || t.prevDay?.c || 0;
+                    const prevPrice = previousPrices.get(symbol);
+
+                    // Determine price direction
+                    let direction = 'flat';
+                    if (prevPrice !== undefined && prevPrice !== 0) {
+                        if (currentPrice > prevPrice) direction = 'up';
+                        else if (currentPrice < prevPrice) direction = 'down';
+                    }
+
+                    // Store current price for next comparison
+                    previousPrices.set(symbol, currentPrice);
+
+                    return {
+                        symbol: symbol,
+                        price: currentPrice,
+                        change: t.todaysChangePerc || 0,
+                        changeAmount: t.todaysChange || 0,
+                        volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
+                        dollarVolume: ((t.day?.c || t.min?.c || t.prevDay?.c || 0) * (t.day?.v || t.min?.av || 0)),
+                        high: t.day?.h || t.prevDay?.h || 0,
+                        low: t.day?.l || t.prevDay?.l || 0,
+                        open: t.day?.o || t.prevDay?.o || 0,
+                        prevClose: t.prevDay?.c || 0,
+                        direction: direction,
+                        updated: new Date(t.updated / 1000000).toLocaleTimeString()
+                    };
+                })
                 .sort((a, b) => b.change - a.change) // Sort by % gain
                 .slice(0, SETTINGS.topCount);
 
