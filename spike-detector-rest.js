@@ -30,6 +30,9 @@ let config = {
     minVolumeBurst: 1.5, // Default: 1.5x volume surge (need real surge)
     minPriceChange: 0.5, // Default: 0.5% change (need real movement)
     minVolume: 50000, // Default: 50k volume (need ACTIVE trading)
+    minDayChange: 0.5, // Default: 0.5% up for the day minimum
+    minRecentChange: 0.1, // Default: 0.1% up in recent window
+    baselineWindow: 45000, // Default: Compare to 45 seconds ago
     checkInterval: 2000, // Check every 2 seconds
     historyDuration: 120000, // Keep 2 minutes of history
     spikeDetectionWindow: 60000 // Default: Look for spikes in last 60 seconds
@@ -118,8 +121,8 @@ function detectSpike(symbol, currentData) {
     // Compare current price to EARLIER prices (not looking for lowest)
     // We want stocks rising from 30-60 seconds ago to NOW
 
-    // Get price from 30-60 seconds ago as baseline
-    const baselineTime = now - 45000; // 45 seconds ago
+    // Get price from baseline window ago
+    const baselineTime = now - config.baselineWindow; // Configurable baseline
     let baselinePrice = null;
     let closestTimeDiff = Infinity;
 
@@ -184,8 +187,8 @@ function detectSpike(symbol, currentData) {
 
     if (priceChangeFromBaseline >= config.minPriceChange && // Must be UP from baseline
         priceChangeFromBaseline > 0 && // MUST be positive (no falling stocks!)
-        recentPriceChange > 0.1 && // Must STILL be rising NOW (at least 0.1%)
-        dayChangePercent > 0.5 && // MUST be GREEN for the day (up at least 0.5%)
+        recentPriceChange > config.minRecentChange && // Must STILL be rising NOW
+        dayChangePercent > config.minDayChange && // MUST be GREEN for the day
         currentData.volume > config.minVolume &&
         volumeRatio >= config.minVolumeBurst) { // Must have volume surge
 
