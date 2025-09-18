@@ -588,11 +588,15 @@ app.get('/', (req, res) => {
                     positionClass = 'new';
                 }
 
+                const positionIndicator = positionArrow ?
+                    positionDisplay + '<span class="position-arrow">' + positionArrow + '</span>' :
+                    positionDisplay;
+
                 row.innerHTML = \`
                     <td class="rank">\${index + 1}</td>
                     <td class="symbol-cell">
                         <span class="position-change \${positionClass}">
-                            \${positionDisplay}\${positionArrow ? `<span class="position-arrow">\${positionArrow}</span>` : ''}
+                            \${positionIndicator}
                         </span>
                         <span class="symbol">\${stock.symbol}</span>
                     </td>
