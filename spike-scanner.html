@@ -567,12 +567,48 @@
 
         // Initialize
         function init() {
-            connectWebSocket();
+            // Use REST API polling instead of WebSocket
+            pollActiveSpikes(); // Start polling immediately
+            setInterval(pollActiveSpikes, 2000); // Poll every 2 seconds
+
             loadSettings();
             setupEventListeners();
             updateTime();
             setInterval(updateTime, 1000);
             setInterval(updateTimers, 100); // Update timers frequently
+        }
+
+        // Poll REST API for active spikes
+        async function pollActiveSpikes() {
+            try {
+                const response = await fetch(`${API_URL}/api/spikes/active`);
+                const data = await response.json();
+
+                if (data.success && data.spikes) {
+                    // Update active spikes
+                    const currentSymbols = new Set(activeSpikes.keys());
+                    const newSymbols = new Set(data.spikes.map(s => s.symbol));
+
+                    // Handle new spikes
+                    data.spikes.forEach(spike => {
+                        if (!currentSymbols.has(spike.symbol)) {
+                            handleNewSpike(spike);
+                        } else {
+                            handleSpikeUpdate(spike);
+                        }
+                    });
+
+                    // Handle completed spikes
+                    currentSymbols.forEach(symbol => {
+                        if (!newSymbols.has(symbol)) {
+                            const spike = activeSpikes.get(symbol);
+                            handleSpikeComplete(spike);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching spikes:', error);
+            }
         }
 
         // Connect to WebSocket
