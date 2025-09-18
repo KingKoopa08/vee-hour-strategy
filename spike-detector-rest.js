@@ -131,10 +131,12 @@ function detectSpike(symbol, currentData) {
     const volumeRatio = currentData.volume / avgVolume;
 
     // Check if this is a real spike:
-    // 1. Price increased significantly from recent low
-    // 2. Good volume
+    // 1. Price increased significantly from recent low (1%+ in 60 seconds)
+    // 2. High volume (500k+ minimum)
+    // 3. Volume surge (2x normal)
     if (priceChangeFromLow >= config.minPriceChange &&
-        currentData.volume > config.minVolume) { // Just need decent volume
+        currentData.volume > config.minVolume &&
+        volumeRatio >= config.minVolumeBurst) { // Must have volume surge too
 
         return {
             symbol,
