@@ -360,21 +360,36 @@ app.get('/', (req, res) => {
             color: #fb923c;
             font-weight: 600;
         }
-        .direction {
-            font-size: 18px;
-            font-weight: bold;
-            display: inline-block;
-            width: 24px;
-            text-align: center;
+        .position-change {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 45px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
         }
-        .direction.up {
+        .position-change.climbed {
+            background: rgba(74, 222, 128, 0.15);
             color: #4ade80;
         }
-        .direction.down {
+        .position-change.fell {
+            background: rgba(248, 113, 113, 0.15);
             color: #f87171;
         }
-        .direction.flat {
+        .position-change.unchanged {
+            background: rgba(107, 114, 128, 0.1);
             color: #6b7280;
+        }
+        .position-change.new {
+            background: rgba(168, 85, 247, 0.15);
+            color: #a855f7;
+        }
+        .position-arrow {
+            font-size: 10px;
+            margin-left: 2px;
         }
         .range {
             color: #9ca3af;
@@ -552,23 +567,35 @@ app.get('/', (req, res) => {
                 // Determine volume class
                 let volumeClass = stock.volume >= 10000000 ? 'high-volume' : 'volume';
 
-                // Determine direction arrow
-                let directionArrow = '';
-                let directionClass = 'flat';
-                if (stock.direction === 'up') {
-                    directionArrow = '↑';
-                    directionClass = 'up';
-                } else if (stock.direction === 'down') {
-                    directionArrow = '↓';
-                    directionClass = 'down';
+                // Determine position change display
+                let positionDisplay = '';
+                let positionClass = 'unchanged';
+                let positionArrow = '';
+
+                if (stock.positionChange > 0) {
+                    positionDisplay = `+${stock.positionChange}`;
+                    positionClass = 'climbed';
+                    positionArrow = '↑';
+                } else if (stock.positionChange < 0) {
+                    positionDisplay = `${stock.positionChange}`;
+                    positionClass = 'fell';
+                    positionArrow = '↓';
+                } else if (stock.positionChange === 0) {
+                    positionDisplay = '—';
+                    positionClass = 'unchanged';
                 } else {
-                    directionArrow = '→';
-                    directionClass = 'flat';
+                    positionDisplay = 'NEW';
+                    positionClass = 'new';
                 }
 
                 row.innerHTML = \`
                     <td class="rank">\${index + 1}</td>
-                    <td class="symbol-cell"><span class="direction \${directionClass}">\${directionArrow}</span><span class="symbol">\${stock.symbol}</span></td>
+                    <td class="symbol-cell">
+                        <span class="position-change \${positionClass}">
+                            \${positionDisplay}\${positionArrow ? `<span class="position-arrow">\${positionArrow}</span>` : ''}
+                        </span>
+                        <span class="symbol">\${stock.symbol}</span>
+                    </td>
                     <td class="price">$\${stock.price.toFixed(2)}</td>
                     <td class="\${changeClass}">+\${stock.change.toFixed(2)}%</td>
                     <td class="positive">+$\${Math.abs(stock.changeAmount).toFixed(2)}</td>
