@@ -19,7 +19,8 @@ const clients = new Set();
 // Cache for gainers
 let topGainers = [];
 let lastUpdate = Date.now();
-let priceHistory = new Map(); // Track price history for direction (symbol -> array of last 5 prices)
+let rankingHistory = new Map(); // Track ranking positions over time (symbol -> {timestamp, rank}[])
+const POSITION_TRACKING_WINDOW = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Settings
 const SETTINGS = {
