@@ -27,9 +27,9 @@ let stats = { detected: 0, bestGain: 0 };
 // Configuration - ADJUSTABLE SPIKE DETECTION
 let config = {
     maxPrice: 100,
-    minVolumeBurst: 1.2, // Default: 1.2x volume surge (more sensitive)
-    minPriceChange: 0.3, // Default: 0.3% change (more sensitive)
-    minVolume: 1000, // Default: 1k volume (catch ALL active stocks)
+    minVolumeBurst: 1.5, // Default: 1.5x volume surge (need real surge)
+    minPriceChange: 0.5, // Default: 0.5% change (need real movement)
+    minVolume: 50000, // Default: 50k volume (need ACTIVE trading)
     checkInterval: 2000, // Check every 2 seconds
     historyDuration: 120000, // Keep 2 minutes of history
     spikeDetectionWindow: 60000 // Default: Look for spikes in last 60 seconds
