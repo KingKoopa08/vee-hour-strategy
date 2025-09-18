@@ -576,14 +576,14 @@ app.get('/', (req, res) => {
                 }
 
                 row.innerHTML = \`
-                    <td>\${index + 1}</td>
-                    <td class="symbol"><span class="direction \${directionClass}">\${directionArrow}</span>\${stock.symbol}</td>
+                    <td class="rank">\${index + 1}</td>
+                    <td class="symbol-cell"><span class="direction \${directionClass}">\${directionArrow}</span><span class="symbol">\${stock.symbol}</span></td>
                     <td class="price">$\${stock.price.toFixed(2)}</td>
                     <td class="\${changeClass}">+\${stock.change.toFixed(2)}%</td>
                     <td class="positive">+$\${Math.abs(stock.changeAmount).toFixed(2)}</td>
                     <td class="\${volumeClass}">\${(stock.volume/1000000).toFixed(2)}M</td>
                     <td class="volume">$\${(stock.dollarVolume/1000000).toFixed(1)}M</td>
-                    <td>\${stock.low.toFixed(2)} - \${stock.high.toFixed(2)}</td>
+                    <td class="range">\${stock.low.toFixed(2)} - \${stock.high.toFixed(2)}</td>
                     <td class="updated">\${stock.updated}</td>
                 \`;
             });
