@@ -247,6 +247,26 @@
 
     <h1>📈 Real-Time Volume Movers</h1>
 
+    <!-- Volume Legend -->
+    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <h3 style="color: #00ffff; margin-bottom: 10px; font-size: 1.1em;">Volume Change Indicators</h3>
+        <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="volume-change volume-spike" style="display: inline-block;">+50%</span>
+                <span style="color: #888;">Volume Spike (≥50% increase)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="volume-change volume-surge" style="display: inline-block;">+25%</span>
+                <span style="color: #888;">Volume Surge (20-49% increase)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="volume-change volume-normal" style="display: inline-block;">+5%</span>
+                <span style="color: #888;">Normal Volume (&lt;20% change)</span>
+            </div>
+        </div>
+        <p style="color: #666; margin-top: 10px; font-size: 0.9em;">Tracks volume changes over 30s, 1m, 2m, 3m, and 5m timeframes</p>
+    </div>
+
     <div class="filters">
         <div class="filter-group">
             <label for="stockLimit">Show Top:</label>
