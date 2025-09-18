@@ -177,11 +177,22 @@ function detectSpike(symbol, currentData) {
     // 2. Price is CURRENTLY rising (positive movement in last 20 seconds)
     // 3. Has decent volume
     // 4. Volume is surging compared to previous period
+    // 5. MUST be up for the DAY (not down overall)
+
+    // Check if stock is up or down for the day
+    const dayChangePercent = currentData.changePercent || 0;
+
     if (priceChangeFromBaseline >= config.minPriceChange && // Must be UP from baseline
         priceChangeFromBaseline > 0 && // MUST be positive (no falling stocks!)
         recentPriceChange > 0 && // Must STILL be rising NOW
+        dayChangePercent > -2 && // Filter out stocks down more than 2% for the day
         currentData.volume > config.minVolume &&
         volumeRatio >= config.minVolumeBurst) { // Must have volume surge
+
+        // Debug suspicious stocks
+        if (symbol === 'SQQQ' || symbol === 'SSG' || dayChangePercent < 0) {
+            console.log(`⚠️ DEBUG ${symbol}: Day: ${dayChangePercent.toFixed(2)}%, 45s: +${priceChangeFromBaseline.toFixed(2)}%, 20s: +${recentPriceChange.toFixed(2)}%, Vol: ${volumeRatio.toFixed(1)}x`);
+        }
 
         return {
             symbol,
