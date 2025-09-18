@@ -1224,6 +1224,15 @@ app.get('/api/rising', async (req, res) => {
     });
 });
 
+app.get('/api/volume', async (req, res) => {
+    const stocks = await getVolumeMovers();
+    res.json({
+        success: true,
+        count: stocks.length,
+        stocks: stocks
+    });
+});
+
 app.get('/api/spikes', (req, res) => {
     res.json({
         success: true,
