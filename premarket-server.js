@@ -1147,7 +1147,6 @@ app.get('/api/sectors/heatmap', async (req, res) => {
 // Rocket Scanner - Explosive Mover Detection
 const rocketCache = new Map();
 const volumeHistory = new Map();
-const priceHistory = new Map();
 let rocketScanInterval = null;
 
 // Market open tracking
