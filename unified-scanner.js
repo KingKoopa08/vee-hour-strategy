@@ -667,7 +667,9 @@ app.get('/gainers', (req, res) => {
 
         // Connect to WebSocket
         function connect() {
-            ws = new WebSocket('ws://localhost:3051');
+            const wsHost = window.location.hostname || 'localhost';
+            const wsUrl = 'ws://' + wsHost + ':3051';
+            ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
