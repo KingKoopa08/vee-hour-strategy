@@ -983,11 +983,14 @@
             const saved = localStorage.getItem('spikeSettings');
             if (saved) {
                 settings = { ...settings, ...JSON.parse(saved) };
-                document.getElementById('maxPrice').value = settings.maxPrice;
-                document.getElementById('minVolume').value = settings.minVolume;
-                document.getElementById('soundToggle').classList.toggle('active', settings.sound);
-                document.getElementById('alertToggle').classList.toggle('active', settings.alerts);
-                document.getElementById('completedToggle').classList.toggle('active', settings.showCompleted);
+
+                // Only update elements that exist
+                if (document.getElementById('maxPrice')) {
+                    document.getElementById('maxPrice').value = settings.maxPrice;
+                }
+                if (document.getElementById('completedToggle')) {
+                    document.getElementById('completedToggle').classList.toggle('active', settings.showCompleted);
+                }
                 if (settings.showCompleted) {
                     document.getElementById('completedSection').style.display = 'block';
                 }
