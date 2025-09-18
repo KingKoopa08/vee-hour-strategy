@@ -180,83 +180,67 @@ async function getRisingStocks() {
 // Get volume movers with multiple timeframe analysis
 async function getVolumeMovers() {
     try {
-        const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
-        const response = await axios.get(url);
+        // Use the same data as Top Gainers to ensure consistency
+        const now = Date.now();
 
-        if (response.data && response.data.tickers) {
-            const now = Date.now();
+        // Update volume history for all stocks in topGainersCache
+        topGainersCache.forEach(stock => {
+            const symbol = stock.symbol;
+            const currentVolume = stock.volume;
 
-            // Process each ticker for volume tracking
-            response.data.tickers.forEach(ticker => {
-                const symbol = ticker.ticker;
-                const currentVolume = ticker.day?.v || ticker.min?.av || ticker.prevDay?.v || 0;
+            // Initialize or update volume history
+            if (!volumeHistory.has(symbol)) {
+                volumeHistory.set(symbol, []);
+            }
 
-                // Initialize or update volume history
-                if (!volumeHistory.has(symbol)) {
-                    volumeHistory.set(symbol, []);
+            const history = volumeHistory.get(symbol);
+            history.push({ time: now, volume: currentVolume });
+
+            // Clean old entries (keep only last 5 minutes)
+            const fiveMinutesAgo = now - (5 * 60 * 1000);
+            while (history.length > 0 && history[0].time < fiveMinutesAgo) {
+                history.shift();
+            }
+        });
+
+        // Add volume change calculations to each stock from topGainersCache
+        let movers = topGainersCache.map(stock => {
+            const symbol = stock.symbol;
+            const currentVolume = stock.volume;
+            const history = volumeHistory.get(symbol) || [];
+
+            // Calculate volume changes for each timeframe
+            const volumeChanges = {};
+
+            for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
+                const targetTime = now - (seconds * 1000);
+                const oldEntry = history.find(h => Math.abs(h.time - targetTime) < 5000); // 5s tolerance
+
+                if (oldEntry && oldEntry.volume > 0) {
+                    const change = ((currentVolume - oldEntry.volume) / oldEntry.volume) * 100;
+                    volumeChanges[label] = change;
+                } else {
+                    volumeChanges[label] = 0;
                 }
+            }
 
-                const history = volumeHistory.get(symbol);
-                history.push({ time: now, volume: currentVolume });
+            // Calculate average volume rate (volume per minute)
+            const avgVolumeRate = history.length > 1 ?
+                (currentVolume - history[0].volume) / ((now - history[0].time) / 60000) : 0;
 
-                // Clean old entries (keep only last 5 minutes)
-                const fiveMinutesAgo = now - (5 * 60 * 1000);
-                while (history.length > 0 && history[0].time < fiveMinutesAgo) {
-                    history.shift();
-                }
-            });
+            return {
+                symbol: stock.symbol,
+                price: stock.price,
+                dayChange: stock.dayChange,
+                volume: stock.volume,
+                volumeChanges: volumeChanges,
+                avgVolumeRate: avgVolumeRate,
+                high: stock.high,
+                low: stock.low
+            };
+        });
 
-            // Calculate volume changes for each stock
-            let movers = response.data.tickers
-                .filter(t => {
-                    const dayChange = t.todaysChangePerc || 0;
-                    const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
-                    const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
-                    return dayChange > 0 && volume > 500000 && price > 0; // Match Top Gainers filter
-                })
-                .map(t => {
-                    const symbol = t.ticker;
-                    const currentVolume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
-                    const history = volumeHistory.get(symbol) || [];
-
-                    // Calculate volume changes for each timeframe
-                    const volumeChanges = {};
-                    const now = Date.now();
-
-                    for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
-                        const targetTime = now - (seconds * 1000);
-                        const oldEntry = history.find(h => Math.abs(h.time - targetTime) < 5000); // 5s tolerance
-
-                        if (oldEntry && oldEntry.volume > 0) {
-                            const change = ((currentVolume - oldEntry.volume) / oldEntry.volume) * 100;
-                            volumeChanges[label] = change;
-                        } else {
-                            volumeChanges[label] = 0;
-                        }
-                    }
-
-                    // Calculate average volume rate (volume per minute)
-                    const avgVolumeRate = history.length > 1 ?
-                        (currentVolume - history[0].volume) / ((now - history[0].time) / 60000) : 0;
-
-                    return {
-                        symbol: t.ticker,
-                        price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
-                        dayChange: t.todaysChangePerc || 0,
-                        volume: currentVolume,
-                        volumeChanges: volumeChanges,
-                        avgVolumeRate: avgVolumeRate,
-                        high: t.day?.h || t.prevDay?.h || 0,
-                        low: t.day?.l || t.prevDay?.l || 0
-                    };
-                })
-                .sort((a, b) => {
-                    // Sort by 1-minute volume change by default
-                    return (b.volumeChanges['1m'] || 0) - (a.volumeChanges['1m'] || 0);
-                })
-                .slice(0, 100); // Top 100 volume movers
-
-            volumeMoversCache = movers;
+        volumeMoversCache = movers;
 
             // Broadcast to WebSocket clients
             wss.clients.forEach(client => {
