@@ -59,8 +59,9 @@ async function getActiveStocks() {
                     const volume = t.day?.v || t.min?.av || 0;
                     // Include ALL stocks under max price - we'll filter by volume later
                     // This ensures we catch ANY stock that suddenly spikes
-                    return price > 0.5 && price < config.maxPrice &&
-                           volume > 10000; // Just need minimal volume to be tradeable
+                    // Lower the minimum price to catch penny stocks too
+                    return price > 0.01 && price < config.maxPrice &&
+                           volume > 100; // Very low threshold to catch all active stocks
                 })
                 .sort((a, b) => {
                     const volA = a.day?.v || a.min?.av || 0;
