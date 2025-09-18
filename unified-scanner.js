@@ -1252,7 +1252,8 @@ app.get('/api/spikes', (req, res) => {
 // Update data every second
 setInterval(async () => {
     await getTopGainers();
-    console.log(`✅ Updated ${topGainersCache.length} gainers`);
+    await getVolumeMovers(); // Update volume movers data
+    console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers`);
 }, 1000);
 
 // Update rising stocks every 10 seconds
