@@ -242,19 +242,18 @@ async function getVolumeMovers() {
 
         volumeMoversCache = movers;
 
-            // Broadcast to WebSocket clients
-            wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                        type: 'volumeMovers',
-                        data: movers.slice(0, 50), // Send top 50 to clients
-                        timestamp: Date.now()
-                    }));
-                }
-            });
-        }
+        // Broadcast to WebSocket clients
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'volumeMovers',
+                    data: movers.slice(0, 50), // Send top 50 to clients
+                    timestamp: Date.now()
+                }));
+            }
+        });
     } catch (error) {
-        console.error('Error fetching volume movers:', error.message);
+        console.error('Error processing volume movers:', error.message);
     }
     return volumeMoversCache;
 }
