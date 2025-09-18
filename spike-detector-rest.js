@@ -194,6 +194,18 @@ function detectSpike(symbol, currentData) {
     // Check if stock is up or down for the day
     const dayChangePercent = currentData.changePercent || 0;
 
+    // DEBUG: Log what we're seeing for problem stocks BEFORE filtering
+    if (symbol === 'SQQQ' || symbol === 'SSG' || symbol === 'AERT') {
+        console.log(`\n🔍 PRE-FILTER DEBUG ${symbol}:`);
+        console.log(`  API Day Change: ${dayChangePercent.toFixed(2)}% (from Polygon)`);
+        console.log(`  Current Price: $${currentPrice.toFixed(2)}`);
+        console.log(`  Baseline (45s ago): $${baselinePrice.toFixed(2)}`);
+        console.log(`  Price Change from baseline: ${priceChangeFromBaseline.toFixed(2)}%`);
+        console.log(`  Recent 20s change: ${recentPriceChange.toFixed(2)}%`);
+        console.log(`  Volume Ratio: ${volumeRatio.toFixed(1)}x`);
+        console.log(`  Will pass filter? ${dayChangePercent > config.minDayChange ? 'YES' : 'NO (day change too low)'}`);
+    }
+
     if (priceChangeFromBaseline >= config.minPriceChange && // Must be UP from baseline
         priceChangeFromBaseline > 0 && // MUST be positive (no falling stocks!)
         recentPriceChange > config.minRecentChange && // Must STILL be rising NOW
