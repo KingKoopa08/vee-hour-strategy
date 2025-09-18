@@ -114,18 +114,31 @@ function detectSpike(symbol, currentData) {
 
     if (relevantHistory.length < 2) return null; // Reduced requirement
 
-    // Find the lowest price in our window
-    let lowestPrice = relevantHistory[0].price;
-    let lowestIndex = 0;
-    for (let i = 0; i < relevantHistory.length; i++) {
-        if (relevantHistory[i].price < lowestPrice) {
-            lowestPrice = relevantHistory[i].price;
-            lowestIndex = i;
+    // IMPORTANT: Only detect RISING stocks
+    // Compare current price to EARLIER prices (not looking for lowest)
+    // We want stocks rising from 30-60 seconds ago to NOW
+
+    // Get price from 30-60 seconds ago as baseline
+    const baselineTime = now - 45000; // 45 seconds ago
+    let baselinePrice = null;
+    let closestTimeDiff = Infinity;
+
+    // Find price closest to 45 seconds ago
+    for (const h of relevantHistory) {
+        const timeDiff = Math.abs(h.timestamp - baselineTime);
+        if (timeDiff < closestTimeDiff) {
+            closestTimeDiff = timeDiff;
+            baselinePrice = h.price;
         }
     }
 
-    // Calculate price change from lowest point to current
-    const priceChangeFromLow = ((currentData.price - lowestPrice) / lowestPrice) * 100;
+    // If no baseline, use oldest available price
+    if (!baselinePrice && relevantHistory.length > 0) {
+        baselinePrice = relevantHistory[0].price;
+    }
+
+    // Calculate price change from baseline to current
+    const priceChangeFromBaseline = baselinePrice ? ((currentData.price - baselinePrice) / baselinePrice) * 100 : 0;
 
     // IMPROVED VOLUME SURGE DETECTION
     // Compare RECENT volume (last 20 seconds) to PREVIOUS volume (20-60 seconds ago)
