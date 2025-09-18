@@ -49,7 +49,7 @@ async function fetchTopGainers() {
 
         if (response.data && response.data.tickers) {
             // Filter and sort for top gainers with volume
-            const gainers = response.data.tickers
+            let gainers = response.data.tickers
                 .filter(t => {
                     const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
                     const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
