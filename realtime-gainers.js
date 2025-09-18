@@ -19,6 +19,7 @@ const clients = new Set();
 // Cache for gainers
 let topGainers = [];
 let lastUpdate = Date.now();
+let previousPrices = new Map(); // Track previous prices for direction
 
 // Settings
 const SETTINGS = {
