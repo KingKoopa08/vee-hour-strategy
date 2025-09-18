@@ -8,8 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
-const WS_PORT = 3001;
+const PORT = process.env.PORT || 3050;
+const WS_PORT = process.env.WS_PORT || 3051;
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY || 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
 
 // Cache for data
