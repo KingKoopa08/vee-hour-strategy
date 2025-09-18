@@ -222,14 +222,15 @@ function detectSpike(symbol, currentData) {
 
         return {
             symbol,
-            startPrice: baselinePrice,
+            startPrice: twoMinPrice || baselinePrice,
             currentPrice: currentData.price,
-            priceChange: priceChangeFromBaseline, // Use baseline change, not from low
+            priceChange: twoMinChange, // 2 minute change
+            recentChange: recentPriceChange, // Last 20 seconds
             volumeBurst: volumeRatio,
             volume: currentData.volume,
-            startTime: now - 45000, // Started 45 seconds ago
+            startTime: now - 120000, // Started 2 minutes ago
             highPrice: currentData.price,
-            momentum: 'SPIKING'
+            momentum: recentPriceChange > twoMinChange/4 ? 'ACCELERATING' : 'RISING'
         };
     }
 
