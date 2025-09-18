@@ -63,25 +63,48 @@ async function fetchTopGainers() {
                     const symbol = t.ticker;
                     const currentPrice = t.day?.c || t.min?.c || t.prevDay?.c || 0;
                     const prevClose = t.prevDay?.c || 0;
-                    const prevTrackedPrice = previousPrices.get(symbol);
+                    const dayChange = t.todaysChangePerc || 0;
 
-                    // Determine price direction
-                    let direction = 'flat';
+                    // Get or initialize price history for this symbol
+                    if (!priceHistory.has(symbol)) {
+                        priceHistory.set(symbol, []);
+                    }
+                    const history = priceHistory.get(symbol);
 
-                    if (prevTrackedPrice !== undefined) {
-                        // We have a previous tracked price, compare with it
-                        if (currentPrice > prevTrackedPrice) direction = 'up';
-                        else if (currentPrice < prevTrackedPrice) direction = 'down';
-                        else direction = 'flat';
-                    } else {
-                        // First time seeing this stock, compare with previous close
-                        if (currentPrice > prevClose && prevClose > 0) direction = 'up';
-                        else if (currentPrice < prevClose && prevClose > 0) direction = 'down';
-                        else direction = 'flat';
+                    // Add current price to history
+                    history.push({
+                        price: currentPrice,
+                        time: Date.now()
+                    });
+
+                    // Keep only last 10 price points
+                    if (history.length > 10) {
+                        history.shift();
                     }
 
-                    // Store current price for next comparison
-                    previousPrices.set(symbol, currentPrice);
+                    // Determine price direction based on recent trend
+                    let direction = 'flat';
+
+                    if (history.length >= 2) {
+                        const recentPrice = history[history.length - 2].price;
+                        const priceDiff = currentPrice - recentPrice;
+                        const percentDiff = recentPrice > 0 ? (priceDiff / recentPrice) * 100 : 0;
+
+                        // More sensitive thresholds for movement detection
+                        if (percentDiff > 0.01) direction = 'up';
+                        else if (percentDiff < -0.01) direction = 'down';
+                        else direction = 'flat';
+
+                        // Log significant movements
+                        if (Math.abs(percentDiff) > 0.1) {
+                            console.log(`${symbol}: ${recentPrice.toFixed(3)} -> ${currentPrice.toFixed(3)} (${percentDiff.toFixed(3)}%)`);
+                        }
+                    } else if (dayChange > 0) {
+                        // First data point, use day change
+                        direction = 'up';
+                    } else if (dayChange < 0) {
+                        direction = 'down';
+                    }
 
                     return {
                         symbol: symbol,
