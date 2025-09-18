@@ -24,18 +24,17 @@ const completedSpikes = [];
 const detectedToday = new Set(); // Track symbols we've already detected today
 let stats = { detected: 0, bestGain: 0 };
 
-// Configuration - ADJUSTABLE SPIKE DETECTION
+// Configuration - REAL-TIME SPIKE DETECTION (LAST FEW MINUTES ONLY)
 let config = {
     maxPrice: 100,
-    minVolumeBurst: 1.5, // Default: 1.5x volume surge (need real surge)
-    minPriceChange: 0.5, // Default: 0.5% change (need real movement)
-    minVolume: 50000, // Default: 50k volume (need ACTIVE trading)
-    minDayChange: 0.5, // Default: 0.5% up for the day minimum
-    minRecentChange: 0.1, // Default: 0.1% up in recent window
-    baselineWindow: 45000, // Default: Compare to 45 seconds ago
+    minVolumeBurst: 2.0, // Need 2x volume surge in RECENT period
+    minPriceChange: 0.5, // Minimum 0.5% move in last 2-3 minutes
+    minVolume: 10000, // Lower threshold for after-hours
+    recentWindow: 120000, // Look at last 2 minutes for spike
+    volumeCompareWindow: 300000, // Compare to previous 5 minutes
     checkInterval: 2000, // Check every 2 seconds
-    historyDuration: 120000, // Keep 2 minutes of history
-    spikeDetectionWindow: 60000 // Default: Look for spikes in last 60 seconds
+    historyDuration: 600000, // Keep 10 minutes of history
+    minTradesInWindow: 5 // Need at least 5 trades to detect spike
 };
 
 // Broadcast to clients
