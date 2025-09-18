@@ -14,15 +14,40 @@
             background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
             color: #e0e0e0;
             padding: 20px;
+            min-height: 100vh;
         }
 
-        .header {
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #00ff41;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .nav-links a.active {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid rgba(0, 255, 65, 0.5);
         }
 
         h1 {
@@ -30,104 +55,102 @@
             background: linear-gradient(135deg, #00ff41, #00ffff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        .back-btn {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
+        .filters {
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 255, 65, 0.3);
-            color: #00ff41;
-            border-radius: 5px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: rgba(0, 255, 65, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .controls {
-            display: flex;
-            gap: 20px;
+            border-radius: 10px;
+            padding: 20px;
             margin-bottom: 30px;
+            display: flex;
+            gap: 30px;
             flex-wrap: wrap;
-            align-items: center;
+            justify-content: center;
         }
 
-        .control-group {
+        .filter-group {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        label {
-            color: #00ff41;
+        .filter-group label {
+            color: #00ffff;
             font-weight: 500;
         }
 
-        input, select {
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 65, 0.3);
+        .filter-group select,
+        .filter-group input {
+            background: rgba(0, 0, 0, 0.5);
             color: #e0e0e0;
+            border: 1px solid rgba(0, 255, 65, 0.3);
             border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
         }
 
-        .stats-bar {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 20px;
+        .status {
+            text-align: center;
             padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 255, 65, 0.1);
             border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .status.connected {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                border-color: rgba(0, 255, 65, 0.3);
+            }
+            50% {
+                border-color: rgba(0, 255, 65, 0.8);
+            }
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .stat-label {
-            color: #888;
-            font-size: 0.9em;
+            color: #00ffff;
+            font-weight: 500;
         }
 
         .stat-value {
-            color: #00ffff;
+            color: #00ff41;
             font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        #connection-status {
-            padding: 5px 10px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
+            margin-left: 5px;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.03);
             border-radius: 10px;
             overflow: hidden;
+            border: 1px solid rgba(0, 255, 65, 0.2);
         }
 
         th {
             background: rgba(0, 255, 65, 0.1);
-            padding: 15px 10px;
+            padding: 15px;
             text-align: left;
             font-weight: 600;
             color: #00ff41;
             border-bottom: 2px solid rgba(0, 255, 65, 0.3);
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
 
         td {
-            padding: 12px 10px;
+            padding: 12px 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
@@ -143,69 +166,44 @@
 
         .positive {
             color: #00ff41;
+            font-weight: 500;
         }
 
         .negative {
             color: #ff4444;
         }
 
-        .neutral {
-            color: #888;
+        .high-volume {
+            color: #ffd700;
+            font-weight: bold;
         }
 
         .volume-change {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-weight: bold;
-            padding: 3px 6px;
-            border-radius: 3px;
+            min-width: 60px;
+            text-align: center;
             font-size: 0.9em;
         }
 
         .volume-spike {
-            background: rgba(255, 65, 0, 0.2);
+            background: rgba(255, 65, 0, 0.3);
             color: #ff8c00;
+            border: 1px solid rgba(255, 65, 0, 0.5);
         }
 
         .volume-surge {
             background: rgba(0, 255, 65, 0.2);
             color: #00ff41;
+            border: 1px solid rgba(0, 255, 65, 0.4);
         }
 
         .volume-normal {
             background: rgba(255, 255, 255, 0.05);
             color: #888;
-        }
-
-        .timeframe-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .timeframe-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            font-weight: 500;
-            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .timeframe-badge.hot {
-            background: rgba(255, 65, 0, 0.2);
-            border-color: #ff8c00;
-            color: #ff8c00;
-        }
-
-        .timeframe-badge.warm {
-            background: rgba(255, 255, 0, 0.2);
-            border-color: #ffff00;
-            color: #ffff00;
-        }
-
-        .timeframe-badge.cool {
-            background: rgba(0, 255, 255, 0.1);
-            border-color: #00ffff;
-            color: #00ffff;
         }
 
         .loading {
@@ -215,37 +213,50 @@
             color: #00ff41;
         }
 
-        .volume-bar {
-            height: 4px;
+        #connection-status {
+            padding: 5px 10px;
+            border-radius: 5px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-top: 4px;
+            font-weight: 500;
         }
 
-        .volume-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff41, #00ffff);
-            transition: width 0.3s ease;
+        #connection-status.connected {
+            color: #00ff41;
+        }
+
+        #connection-status.disconnected {
+            color: #ff4444;
+        }
+
+        #connection-status.connecting {
+            color: #ffd700;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📈 Volume Movers</h1>
-        <a href="/" class="back-btn">← Back to Hub</a>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="/">🏠 Home</a>
+            <a href="/gainers">🔥 Top Gainers</a>
+            <a href="/rising">📊 Rising Stocks</a>
+            <a href="/volume" class="active">📈 Volume Movers</a>
+            <a href="/spikes">⚡ Spike Detector</a>
+        </div>
+        <div id="connection-status" class="disconnected">🔴 Connecting...</div>
     </div>
 
-    <div class="controls">
-        <div class="control-group">
+    <h1>📈 Real-Time Volume Movers</h1>
+
+    <div class="filters">
+        <div class="filter-group">
             <label>Min Volume:</label>
             <input type="number" id="minVolume" value="1000000" step="100000">
         </div>
-        <div class="control-group">
+        <div class="filter-group">
             <label>Min Price:</label>
             <input type="number" id="minPrice" value="1" step="0.5">
         </div>
-        <div class="control-group">
+        <div class="filter-group">
             <label>Sort By:</label>
             <select id="sortBy">
                 <option value="1m">1 Minute Change</option>
@@ -256,28 +267,17 @@
                 <option value="volume">Total Volume</option>
             </select>
         </div>
-        <div class="control-group">
+        <div class="filter-group">
             <label>Show Top:</label>
             <input type="number" id="showTop" value="50" min="10" max="200">
         </div>
     </div>
 
-    <div class="stats-bar">
-        <div class="stat-item">
-            <span class="stat-label">Status:</span>
-            <span id="connection-status">⚫ Connecting...</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Stocks Tracked:</span>
-            <span class="stat-value" id="stockCount">0</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Volume Surges:</span>
-            <span class="stat-value" id="surgeCount">0</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Last Update:</span>
-            <span class="stat-value" id="lastUpdate">--:--:--</span>
+    <div class="status connected">
+        <div class="stats-container">
+            <div class="stat-item">Stocks Tracked:<span class="stat-value" id="stockCount">0</span></div>
+            <div class="stat-item">Volume Surges:<span class="stat-value" id="surgeCount">0</span></div>
+            <div class="stat-item">Last Update:<span class="stat-value" id="lastUpdate">--:--:--</span></div>
         </div>
     </div>
 
@@ -320,7 +320,9 @@
 
             ws.onopen = () => {
                 console.log('Connected to WebSocket');
-                document.getElementById('connection-status').innerHTML = '🟢 Connected';
+                const statusEl = document.getElementById('connection-status');
+                statusEl.innerHTML = '🟢 Connected';
+                statusEl.className = 'connected';
 
                 // Request initial data
                 ws.send(JSON.stringify({ type: 'subscribe', channel: 'volumeMovers' }));
@@ -335,17 +337,21 @@
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
-                document.getElementById('connection-status').innerHTML = '🔴 Error';
+                const statusEl = document.getElementById('connection-status');
+                statusEl.innerHTML = '🔴 Error';
+                statusEl.className = 'disconnected';
             };
 
             ws.onclose = () => {
-                document.getElementById('connection-status').innerHTML = '🟡 Reconnecting...';
+                const statusEl = document.getElementById('connection-status');
+                statusEl.innerHTML = '🟡 Reconnecting...';
+                statusEl.className = 'connecting';
                 setTimeout(connect, 3000);
             };
         }
 
         function formatVolumeChange(change) {
-            if (!change || change === 0) return '<span class="neutral">0%</span>';
+            if (!change || change === 0) return '<span class="volume-change volume-normal">0%</span>';
 
             const absChange = Math.abs(change);
             let className = 'volume-normal';
@@ -358,14 +364,6 @@
 
             const sign = change > 0 ? '+' : '';
             return `<span class="volume-change ${className}">${sign}${change.toFixed(1)}%</span>`;
-        }
-
-        function getTimeframeClass(change) {
-            const absChange = Math.abs(change || 0);
-            if (absChange >= 50) return 'hot';
-            if (absChange >= 20) return 'warm';
-            if (absChange >= 5) return 'cool';
-            return '';
         }
 
         function updateTable(stocks) {
@@ -407,11 +405,15 @@
                 return;
             }
 
-            tbody.innerHTML = filteredStocks.map((stock, index) => `
+            tbody.innerHTML = filteredStocks.map((stock, index) => {
+                const volumeClass = stock.volume > 10000000 ? 'high-volume' : '';
+                const priceClass = stock.dayChange >= 0 ? 'positive' : 'negative';
+
+                return `
                 <tr>
                     <td class="symbol">${stock.symbol}</td>
                     <td>$${stock.price.toFixed(2)}</td>
-                    <td class="${stock.dayChange >= 0 ? 'positive' : 'negative'}">
+                    <td class="${priceClass}">
                         ${stock.dayChange >= 0 ? '+' : ''}${stock.dayChange.toFixed(2)}%
                     </td>
                     <td>${formatVolumeChange(stock.volumeChanges['30s'])}</td>
@@ -419,9 +421,9 @@
                     <td>${formatVolumeChange(stock.volumeChanges['2m'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['3m'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['5m'])}</td>
-                    <td>${(stock.volume / 1000000).toFixed(2)}M</td>
+                    <td class="${volumeClass}">${(stock.volume / 1000000).toFixed(2)}M</td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         // Setup event listeners
