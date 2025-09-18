@@ -500,19 +500,52 @@ app.get('/', (req, res) => {
         const tbody = document.getElementById('gainersBody');
         const refreshIndicator = document.getElementById('refreshIndicator');
 
+        let allGainers = [];
+        let filters = {
+            stockLimit: 50,
+            minGain: 0,
+            minVolume: 500000
+        };
+
+        // Filter controls
+        document.getElementById('stockLimit').addEventListener('change', (e) => {
+            filters.stockLimit = parseInt(e.target.value);
+            applyFilters();
+        });
+
+        document.getElementById('minGain').addEventListener('change', (e) => {
+            filters.minGain = parseFloat(e.target.value);
+            applyFilters();
+        });
+
+        document.getElementById('minVolume').addEventListener('change', (e) => {
+            filters.minVolume = parseInt(e.target.value);
+            applyFilters();
+        });
+
         ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
 
             if (message.type === 'update' || message.type === 'init') {
-                updateTable(message.data || []);
-                document.getElementById('count').textContent = (message.data?.length || 0) + ' Stocks';
+                allGainers = message.data || [];
+                document.getElementById('count').textContent = allGainers.length;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                applyFilters();
 
                 // Flash refresh indicator
                 refreshIndicator.classList.add('active');
                 setTimeout(() => refreshIndicator.classList.remove('active'), 200);
             }
         };
+
+        function applyFilters() {
+            let filtered = allGainers
+                .filter(stock => stock.change >= filters.minGain)
+                .filter(stock => stock.volume >= filters.minVolume)
+                .slice(0, filters.stockLimit);
+
+            updateTable(filtered);
+        }
 
         function updateTable(gainers) {
             tbody.innerHTML = '';
