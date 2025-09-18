@@ -16,7 +16,18 @@ const POLYGON_API_KEY = process.env.POLYGON_API_KEY || 'AhYeb0tc72ti39yZpxdNpoZx
 let topGainersCache = [];
 let risingStocksCache = [];
 let spikeDetectorCache = [];
+let volumeMoversCache = [];
+let volumeHistory = new Map(); // Store volume history for timeframe analysis
 let lastUpdate = Date.now();
+
+// Volume tracking timeframes (in seconds)
+const VOLUME_TIMEFRAMES = {
+    '30s': 30,
+    '1m': 60,
+    '2m': 120,
+    '3m': 180,
+    '5m': 300
+};
 let rankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
