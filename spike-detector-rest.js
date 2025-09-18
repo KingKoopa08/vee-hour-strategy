@@ -126,9 +126,30 @@ function detectSpike(symbol, currentData) {
     // Calculate price change from lowest point to current
     const priceChangeFromLow = ((currentData.price - lowestPrice) / lowestPrice) * 100;
 
-    // Calculate average volume in our window
-    const avgVolume = relevantHistory.reduce((sum, h) => sum + h.volume, 0) / relevantHistory.length;
-    const volumeRatio = currentData.volume / avgVolume;
+    // IMPROVED VOLUME SURGE DETECTION
+    // Compare RECENT volume (last 20 seconds) to PREVIOUS volume (20-60 seconds ago)
+    const recentCutoff = now - 20000; // Last 20 seconds
+    const recentHistory = relevantHistory.filter(h => h.timestamp > recentCutoff);
+    const olderHistory = relevantHistory.filter(h => h.timestamp <= recentCutoff);
+
+    let volumeRatio = 1.0;
+
+    if (recentHistory.length > 0 && olderHistory.length > 0) {
+        // Calculate average volume for recent vs older periods
+        const recentAvgVolume = recentHistory.reduce((sum, h) => sum + h.volume, 0) / recentHistory.length;
+        const olderAvgVolume = olderHistory.reduce((sum, h) => sum + h.volume, 0) / olderHistory.length;
+
+        // Compare recent volume to older volume (this shows if volume is SURGING now)
+        if (olderAvgVolume > 0) {
+            volumeRatio = recentAvgVolume / olderAvgVolume;
+        }
+
+        // Also check if current volume is higher than recent average
+        const currentVolumeRatio = currentData.volume / recentAvgVolume;
+
+        // Use the higher of the two ratios (more sensitive to volume surges)
+        volumeRatio = Math.max(volumeRatio, currentVolumeRatio);
+    }
 
     // Check if this is a real spike:
     // 1. Price increased significantly from recent low (1%+ in 60 seconds)
