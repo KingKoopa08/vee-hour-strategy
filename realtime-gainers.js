@@ -190,141 +190,310 @@ app.get('/', (req, res) => {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff41;
-            padding: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
         }
         .header {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            background: #111;
-            border: 1px solid #00ff41;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
         }
         h1 {
-            color: #00ff41;
-            font-size: 24px;
-            text-shadow: 0 0 10px #00ff41;
-        }
-        .stats {
+            color: #4ade80;
+            font-size: 28px;
+            font-weight: 600;
             display: flex;
-            gap: 20px;
-            font-size: 14px;
+            align-items: center;
+            gap: 12px;
         }
-        .status {
-            width: 10px;
-            height: 10px;
-            background: #00ff41;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 1s infinite;
+        .live-badge {
+            background: #4ade80;
+            color: #1a1a1a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
         }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        .stats {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+        .controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 16px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-group label {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        .filter-group select, .filter-group input {
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+            min-width: 100px;
+        }
+        .filter-group select:focus, .filter-group input:focus {
+            outline: none;
+            border-color: #4ade80;
+        }
+        .table-container {
+            background: #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
-        }
-        th, td {
-            padding: 8px 10px;
-            text-align: left;
-            border-bottom: 1px solid #1a1a1a;
         }
         th {
-            background: #111;
-            color: #00ff41;
+            background: #1f1f1f;
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 16px 12px;
+            text-align: left;
             position: sticky;
             top: 0;
-            border-bottom: 2px solid #00ff41;
+            z-index: 10;
+            border-bottom: 2px solid #3a3a3a;
         }
-        tr:hover { background: #1a1a1a; }
-        .symbol {
-            color: #fff;
-            font-weight: bold;
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #3a3a3a;
             font-size: 14px;
         }
-        .positive { color: #00ff41; font-weight: bold; }
-        .high-gain { color: #ffff00; font-weight: bold; }
-        .mega-gain { color: #ff00ff; font-weight: bold; animation: glow 1s infinite; }
-        @keyframes glow {
-            0%, 100% { text-shadow: 0 0 5px currentColor; }
-            50% { text-shadow: 0 0 15px currentColor; }
+        tbody tr {
+            transition: background 0.2s;
         }
-        .volume { color: #0088ff; }
-        .high-volume { color: #ffaa00; font-weight: bold; }
-        .price { color: #fff; }
-        .updated { color: #666; font-size: 11px; }
-        .direction {
+        tbody tr:hover {
+            background: #333;
+        }
+        tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .rank {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .symbol {
+            color: #fff;
+            font-weight: 600;
             font-size: 16px;
+        }
+        .price {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        .positive {
+            color: #4ade80;
+            font-weight: 600;
+        }
+        .negative {
+            color: #f87171;
+            font-weight: 600;
+        }
+        .high-gain {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+        .mega-gain {
+            color: #a78bfa;
+            font-weight: 600;
+            animation: glow 2s infinite;
+        }
+        @keyframes glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .volume {
+            color: #60a5fa;
+        }
+        .high-volume {
+            color: #fb923c;
+            font-weight: 600;
+        }
+        .direction {
+            font-size: 18px;
             font-weight: bold;
-            margin-right: 8px;
             display: inline-block;
-            width: 20px;
+            width: 24px;
             text-align: center;
         }
-        .direction.up { color: #00ff41; animation: blink-up 0.5s; }
-        .direction.down { color: #ff4444; animation: blink-down 0.5s; }
-        .direction.flat { color: #666; }
-        @keyframes blink-up {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .direction.up {
+            color: #4ade80;
         }
-        @keyframes blink-down {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+        .direction.down {
+            color: #f87171;
+        }
+        .direction.flat {
+            color: #6b7280;
+        }
+        .range {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        .updated {
+            color: #6b7280;
+            font-size: 12px;
         }
         .refresh-indicator {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #00ff41;
-            color: #000;
-            padding: 5px 10px;
-            border-radius: 3px;
+            bottom: 20px;
+            right: 20px;
+            background: #4ade80;
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 20px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             opacity: 0;
             transition: opacity 0.2s;
+            box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
         }
-        .refresh-indicator.active { opacity: 1; }
+        .refresh-indicator.active {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🚀 REAL-TIME TOP GAINERS</h1>
-        <div class="stats">
-            <div><span class="status"></span> LIVE</div>
-            <div>Refresh: 1s</div>
-            <div>Min Volume: 500K</div>
-            <div id="count">0 Stocks</div>
-            <div id="lastUpdate">--:--:--</div>
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <h1>
+                    📈 Top Gainers
+                    <span class="live-badge">LIVE</span>
+                </h1>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Refresh Rate</span>
+                        <span class="stat-value">1 second</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Min Volume</span>
+                        <span class="stat-value">500K</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Stocks</span>
+                        <span class="stat-value" id="count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Last Update</span>
+                        <span class="stat-value" id="lastUpdate">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="filter-group">
+                <label for="stockLimit">Show Top:</label>
+                <select id="stockLimit">
+                    <option value="10">10 Stocks</option>
+                    <option value="20">20 Stocks</option>
+                    <option value="30">30 Stocks</option>
+                    <option value="50" selected>50 Stocks</option>
+                    <option value="100">100 Stocks</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="minGain">Min Gain:</label>
+                <select id="minGain">
+                    <option value="0">All Gainers</option>
+                    <option value="5">5%+</option>
+                    <option value="10">10%+</option>
+                    <option value="20">20%+</option>
+                    <option value="50">50%+</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="minVolume">Min Volume:</label>
+                <select id="minVolume">
+                    <option value="500000" selected>500K+</option>
+                    <option value="1000000">1M+</option>
+                    <option value="5000000">5M+</option>
+                    <option value="10000000">10M+</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px">#</th>
+                        <th style="width: 150px">Symbol</th>
+                        <th style="width: 100px">Price</th>
+                        <th style="width: 100px">Change %</th>
+                        <th style="width: 100px">Change $</th>
+                        <th style="width: 120px">Volume</th>
+                        <th style="width: 120px">$ Volume</th>
+                        <th style="width: 150px">Day Range</th>
+                        <th>Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="gainersBody"></tbody>
+            </table>
         </div>
     </div>
 
     <div class="refresh-indicator" id="refreshIndicator">UPDATING...</div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Symbol</th>
-                <th>Price</th>
-                <th>Change %</th>
-                <th>Change $</th>
-                <th>Volume</th>
-                <th>$ Volume</th>
-                <th>Day Range</th>
-                <th>Updated</th>
-            </tr>
-        </thead>
-        <tbody id="gainersBody"></tbody>
-    </table>
 
     <script>
         const ws = new WebSocket('ws://localhost:${WS_PORT}');
