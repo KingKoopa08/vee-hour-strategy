@@ -187,10 +187,10 @@ function detectSpike(symbol, currentData) {
             symbol,
             startPrice: baselinePrice,
             currentPrice: currentData.price,
-            priceChange: priceChangeFromLow,
+            priceChange: priceChangeFromBaseline, // Use baseline change, not from low
             volumeBurst: volumeRatio,
             volume: currentData.volume,
-            startTime: relevantHistory[lowestIndex].timestamp,
+            startTime: now - 45000, // Started 45 seconds ago
             highPrice: currentData.price,
             momentum: 'SPIKING'
         };
