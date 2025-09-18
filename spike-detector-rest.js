@@ -365,6 +365,9 @@ app.post('/api/spikes/config', (req, res) => {
     if (updates.minPriceChange !== undefined) config.minPriceChange = updates.minPriceChange;
     if (updates.minVolume !== undefined) config.minVolume = updates.minVolume;
     if (updates.spikeDetectionWindow !== undefined) config.spikeDetectionWindow = updates.spikeDetectionWindow;
+    if (updates.minDayChange !== undefined) config.minDayChange = updates.minDayChange;
+    if (updates.minRecentChange !== undefined) config.minRecentChange = updates.minRecentChange;
+    if (updates.baselineWindow !== undefined) config.baselineWindow = updates.baselineWindow;
 
     // Clear detected today when config changes to re-detect with new settings
     detectedToday.clear();
