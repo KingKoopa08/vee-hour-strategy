@@ -62,13 +62,22 @@ async function fetchTopGainers() {
                 .map(t => {
                     const symbol = t.ticker;
                     const currentPrice = t.day?.c || t.min?.c || t.prevDay?.c || 0;
-                    const prevPrice = previousPrices.get(symbol);
+                    const prevClose = t.prevDay?.c || 0;
+                    const prevTrackedPrice = previousPrices.get(symbol);
 
                     // Determine price direction
                     let direction = 'flat';
-                    if (prevPrice !== undefined && prevPrice !== 0) {
-                        if (currentPrice > prevPrice) direction = 'up';
-                        else if (currentPrice < prevPrice) direction = 'down';
+
+                    if (prevTrackedPrice !== undefined) {
+                        // We have a previous tracked price, compare with it
+                        if (currentPrice > prevTrackedPrice) direction = 'up';
+                        else if (currentPrice < prevTrackedPrice) direction = 'down';
+                        else direction = 'flat';
+                    } else {
+                        // First time seeing this stock, compare with previous close
+                        if (currentPrice > prevClose && prevClose > 0) direction = 'up';
+                        else if (currentPrice < prevClose && prevClose > 0) direction = 'down';
+                        else direction = 'flat';
                     }
 
                     // Store current price for next comparison
