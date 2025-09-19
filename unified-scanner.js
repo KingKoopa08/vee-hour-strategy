@@ -153,16 +153,23 @@ async function getTopGainers() {
 
                 } else {
                     // Regular trading hours (9:30 AM - 4:00 PM ET)
+                    // Use the most recent available price
                     currentPrice = t.min?.c || t.day?.c || 0;
-                    sessionChange = dayChange;  // During regular hours, session change equals day change
 
-                    // Validate the regular hours data
+                    // Trust the API's todaysChangePerc during regular hours
+                    // as it has more recent data than our delayed snapshots
+                    if (t.todaysChangePerc !== undefined && t.todaysChangePerc !== null) {
+                        dayChange = t.todaysChangePerc;
+                        sessionChange = t.todaysChangePerc;
+                    } else {
+                        sessionChange = dayChange;
+                    }
+
+                    // Log if there's a big discrepancy for debugging
                     if (currentPrice > 0 && prevClose > 0) {
                         const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
-                        if (Math.abs(dayChange - calculatedChange) > 50) {
-                            console.log(`⚠️ Data validation: ${t.ticker} - API says ${dayChange.toFixed(2)}%, calculated ${calculatedChange.toFixed(2)}%`);
-                            dayChange = calculatedChange;
-                            sessionChange = calculatedChange;
+                        if (Math.abs(dayChange - calculatedChange) > 10) {
+                            console.log(`📊 ${t.ticker}: API=${dayChange.toFixed(2)}%, Calc=${calculatedChange.toFixed(2)}%, Price=${currentPrice}, PrevClose=${prevClose}`);
                         }
                     }
                 }
