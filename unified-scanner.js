@@ -95,24 +95,35 @@ async function getTopGainers() {
         if (response.data && response.data.tickers) {
             // Filter for gainers with positive day change
             let gainers = response.data.tickers.filter(t => {
-                // Calculate actual change percentage from prices
-                const currentPrice = t.day?.c || t.min?.c || 0;
+                // Get the most recent price (including after-hours if available)
+                const marketSession = getMarketSession();
+                let currentPrice;
+
+                // Use appropriate price based on market session
+                if (marketSession === 'After Hours' || marketSession === 'Pre-Market') {
+                    // Use minute bar price for extended hours
+                    currentPrice = t.min?.c || t.day?.c || 0;
+                } else {
+                    // Use day price during regular hours
+                    currentPrice = t.day?.c || t.min?.c || 0;
+                }
+
                 const prevClose = t.prevDay?.c || 0;
                 let dayChange = t.todaysChangePerc || 0;
 
-                // Validate and correct data if necessary
-                if (currentPrice > 0 && prevClose > 0) {
+                // For after-hours, always calculate the change ourselves
+                if ((marketSession === 'After Hours' || marketSession === 'Pre-Market') && currentPrice > 0 && prevClose > 0) {
+                    dayChange = ((currentPrice - prevClose) / prevClose) * 100;
+                    if (t.ticker === 'AGMH') {
+                        console.log(`📊 AGMH: Current: $${currentPrice}, Prev: $${prevClose}, Change: ${dayChange.toFixed(2)}%`);
+                    }
+                } else if (currentPrice > 0 && prevClose > 0) {
+                    // Validate regular hours data
                     const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
 
                     // If API change is wildly different from calculated (more than 50% difference), use calculated
                     if (Math.abs(dayChange - calculatedChange) > 50) {
                         console.log(`⚠️ Data validation: ${t.ticker} - API says ${dayChange.toFixed(2)}%, calculated ${calculatedChange.toFixed(2)}% (price: $${currentPrice}, prev: $${prevClose})`);
-                        dayChange = calculatedChange;
-                    }
-
-                    // Additional sanity check - if change is over 200% and price is under $1, it's likely wrong
-                    if (dayChange > 200 && currentPrice < 1) {
-                        console.log(`⚠️ Suspicious data: ${t.ticker} shows ${dayChange.toFixed(2)}% gain at $${currentPrice} - recalculating`);
                         dayChange = calculatedChange;
                     }
                 }
