@@ -374,12 +374,9 @@
         let filters = {
             minVolume: 500000,
             minGain: 0,
-            sortBy: 'dayChange',
-            secondarySort: '',
-            minPriceChange: 'any',
-            priceTimeframe: '1m',
-            minVolChange: 'any',
-            volTimeframe: '1m',
+            primarySort: 'dayChange',
+            priceSortBy: 'none',
+            volumeSortBy: 'none',
             stockLimit: 50
         };
 
@@ -455,54 +452,38 @@
 
             // Apply filters
             let filteredStocks = stocks
-                .filter(stock => {
-                    // Basic filters
-                    if (stock.volume < filters.minVolume) return false;
-                    if (stock.dayChange < filters.minGain) return false;
+                .filter(stock =>
+                    stock.volume >= filters.minVolume &&
+                    stock.dayChange >= filters.minGain
+                );
 
-                    // Price change filter
-                    if (filters.minPriceChange !== 'any') {
-                        const priceChange = stock.priceChanges?.[filters.priceTimeframe] || 0;
-                        const minChange = parseFloat(filters.minPriceChange);
-                        if (Math.abs(priceChange) < minChange) return false;
-                    }
-
-                    // Volume change filter
-                    if (filters.minVolChange !== 'any') {
-                        const volChange = stock.volumeChanges?.[filters.volTimeframe] || 0;
-                        const minChange = parseFloat(filters.minVolChange);
-                        if (Math.abs(volChange) < minChange) return false;
-                    }
-
-                    return true;
-                });
-
-            // Sort with multi-level sorting
+            // Apply complex multi-criteria sorting
             filteredStocks.sort((a, b) => {
                 let compareValue = 0;
 
-                // Primary sort
-                if (filters.sortBy === 'dayChange') {
+                // Primary sort (always applied)
+                if (filters.primarySort === 'dayChange') {
                     compareValue = b.dayChange - a.dayChange;
-                } else if (filters.sortBy.startsWith('priceChange')) {
-                    const timeframe = filters.sortBy.replace('priceChange', '');
-                    compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
-                } else if (filters.sortBy.startsWith('volumeChange')) {
-                    const timeframe = filters.sortBy.replace('volumeChange', '');
-                    compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
+                } else if (filters.primarySort === 'price') {
+                    compareValue = b.price - a.price;
+                } else if (filters.primarySort === 'volume') {
+                    compareValue = b.volume - a.volume;
                 }
 
-                // If primary values are equal and secondary sort is specified
-                if (compareValue === 0 && filters.secondarySort) {
-                    if (filters.secondarySort === 'dayChange') {
-                        compareValue = b.dayChange - a.dayChange;
-                    } else if (filters.secondarySort.startsWith('priceChange')) {
-                        const timeframe = filters.secondarySort.replace('priceChange', '');
-                        compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
-                    } else if (filters.secondarySort.startsWith('volumeChange')) {
-                        const timeframe = filters.secondarySort.replace('volumeChange', '');
-                        compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
-                    }
+                // If primary values are equal, apply price sort if selected
+                if (compareValue === 0 && filters.priceSortBy !== 'none') {
+                    const timeframe = filters.priceSortBy.replace('priceChange', '');
+                    const aPriceChange = a.priceChanges?.[timeframe] || 0;
+                    const bPriceChange = b.priceChanges?.[timeframe] || 0;
+                    compareValue = bPriceChange - aPriceChange;
+                }
+
+                // If still equal, apply volume sort if selected
+                if (compareValue === 0 && filters.volumeSortBy !== 'none') {
+                    const timeframe = filters.volumeSortBy.replace('volumeChange', '');
+                    const aVolChange = a.volumeChanges?.[timeframe] || 0;
+                    const bVolChange = b.volumeChanges?.[timeframe] || 0;
+                    compareValue = bVolChange - aVolChange;
                 }
 
                 return compareValue;
@@ -571,27 +552,17 @@
         });
 
         document.getElementById('primarySort').addEventListener('change', (e) => {
-            filters.sortBy = e.target.value;
+            filters.primarySort = e.target.value;
             updateTable(allStocks);
         });
 
-        document.getElementById('minPriceChange').addEventListener('change', (e) => {
-            filters.minPriceChange = e.target.value;
+        document.getElementById('priceSortBy').addEventListener('change', (e) => {
+            filters.priceSortBy = e.target.value;
             updateTable(allStocks);
         });
 
-        document.getElementById('priceTimeframe').addEventListener('change', (e) => {
-            filters.priceTimeframe = e.target.value;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('minVolChange').addEventListener('change', (e) => {
-            filters.minVolChange = e.target.value;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('volTimeframe').addEventListener('change', (e) => {
-            filters.volTimeframe = e.target.value;
+        document.getElementById('volumeSortBy').addEventListener('change', (e) => {
+            filters.volumeSortBy = e.target.value;
             updateTable(allStocks);
         });
 
