@@ -129,8 +129,9 @@ async function getTopGainers() {
                 }
 
                 // Special handling for known problematic stocks
-                if (t.ticker === 'MHY' && currentPrice < 1 && dayChange > 100) {
-                    console.log(`⚠️ Filtering out MHY - suspicious data: price $${currentPrice} with ${dayChange.toFixed(2)}% change`);
+                if (t.ticker === 'MHY') {
+                    // MHY actual price should be around $0.12, not $25
+                    console.log(`⚠️ Filtering out MHY - known bad data from API`);
                     return false; // Filter it out completely
                 }
 
