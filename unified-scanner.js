@@ -164,9 +164,18 @@ async function getTopGainers() {
                     positionChange = oldestEntry.rank - currentRank;
                 }
 
+                // Get appropriate price based on market session
+                const marketSession = getMarketSession();
+                let displayPrice;
+                if (marketSession === 'After Hours' || marketSession === 'Pre-Market') {
+                    displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
+                } else {
+                    displayPrice = stock.day?.c || stock.min?.c || stock.prevDay?.c || 0;
+                }
+
                 return {
                     symbol: stock.ticker,
-                    price: stock.day?.c || stock.min?.c || stock.prevDay?.c || 0,
+                    price: displayPrice,
                     dayChange: stock.validatedChangePerc || stock.todaysChangePerc || 0,
                     volume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
