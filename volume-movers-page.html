@@ -318,20 +318,29 @@
     <table id="volumeTable">
         <thead>
             <tr>
-                <th>Symbol</th>
-                <th>Price</th>
-                <th>Day %</th>
-                <th>30s</th>
-                <th>1m</th>
-                <th>2m</th>
-                <th>3m</th>
-                <th>5m</th>
-                <th>Volume</th>
+                <th rowspan="2">Symbol</th>
+                <th rowspan="2">Price</th>
+                <th rowspan="2">Day %</th>
+                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Price Change %</th>
+                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Volume Change %</th>
+                <th rowspan="2">Total Vol</th>
+            </tr>
+            <tr>
+                <th style="font-size: 0.9em;">30s</th>
+                <th style="font-size: 0.9em;">1m</th>
+                <th style="font-size: 0.9em;">2m</th>
+                <th style="font-size: 0.9em;">3m</th>
+                <th style="font-size: 0.9em;">5m</th>
+                <th style="font-size: 0.9em;">30s</th>
+                <th style="font-size: 0.9em;">1m</th>
+                <th style="font-size: 0.9em;">2m</th>
+                <th style="font-size: 0.9em;">3m</th>
+                <th style="font-size: 0.9em;">5m</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             <tr class="loading">
-                <td colspan="9">Loading volume data...</td>
+                <td colspan="14">Loading volume data...</td>
             </tr>
         </tbody>
     </table>
@@ -400,6 +409,14 @@
             return `<span class="volume-change ${className}">${sign}${change.toFixed(1)}%</span>`;
         }
 
+        function formatPriceChange(change) {
+            if (!change || change === 0) return '<span style="color: #888;">0.0%</span>';
+
+            const sign = change > 0 ? '+' : '';
+            const color = change > 0 ? '#00ff41' : '#ff4444';
+            return `<span style="color: ${color}; font-weight: 500;">${sign}${change.toFixed(2)}%</span>`;
+        }
+
         function updateTable(stocks) {
             allStocks = stocks;
 
@@ -437,7 +454,7 @@
             // Build table HTML
             const tbody = document.getElementById('tableBody');
             if (filteredStocks.length === 0) {
-                tbody.innerHTML = '<tr class="loading"><td colspan="9">No stocks match current filters</td></tr>';
+                tbody.innerHTML = '<tr class="loading"><td colspan="14">No stocks match current filters</td></tr>';
                 return;
             }
 
@@ -452,6 +469,11 @@
                     <td class="${priceClass}">
                         ${stock.dayChange >= 0 ? '+' : ''}${stock.dayChange.toFixed(2)}%
                     </td>
+                    <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['30s'] : 0)}</td>
+                    <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['1m'] : 0)}</td>
+                    <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['2m'] : 0)}</td>
+                    <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['3m'] : 0)}</td>
+                    <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['5m'] : 0)}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['30s'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['1m'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['2m'])}</td>
