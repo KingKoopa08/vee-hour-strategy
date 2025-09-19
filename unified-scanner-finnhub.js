@@ -14,7 +14,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 3050;
 const WS_PORT = process.env.WS_PORT || 3051;
 const POLYGON_API_KEY = process.env.POLYGON_API_KEY || 'AhYeb0tc72ti39yZpxdNpoZx6_CD9IYW';
-const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || 'ct90j39r01qhb3v7tnqgct90j39r01qhb3v7tnr0';
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || 'd36lethr01qtvbti6kagd36lethr01qtvbti6kb0';
 
 // Initialize Finnhub client
 const finnhub = new FinnhubClient(FINNHUB_API_KEY);
