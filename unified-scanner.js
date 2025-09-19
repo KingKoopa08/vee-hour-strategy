@@ -755,6 +755,11 @@ app.get('/gainers', (req, res) => {
 
     <h1>🔥 Real-Time Top Gainers</h1>
 
+    <div id="marketSession" style="text-align: center; margin-bottom: 20px; padding: 10px; background: rgba(0, 255, 65, 0.1); border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 10px;">
+        <span style="color: #00ffff; font-weight: 600;">Market Session: </span>
+        <span id="sessionName" style="color: #00ff41; font-weight: bold;">Loading...</span>
+    </div>
+
     <div class="filters">
         <div class="filter-group">
             <label for="stockLimit">Show Top:</label>
