@@ -128,6 +128,12 @@ async function getTopGainers() {
                     }
                 }
 
+                // Special handling for known problematic stocks
+                if (t.ticker === 'MHY' && currentPrice < 1 && dayChange > 100) {
+                    console.log(`⚠️ Filtering out MHY - suspicious data: price $${currentPrice} with ${dayChange.toFixed(2)}% change`);
+                    return false; // Filter it out completely
+                }
+
                 // Store the validated change back in the object
                 t.validatedChangePerc = dayChange;
 
