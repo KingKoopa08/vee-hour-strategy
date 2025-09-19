@@ -1373,11 +1373,52 @@ app.get('/api/rising', async (req, res) => {
 });
 
 app.get('/api/volume', async (req, res) => {
-    const stocks = await getVolumeMovers();
+    let stocks = await getVolumeMovers();
+
+    // Get sorting parameters
+    const sortBy = req.query.sortBy || 'dayChange';  // dayChange, priceChange30s, priceChange1m, volumeChange30s, volumeChange1m, etc.
+    const sortOrder = req.query.sortOrder || 'desc';  // asc or desc
+    const secondarySort = req.query.secondarySort;  // Optional secondary sort
+
+    // Apply sorting
+    stocks = stocks.sort((a, b) => {
+        let compareValue = 0;
+
+        // Primary sort
+        if (sortBy === 'dayChange') {
+            compareValue = (b.dayChange || 0) - (a.dayChange || 0);
+        } else if (sortBy.startsWith('priceChange')) {
+            const timeframe = sortBy.replace('priceChange', '');
+            compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
+        } else if (sortBy.startsWith('volumeChange')) {
+            const timeframe = sortBy.replace('volumeChange', '');
+            compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
+        }
+
+        // If primary sort values are equal and secondary sort is specified
+        if (compareValue === 0 && secondarySort) {
+            if (secondarySort === 'dayChange') {
+                compareValue = (b.dayChange || 0) - (a.dayChange || 0);
+            } else if (secondarySort.startsWith('priceChange')) {
+                const timeframe = secondarySort.replace('priceChange', '');
+                compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
+            } else if (secondarySort.startsWith('volumeChange')) {
+                const timeframe = secondarySort.replace('volumeChange', '');
+                compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
+            }
+        }
+
+        // Handle sort order
+        return sortOrder === 'asc' ? -compareValue : compareValue;
+    });
+
     res.json({
         success: true,
         count: stocks.length,
-        stocks: stocks
+        stocks: stocks,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        secondarySort: secondarySort
     });
 });
 
