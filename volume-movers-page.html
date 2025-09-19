@@ -384,7 +384,10 @@
         // Connect to WebSocket
         function connect() {
             const wsHost = window.location.hostname || 'localhost';
-            const wsUrl = 'ws://' + wsHost + ':3051';
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsPort = window.location.hostname === 'localhost' ? ':3051' : '';
+            const wsPath = window.location.hostname === 'localhost' ? '' : '/ws';
+            const wsUrl = wsProtocol + '//' + wsHost + wsPort + wsPath;
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
