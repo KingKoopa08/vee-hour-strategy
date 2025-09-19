@@ -163,7 +163,7 @@ async function getTopGainers() {
                 // Include stocks with positive day change OR positive session change
                 return (dayChange > 0 || sessionChange > 0) && volume > 500000 && price > 0;
             })
-            .sort((a, b) => (b.validatedChangePerc || 0) - (a.validatedChangePerc || 0))
+            .sort((a, b) => (b.validatedDayChange || 0) - (a.validatedDayChange || 0))
             .slice(0, 200); // Get top 200 gainers
 
             // Update ranking history
@@ -204,7 +204,9 @@ async function getTopGainers() {
                 return {
                     symbol: stock.ticker,
                     price: displayPrice,
-                    dayChange: stock.validatedChangePerc || stock.todaysChangePerc || 0,
+                    dayChange: stock.validatedDayChange || stock.todaysChangePerc || 0,
+                    sessionChange: stock.sessionChange || 0,
+                    afterHoursChange: stock.afterHoursChange || 0,
                     volume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
                     high: stock.day?.h || stock.prevDay?.h || 0,
