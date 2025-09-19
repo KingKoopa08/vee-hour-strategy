@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class FinnhubClient {
     constructor(apiKey) {
-        this.apiKey = apiKey || 'ct90j39r01qhb3v7tnqgct90j39r01qhb3v7tnr0'; // Free tier API key
+        this.apiKey = apiKey || 'd36lethr01qtvbti6kagd36lethr01qtvbti6kb0'; // Free tier API key
         this.baseURL = 'https://finnhub.io/api/v1';
 
         // Rate limiting
