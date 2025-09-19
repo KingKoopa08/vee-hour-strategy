@@ -190,7 +190,7 @@ class FinnhubClient {
 
     // WebSocket connection for real-time updates
     createWebSocket(symbols, onMessage) {
-        const socket = new WebSocket('wss://ws.finnhub.io?token=ct90j39r01qhb3v7tnqgct90j39r01qhb3v7tnr0');
+        const socket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`);
 
         socket.addEventListener('open', function (event) {
             // Subscribe to symbols
