@@ -65,7 +65,8 @@ wss.on('connection', (ws) => {
     ws.send(JSON.stringify({
         type: 'gainers',
         data: topGainersCache,
-        timestamp: lastUpdate
+        timestamp: lastUpdate,
+        marketSession: getMarketSession()
     }));
 
     ws.on('close', () => {
@@ -148,7 +149,8 @@ async function getTopGainers() {
             broadcast({
                 type: 'gainers',
                 data: gainers,
-                timestamp: lastUpdate
+                timestamp: lastUpdate,
+                marketSession: getMarketSession()
             });
 
             return gainers;
