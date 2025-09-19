@@ -398,6 +398,10 @@
             minGain: 0,
             sortBy: 'dayChange',
             secondarySort: '',
+            minPriceChange: 'any',
+            priceTimeframe: '1m',
+            minVolChange: 'any',
+            volTimeframe: '1m',
             stockLimit: 50
         };
 
@@ -473,10 +477,27 @@
 
             // Apply filters
             let filteredStocks = stocks
-                .filter(stock =>
-                    stock.volume >= filters.minVolume &&
-                    stock.dayChange >= filters.minGain
-                );
+                .filter(stock => {
+                    // Basic filters
+                    if (stock.volume < filters.minVolume) return false;
+                    if (stock.dayChange < filters.minGain) return false;
+
+                    // Price change filter
+                    if (filters.minPriceChange !== 'any') {
+                        const priceChange = stock.priceChanges?.[filters.priceTimeframe] || 0;
+                        const minChange = parseFloat(filters.minPriceChange);
+                        if (Math.abs(priceChange) < minChange) return false;
+                    }
+
+                    // Volume change filter
+                    if (filters.minVolChange !== 'any') {
+                        const volChange = stock.volumeChanges?.[filters.volTimeframe] || 0;
+                        const minChange = parseFloat(filters.minVolChange);
+                        if (Math.abs(volChange) < minChange) return false;
+                    }
+
+                    return true;
+                });
 
             // Sort with multi-level sorting
             filteredStocks.sort((a, b) => {
@@ -576,8 +597,23 @@
             updateTable(allStocks);
         });
 
-        document.getElementById('secondarySort').addEventListener('change', (e) => {
-            filters.secondarySort = e.target.value;
+        document.getElementById('minPriceChange').addEventListener('change', (e) => {
+            filters.minPriceChange = e.target.value;
+            updateTable(allStocks);
+        });
+
+        document.getElementById('priceTimeframe').addEventListener('change', (e) => {
+            filters.priceTimeframe = e.target.value;
+            updateTable(allStocks);
+        });
+
+        document.getElementById('minVolChange').addEventListener('change', (e) => {
+            filters.minVolChange = e.target.value;
+            updateTable(allStocks);
+        });
+
+        document.getElementById('volTimeframe').addEventListener('change', (e) => {
+            filters.volTimeframe = e.target.value;
             updateTable(allStocks);
         });
 
