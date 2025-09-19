@@ -20,6 +20,7 @@ let risingStocksCache = [];
 let spikeDetectorCache = [];
 let volumeMoversCache = [];
 let volumeHistory = new Map(); // Store volume history for timeframe analysis
+let priceHistory = new Map(); // Store price history for timeframe analysis
 let lastUpdate = Date.now();
 
 // Volume tracking timeframes (in seconds)
@@ -183,44 +184,65 @@ async function getVolumeMovers() {
         // Use the same data as Top Gainers to ensure consistency
         const now = Date.now();
 
-        // Update volume history for all stocks in topGainersCache
+        // Update volume and price history for all stocks in topGainersCache
         topGainersCache.forEach(stock => {
             const symbol = stock.symbol;
             const currentVolume = stock.volume;
+            const currentPrice = stock.price;
 
             // Initialize or update volume history
             if (!volumeHistory.has(symbol)) {
                 volumeHistory.set(symbol, []);
             }
+            if (!priceHistory.has(symbol)) {
+                priceHistory.set(symbol, []);
+            }
 
-            const history = volumeHistory.get(symbol);
-            history.push({ time: now, volume: currentVolume });
+            const volHistory = volumeHistory.get(symbol);
+            const prcHistory = priceHistory.get(symbol);
+
+            volHistory.push({ time: now, volume: currentVolume });
+            prcHistory.push({ time: now, price: currentPrice });
 
             // Clean old entries (keep only last 5 minutes)
             const fiveMinutesAgo = now - (5 * 60 * 1000);
-            while (history.length > 0 && history[0].time < fiveMinutesAgo) {
-                history.shift();
+            while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
+                volHistory.shift();
+            }
+            while (prcHistory.length > 0 && prcHistory[0].time < fiveMinutesAgo) {
+                prcHistory.shift();
             }
         });
 
-        // Add volume change calculations to each stock from topGainersCache
+        // Add volume and price change calculations to each stock from topGainersCache
         let movers = topGainersCache.map(stock => {
             const symbol = stock.symbol;
             const currentVolume = stock.volume;
-            const history = volumeHistory.get(symbol) || [];
+            const currentPrice = stock.price;
+            const volHistory = volumeHistory.get(symbol) || [];
+            const prcHistory = priceHistory.get(symbol) || [];
 
-            // Calculate volume changes for each timeframe
+            // Calculate volume and price changes for each timeframe
             const volumeChanges = {};
+            const priceChanges = {};
 
             for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
                 const targetTime = now - (seconds * 1000);
-                const oldEntry = history.find(h => Math.abs(h.time - targetTime) < 5000); // 5s tolerance
+                const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 5000); // 5s tolerance
+                const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 5000);
 
-                if (oldEntry && oldEntry.volume > 0) {
-                    const change = ((currentVolume - oldEntry.volume) / oldEntry.volume) * 100;
+                if (oldVolEntry && oldVolEntry.volume > 0) {
+                    const change = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
                     volumeChanges[label] = change;
                 } else {
                     volumeChanges[label] = 0;
+                }
+
+                if (oldPrcEntry && oldPrcEntry.price > 0) {
+                    const change = ((currentPrice - oldPrcEntry.price) / oldPrcEntry.price) * 100;
+                    priceChanges[label] = change;
+                } else {
+                    priceChanges[label] = 0;
                 }
             }
 
@@ -234,6 +256,7 @@ async function getVolumeMovers() {
                 dayChange: stock.dayChange,
                 volume: stock.volume,
                 volumeChanges: volumeChanges,
+                priceChanges: priceChanges,
                 avgVolumeRate: avgVolumeRate,
                 high: stock.high,
                 low: stock.low
