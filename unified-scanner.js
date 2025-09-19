@@ -95,52 +95,73 @@ async function getTopGainers() {
         if (response.data && response.data.tickers) {
             // Filter for gainers with positive day change
             let gainers = response.data.tickers.filter(t => {
-                // Get the most recent price (including after-hours if available)
+                // Get the most recent price and market session
                 const marketSession = getMarketSession();
-                let currentPrice;
+                let currentPrice, regularClosePrice;
+                let dayChange = 0;
+                let sessionChange = 0;
+                let afterHoursChange = 0;
 
-                // Use appropriate price based on market session
-                if (marketSession === 'After Hours' || marketSession === 'Pre-Market') {
-                    // Use minute bar price for extended hours
-                    currentPrice = t.min?.c || t.day?.c || 0;
-                } else {
-                    // Use day price during regular hours
-                    currentPrice = t.day?.c || t.min?.c || 0;
-                }
+                // Get prices based on market session
+                if (marketSession === 'After Hours') {
+                    currentPrice = t.min?.c || t.day?.c || 0;  // Current after-hours price
+                    regularClosePrice = t.day?.c || 0;  // Regular session close
 
-                const prevClose = t.prevDay?.c || 0;
-                let dayChange = t.todaysChangePerc || 0;
+                    // Day change: from yesterday close to regular close
+                    dayChange = t.todaysChangePerc || 0;
 
-                // For after-hours, always calculate the change ourselves
-                if ((marketSession === 'After Hours' || marketSession === 'Pre-Market') && currentPrice > 0 && prevClose > 0) {
-                    dayChange = ((currentPrice - prevClose) / prevClose) * 100;
-                    if (t.ticker === 'AGMH') {
-                        console.log(`📊 AGMH: Current: $${currentPrice}, Prev: $${prevClose}, Change: ${dayChange.toFixed(2)}%`);
+                    // After-hours change: from regular close to current after-hours
+                    if (regularClosePrice > 0 && currentPrice > 0) {
+                        afterHoursChange = ((currentPrice - regularClosePrice) / regularClosePrice) * 100;
                     }
-                } else if (currentPrice > 0 && prevClose > 0) {
-                    // Validate regular hours data
-                    const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
 
-                    // If API change is wildly different from calculated (more than 50% difference), use calculated
-                    if (Math.abs(dayChange - calculatedChange) > 50) {
-                        console.log(`⚠️ Data validation: ${t.ticker} - API says ${dayChange.toFixed(2)}%, calculated ${calculatedChange.toFixed(2)}% (price: $${currentPrice}, prev: $${prevClose})`);
-                        dayChange = calculatedChange;
+                    // Session change for after-hours is the after-hours change
+                    sessionChange = afterHoursChange;
+                } else if (marketSession === 'Pre-Market') {
+                    currentPrice = t.min?.c || 0;  // Current pre-market price
+                    const prevClose = t.prevDay?.c || 0;
+
+                    // Pre-market change: from yesterday close to current pre-market
+                    if (currentPrice > 0 && prevClose > 0) {
+                        sessionChange = ((currentPrice - prevClose) / prevClose) * 100;
+                        dayChange = sessionChange;  // In pre-market, day change is the pre-market change
+                    }
+                } else {
+                    // Regular hours
+                    currentPrice = t.day?.c || t.min?.c || 0;
+                    regularClosePrice = currentPrice;
+                    dayChange = t.todaysChangePerc || 0;
+                    sessionChange = dayChange;  // During regular hours, session change is day change
+
+                    // Validate the data
+                    const prevClose = t.prevDay?.c || 0;
+                    if (currentPrice > 0 && prevClose > 0) {
+                        const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
+                        if (Math.abs(dayChange - calculatedChange) > 50) {
+                            console.log(`⚠️ Data validation: ${t.ticker} - API says ${dayChange.toFixed(2)}%, calculated ${calculatedChange.toFixed(2)}%`);
+                            dayChange = calculatedChange;
+                            sessionChange = calculatedChange;
+                        }
                     }
                 }
 
                 // Special handling for known problematic stocks
                 if (t.ticker === 'MHY') {
-                    // MHY actual price should be around $0.12, not $25
                     console.log(`⚠️ Filtering out MHY - known bad data from API`);
-                    return false; // Filter it out completely
+                    return false;
                 }
 
-                // Store the validated change back in the object
-                t.validatedChangePerc = dayChange;
+                // Store all calculated values
+                t.currentPrice = currentPrice;
+                t.validatedDayChange = dayChange;
+                t.sessionChange = sessionChange;
+                t.afterHoursChange = afterHoursChange;
 
                 const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
-                const price = currentPrice || prevClose || 0;
-                return dayChange > 0 && volume > 500000 && price > 0;
+                const price = currentPrice || t.prevDay?.c || 0;
+
+                // Include stocks with positive day change OR positive session change
+                return (dayChange > 0 || sessionChange > 0) && volume > 500000 && price > 0;
             })
             .sort((a, b) => (b.validatedChangePerc || 0) - (a.validatedChangePerc || 0))
             .slice(0, 200); // Get top 200 gainers
