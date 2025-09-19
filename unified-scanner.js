@@ -95,12 +95,36 @@ async function getTopGainers() {
         if (response.data && response.data.tickers) {
             // Filter for gainers with positive day change
             let gainers = response.data.tickers.filter(t => {
-                const dayChange = t.todaysChangePerc || 0;
+                // Calculate actual change percentage from prices
+                const currentPrice = t.day?.c || t.min?.c || 0;
+                const prevClose = t.prevDay?.c || 0;
+                let dayChange = t.todaysChangePerc || 0;
+
+                // Validate and correct data if necessary
+                if (currentPrice > 0 && prevClose > 0) {
+                    const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
+
+                    // If API change is wildly different from calculated (more than 50% difference), use calculated
+                    if (Math.abs(dayChange - calculatedChange) > 50) {
+                        console.log(`⚠️ Data validation: ${t.ticker} - API says ${dayChange.toFixed(2)}%, calculated ${calculatedChange.toFixed(2)}% (price: $${currentPrice}, prev: $${prevClose})`);
+                        dayChange = calculatedChange;
+                    }
+
+                    // Additional sanity check - if change is over 200% and price is under $1, it's likely wrong
+                    if (dayChange > 200 && currentPrice < 1) {
+                        console.log(`⚠️ Suspicious data: ${t.ticker} shows ${dayChange.toFixed(2)}% gain at $${currentPrice} - recalculating`);
+                        dayChange = calculatedChange;
+                    }
+                }
+
+                // Store the validated change back in the object
+                t.validatedChangePerc = dayChange;
+
                 const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
-                const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
+                const price = currentPrice || prevClose || 0;
                 return dayChange > 0 && volume > 500000 && price > 0;
             })
-            .sort((a, b) => (b.todaysChangePerc || 0) - (a.todaysChangePerc || 0))
+            .sort((a, b) => (b.validatedChangePerc || 0) - (a.validatedChangePerc || 0))
             .slice(0, 200); // Get top 200 gainers
 
             // Update ranking history
@@ -132,7 +156,7 @@ async function getTopGainers() {
                 return {
                     symbol: stock.ticker,
                     price: stock.day?.c || stock.min?.c || stock.prevDay?.c || 0,
-                    dayChange: stock.todaysChangePerc || 0,
+                    dayChange: stock.validatedChangePerc || stock.todaysChangePerc || 0,
                     volume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
                     high: stock.day?.h || stock.prevDay?.h || 0,
@@ -170,24 +194,52 @@ async function getRisingStocks() {
         if (response.data && response.data.tickers) {
             const risingStocks = response.data.tickers
                 .filter(t => {
-                    const dayChange = t.todaysChangePerc || 0;
+                    // Calculate actual change percentage from prices
+                    const currentPrice = t.day?.c || t.min?.c || 0;
+                    const prevClose = t.prevDay?.c || 0;
+                    let dayChange = t.todaysChangePerc || 0;
+
+                    // Validate and correct data if necessary
+                    if (currentPrice > 0 && prevClose > 0) {
+                        const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
+
+                        // If API change is wildly different from calculated (more than 50% difference), use calculated
+                        if (Math.abs(dayChange - calculatedChange) > 50) {
+                            dayChange = calculatedChange;
+                        }
+                    }
+
                     const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
-                    const price = t.day?.c || t.min?.c || t.prevDay?.c || 0;
+                    const price = currentPrice || prevClose || 0;
 
                     return dayChange >= 1.2 &&
                            volume >= 500000 &&
                            price > 0 &&
                            price <= 500;
                 })
-                .map(t => ({
-                    symbol: t.ticker,
-                    price: t.day?.c || t.min?.c || t.prevDay?.c || 0,
-                    dayChange: t.todaysChangePerc || 0,
-                    volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
-                    dollarVolume: ((t.day?.c || 0) * (t.day?.v || 0)).toFixed(0),
-                    high: t.day?.h || t.prevDay?.h || 0,
-                    low: t.day?.l || t.prevDay?.l || 0
-                }))
+                .map(t => {
+                    // Re-calculate for the map as well
+                    const currentPrice = t.day?.c || t.min?.c || 0;
+                    const prevClose = t.prevDay?.c || 0;
+                    let dayChange = t.todaysChangePerc || 0;
+
+                    if (currentPrice > 0 && prevClose > 0) {
+                        const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
+                        if (Math.abs(dayChange - calculatedChange) > 50) {
+                            dayChange = calculatedChange;
+                        }
+                    }
+
+                    return {
+                        symbol: t.ticker,
+                        price: currentPrice || prevClose || 0,
+                        dayChange: dayChange,
+                        volume: t.day?.v || t.min?.av || t.prevDay?.v || 0,
+                        dollarVolume: ((currentPrice || 0) * (t.day?.v || 0)).toFixed(0),
+                        high: t.day?.h || t.prevDay?.h || 0,
+                        low: t.day?.l || t.prevDay?.l || 0
+                    };
+                })
                 .sort((a, b) => b.dayChange - a.dayChange);
 
             risingStocksCache = risingStocks;
