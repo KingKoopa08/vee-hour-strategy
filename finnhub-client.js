@@ -1,10 +1,9 @@
-const finnhub = require('finnhub');
+const axios = require('axios');
 
 class FinnhubClient {
     constructor(apiKey) {
-        const api_key = finnhub.ApiClient.instance.authentications['api_key'];
-        api_key.apiKey = apiKey || 'ct90j39r01qhb3v7tnqgct90j39r01qhb3v7tnr0'; // Free tier API key
-        this.finnhubClient = new finnhub.DefaultApi();
+        this.apiKey = apiKey || 'ct90j39r01qhb3v7tnqgct90j39r01qhb3v7tnr0'; // Free tier API key
+        this.baseURL = 'https://finnhub.io/api/v1';
 
         // Rate limiting
         this.requestQueue = [];
