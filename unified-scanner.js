@@ -56,6 +56,7 @@ function getMarketSession() {
     }
 }
 let rankingHistory = new Map();
+let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
 // WebSocket server for real-time updates
@@ -410,8 +411,38 @@ async function getVolumeMovers() {
                 priceChanges: priceChanges,
                 avgVolumeRate: avgVolumeRate,
                 high: stock.high,
-                low: stock.low
+                low: stock.low,
+                positionChange: stock.positionChange || 0,
+                currentRank: stock.currentRank || 0
             };
+        });
+
+        // Sort movers by dayChange to determine volume-specific ranking
+        movers.sort((a, b) => b.dayChange - a.dayChange);
+
+        // Update volume ranking history and calculate position changes
+        const cutoff = Date.now() - POSITION_TRACKING_WINDOW;
+        movers.forEach((stock, index) => {
+            const symbol = stock.symbol;
+            if (!volumeRankingHistory.has(symbol)) {
+                volumeRankingHistory.set(symbol, []);
+            }
+            const history = volumeRankingHistory.get(symbol);
+            history.push({ timestamp: Date.now(), rank: index + 1 });
+
+            // Clean old entries
+            const filtered = history.filter(entry => entry.timestamp > cutoff);
+            volumeRankingHistory.set(symbol, filtered);
+
+            // Calculate position change for volume page
+            let volumePositionChange = 0;
+            if (filtered.length > 1) {
+                const oldestEntry = filtered[0];
+                volumePositionChange = oldestEntry.rank - (index + 1);
+            }
+
+            stock.volumeRank = index + 1;
+            stock.volumePositionChange = volumePositionChange;
         });
 
         volumeMoversCache = movers;
