@@ -39,18 +39,20 @@ class FinnhubClient {
     async getQuote(symbol) {
         await this.checkRateLimit();
 
-        return new Promise((resolve, reject) => {
-            this.finnhubClient.quote(symbol, (error, data, response) => {
-                if (error) {
-                    console.error(`Error fetching quote for ${symbol}:`, error);
-                    reject(error);
-                } else {
-                    // Add symbol to the data
-                    data.symbol = symbol;
-                    resolve(data);
-                }
-            });
-        });
+        try {
+            const url = `${this.baseURL}/quote?symbol=${symbol}&token=${this.apiKey}`;
+            const response = await axios.get(url);
+
+            if (response.data) {
+                // Add symbol to the data
+                response.data.symbol = symbol;
+                return response.data;
+            }
+            throw new Error('No data received');
+        } catch (error) {
+            console.error(`Error fetching quote for ${symbol}:`, error.message);
+            throw error;
+        }
     }
 
     // Get quotes for multiple symbols (batched with rate limiting)
@@ -79,48 +81,42 @@ class FinnhubClient {
     async getMarketStatus() {
         await this.checkRateLimit();
 
-        return new Promise((resolve, reject) => {
-            this.finnhubClient.marketStatus('US', (error, data, response) => {
-                if (error) {
-                    console.error('Error fetching market status:', error);
-                    reject(error);
-                } else {
-                    resolve(data);
-                }
-            });
-        });
+        try {
+            const url = `${this.baseURL}/stock/market-status?exchange=US&token=${this.apiKey}`;
+            const response = await axios.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching market status:', error.message);
+            throw error;
+        }
     }
 
     // Search for symbols
     async searchSymbol(query) {
         await this.checkRateLimit();
 
-        return new Promise((resolve, reject) => {
-            this.finnhubClient.symbolSearch(query, (error, data, response) => {
-                if (error) {
-                    console.error('Error searching symbols:', error);
-                    reject(error);
-                } else {
-                    resolve(data);
-                }
-            });
-        });
+        try {
+            const url = `${this.baseURL}/search?q=${query}&token=${this.apiKey}`;
+            const response = await axios.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Error searching symbols:', error.message);
+            throw error;
+        }
     }
 
     // Get company profile
     async getCompanyProfile(symbol) {
         await this.checkRateLimit();
 
-        return new Promise((resolve, reject) => {
-            this.finnhubClient.companyProfile2({ symbol }, (error, data, response) => {
-                if (error) {
-                    console.error(`Error fetching profile for ${symbol}:`, error);
-                    reject(error);
-                } else {
-                    resolve(data);
-                }
-            });
-        });
+        try {
+            const url = `${this.baseURL}/stock/profile2?symbol=${symbol}&token=${this.apiKey}`;
+            const response = await axios.get(url);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching profile for ${symbol}:`, error.message);
+            throw error;
+        }
     }
 
     // Convert Finnhub quote to our internal format
