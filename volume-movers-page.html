@@ -254,7 +254,7 @@
 
     <!-- Volume Legend -->
     <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
-        <h3 style="color: #00ffff; margin-bottom: 10px; font-size: 1.1em;">Volume Change Indicators</h3>
+        <h3 style="color: #00ffff; margin-bottom: 10px; font-size: 1.1em;">Change Indicators</h3>
         <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="volume-change volume-spike" style="display: inline-block;">+50%</span>
@@ -269,7 +269,7 @@
                 <span style="color: #888;">Normal Volume (&lt;20% change)</span>
             </div>
         </div>
-        <p style="color: #666; margin-top: 10px; font-size: 0.9em;">Tracks volume changes over 30s, 1m, 2m, 3m, and 5m timeframes</p>
+        <p style="color: #666; margin-top: 10px; font-size: 0.9em;">Tracks price and volume changes over 30s, 1m, 2m, 3m, and 5m timeframes</p>
     </div>
 
     <div class="filters">
@@ -341,11 +341,12 @@
     <table id="volumeTable">
         <thead>
             <tr>
+                <th rowspan="2">Rank</th>
                 <th rowspan="2">Symbol</th>
                 <th rowspan="2">Price</th>
                 <th rowspan="2">Day %</th>
-                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Price Change %</th>
-                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Volume Change %</th>
+                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Price Δ%</th>
+                <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Volume Δ%</th>
                 <th rowspan="2">Total Vol</th>
             </tr>
             <tr>
@@ -363,7 +364,7 @@
         </thead>
         <tbody id="tableBody">
             <tr class="loading">
-                <td colspan="14">Loading volume data...</td>
+                <td colspan="15">Loading volume data...</td>
             </tr>
         </tbody>
     </table>
@@ -505,7 +506,7 @@
             // Build table HTML
             const tbody = document.getElementById('tableBody');
             if (filteredStocks.length === 0) {
-                tbody.innerHTML = '<tr class="loading"><td colspan="14">No stocks match current filters</td></tr>';
+                tbody.innerHTML = '<tr class="loading"><td colspan="15">No stocks match current filters</td></tr>';
                 return;
             }
 
@@ -513,8 +514,25 @@
                 const volumeClass = stock.volume > 10000000 ? 'high-volume' : '';
                 const priceClass = stock.dayChange >= 0 ? 'positive' : 'negative';
 
+                // Format position change
+                let positionDisplay = '';
+                const posChange = stock.volumePositionChange || 0;
+                if (posChange > 0) {
+                    positionDisplay = `<span style="color: #00ff41; font-weight: bold;">↑${posChange}</span>`;
+                } else if (posChange < 0) {
+                    positionDisplay = `<span style="color: #ff4444; font-weight: bold;">↓${Math.abs(posChange)}</span>`;
+                } else {
+                    positionDisplay = `<span style="color: #888;">-</span>`;
+                }
+
                 return `
                 <tr>
+                    <td style="text-align: center;">
+                        <div style="display: flex; align-items: center; gap: 5px; justify-content: center;">
+                            <span style="color: #888;">${stock.volumeRank || (index + 1)}</span>
+                            ${positionDisplay}
+                        </div>
+                    </td>
                     <td class="symbol">${stock.symbol}</td>
                     <td>$${stock.price.toFixed(2)}</td>
                     <td class="${priceClass}">
