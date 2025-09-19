@@ -108,38 +108,54 @@ async function getTopGainers() {
                 let afterHoursChange = 0;
 
                 // Get prices based on market session
+                // dayChange should ALWAYS be the regular market hours change
+                dayChange = t.todaysChangePerc || 0;
+                const prevClose = t.prevDay?.c || 0;
+                const regularClose = t.day?.c || 0;
+
                 if (marketSession === 'After Hours') {
-                    currentPrice = t.min?.c || t.day?.c || 0;  // Current after-hours price
-                    regularClosePrice = t.day?.c || 0;  // Regular session close
+                    // After market hours (4:00 PM - 8:00 PM ET)
+                    currentPrice = t.min?.c || t.day?.c || 0;  // Latest extended hours price
 
-                    // Day change: from yesterday close to regular close
-                    dayChange = t.todaysChangePerc || 0;
-
-                    // After-hours change: from regular close to current after-hours
-                    if (regularClosePrice > 0 && currentPrice > 0) {
-                        afterHoursChange = ((currentPrice - regularClosePrice) / regularClosePrice) * 100;
+                    // After-hours change: from regular close to current after-hours price
+                    if (regularClose > 0 && currentPrice > 0 && t.min?.c) {
+                        afterHoursChange = ((currentPrice - regularClose) / regularClose) * 100;
+                        sessionChange = afterHoursChange;
+                    } else {
+                        sessionChange = 0;
                     }
 
-                    // Session change for after-hours is the after-hours change
-                    sessionChange = afterHoursChange;
                 } else if (marketSession === 'Pre-Market') {
-                    currentPrice = t.min?.c || 0;  // Current pre-market price
-                    const prevClose = t.prevDay?.c || 0;
+                    // Pre-market hours (4:00 AM - 9:30 AM ET)
+                    currentPrice = t.min?.c || prevClose || 0;  // Current pre-market price
 
-                    // Pre-market change: from yesterday close to current pre-market
-                    if (currentPrice > 0 && prevClose > 0) {
+                    // Pre-market change: from yesterday's close to current pre-market price
+                    if (currentPrice > 0 && prevClose > 0 && t.min?.c) {
                         sessionChange = ((currentPrice - prevClose) / prevClose) * 100;
-                        dayChange = sessionChange;  // In pre-market, day change is the pre-market change
+                    } else {
+                        sessionChange = 0;
                     }
-                } else {
-                    // Regular hours - always prefer min.c (latest quote) over day.c
-                    currentPrice = t.min?.c || t.day?.c || 0;
-                    regularClosePrice = t.day?.c || currentPrice;
-                    dayChange = t.todaysChangePerc || 0;
-                    sessionChange = dayChange;  // During regular hours, session change is day change
 
-                    // Validate the data
-                    const prevClose = t.prevDay?.c || 0;
+                } else if (marketSession === 'Closed') {
+                    // Market closed (8:00 PM - 4:00 AM ET)
+                    // Show the last available price and any after-hours movement from today
+                    currentPrice = t.day?.c || t.min?.c || prevClose || 0;
+
+                    // If there was after-hours trading today, calculate it
+                    if (regularClose > 0 && t.min?.c && t.min.c !== regularClose) {
+                        afterHoursChange = ((t.min.c - regularClose) / regularClose) * 100;
+                        sessionChange = 0; // No active session
+                    } else {
+                        sessionChange = 0;
+                        afterHoursChange = 0;
+                    }
+
+                } else {
+                    // Regular trading hours (9:30 AM - 4:00 PM ET)
+                    currentPrice = t.min?.c || t.day?.c || 0;
+                    sessionChange = dayChange;  // During regular hours, session change equals day change
+
+                    // Validate the regular hours data
                     if (currentPrice > 0 && prevClose > 0) {
                         const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
                         if (Math.abs(dayChange - calculatedChange) > 50) {
