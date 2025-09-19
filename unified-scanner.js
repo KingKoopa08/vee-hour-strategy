@@ -204,7 +204,8 @@ async function getTopGainers() {
                 if (marketSession === 'After Hours' || marketSession === 'Pre-Market' || marketSession === 'Closed') {
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 } else {
-                    displayPrice = stock.day?.c || stock.min?.c || stock.prevDay?.c || 0;
+                    // Regular hours - also prefer min.c for real-time updates
+                    displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 }
 
                 return {
