@@ -200,11 +200,15 @@ async function getTopGainers() {
                 // Get appropriate price based on market session
                 const marketSession = getMarketSession();
                 let displayPrice;
-                // Always prefer min.c (latest quote) for all sessions
-                if (marketSession === 'After Hours' || marketSession === 'Pre-Market' || marketSession === 'Closed') {
+
+                if (marketSession === 'Closed') {
+                    // When market is closed, use today's close if available
+                    displayPrice = stock.day?.c || stock.prevDay?.c || stock.min?.c || 0;
+                } else if (marketSession === 'After Hours' || marketSession === 'Pre-Market') {
+                    // During extended hours, prefer latest quote
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 } else {
-                    // Regular hours - also prefer min.c for real-time updates
+                    // Regular hours - prefer latest quote for real-time updates
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 }
 
