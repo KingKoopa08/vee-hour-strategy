@@ -1280,13 +1280,16 @@ setInterval(async () => {
     await getTopGainers();
     await getVolumeMovers(); // Update volume movers data
 
+    const marketSession = getMarketSession();
+
     // Broadcast volume movers to WebSocket clients
     broadcast({
         type: 'volumeMovers',
-        data: volumeMoversCache
+        data: volumeMoversCache,
+        marketSession: marketSession
     });
 
-    console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers`);
+    console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers | Session: ${marketSession}`);
 }, 1000);
 
 // Update rising stocks every 10 seconds
