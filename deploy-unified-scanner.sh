@@ -50,7 +50,7 @@ print_status "Latest code pulled"
 # Step 2: Install/Update Node dependencies
 echo ""
 echo "📦 Step 2: Installing Node.js dependencies..."
-npm install --production
+npm install --production --legacy-peer-deps
 
 print_status "Dependencies installed"
 
