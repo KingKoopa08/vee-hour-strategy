@@ -378,6 +378,7 @@
             minVolume: 500000,
             minGain: 0,
             sortBy: 'dayChange',
+            secondarySort: '',
             stockLimit: 50
         };
 
@@ -458,15 +459,35 @@
                     stock.dayChange >= filters.minGain
                 );
 
-            // Sort
+            // Sort with multi-level sorting
             filteredStocks.sort((a, b) => {
-                if (filters.sortBy === 'volume') {
-                    return b.volume - a.volume;
-                } else if (filters.sortBy === 'dayChange') {
-                    return b.dayChange - a.dayChange;
-                } else {
-                    return (b.volumeChanges[filters.sortBy] || 0) - (a.volumeChanges[filters.sortBy] || 0);
+                let compareValue = 0;
+
+                // Primary sort
+                if (filters.sortBy === 'dayChange') {
+                    compareValue = b.dayChange - a.dayChange;
+                } else if (filters.sortBy.startsWith('priceChange')) {
+                    const timeframe = filters.sortBy.replace('priceChange', '');
+                    compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
+                } else if (filters.sortBy.startsWith('volumeChange')) {
+                    const timeframe = filters.sortBy.replace('volumeChange', '');
+                    compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
                 }
+
+                // If primary values are equal and secondary sort is specified
+                if (compareValue === 0 && filters.secondarySort) {
+                    if (filters.secondarySort === 'dayChange') {
+                        compareValue = b.dayChange - a.dayChange;
+                    } else if (filters.secondarySort.startsWith('priceChange')) {
+                        const timeframe = filters.secondarySort.replace('priceChange', '');
+                        compareValue = (b.priceChanges?.[timeframe] || 0) - (a.priceChanges?.[timeframe] || 0);
+                    } else if (filters.secondarySort.startsWith('volumeChange')) {
+                        const timeframe = filters.secondarySort.replace('volumeChange', '');
+                        compareValue = (b.volumeChanges?.[timeframe] || 0) - (a.volumeChanges?.[timeframe] || 0);
+                    }
+                }
+
+                return compareValue;
             });
 
             // Limit
@@ -531,8 +552,13 @@
             updateTable(allStocks);
         });
 
-        document.getElementById('sortBy').addEventListener('change', (e) => {
+        document.getElementById('primarySort').addEventListener('change', (e) => {
             filters.sortBy = e.target.value;
+            updateTable(allStocks);
+        });
+
+        document.getElementById('secondarySort').addEventListener('change', (e) => {
+            filters.secondarySort = e.target.value;
             updateTable(allStocks);
         });
 
