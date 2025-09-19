@@ -268,8 +268,8 @@ async function getVolumeMovers() {
             }
 
             // Calculate average volume rate (volume per minute)
-            const avgVolumeRate = history.length > 1 ?
-                (currentVolume - history[0].volume) / ((now - history[0].time) / 60000) : 0;
+            const avgVolumeRate = volHistory.length > 1 ?
+                (currentVolume - volHistory[0].volume) / ((now - volHistory[0].time) / 60000) : 0;
 
             return {
                 symbol: stock.symbol,
