@@ -31,6 +31,25 @@ const VOLUME_TIMEFRAMES = {
     '3m': 180,
     '5m': 300
 };
+
+// Get current market session
+function getMarketSession() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const time = hours * 100 + minutes;
+
+    // Adjust these times based on your timezone (EST shown)
+    if (time >= 400 && time < 930) {
+        return 'Pre-Market';
+    } else if (time >= 930 && time < 1600) {
+        return 'Regular Hours';
+    } else if (time >= 1600 && time < 2000) {
+        return 'After Hours';
+    } else {
+        return 'Closed';
+    }
+}
 let rankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
