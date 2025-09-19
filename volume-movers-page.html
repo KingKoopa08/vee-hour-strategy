@@ -380,6 +380,11 @@
                 const data = JSON.parse(event.data);
                 if (data.type === 'volumeMovers') {
                     updateTable(data.data);
+
+                    // Update market session if provided
+                    if (data.marketSession) {
+                        document.getElementById('sessionName').textContent = data.marketSession;
+                    }
                 }
             };
 
