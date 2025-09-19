@@ -212,7 +212,8 @@ async function getTopGainers() {
                     high: stock.day?.h || stock.prevDay?.h || 0,
                     low: stock.day?.l || stock.prevDay?.l || 0,
                     positionChange,
-                    currentRank
+                    currentRank,
+                    marketSession: getMarketSession()
                 };
             });
 
