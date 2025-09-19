@@ -299,15 +299,36 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="sortBy">Sort By:</label>
-            <select id="sortBy">
-                <option value="dayChange">Day Change %</option>
-                <option value="1m">1 Minute Change</option>
-                <option value="30s">30 Second Change</option>
-                <option value="2m">2 Minute Change</option>
-                <option value="3m">3 Minute Change</option>
-                <option value="5m">5 Minute Change</option>
-                <option value="volume">Total Volume</option>
+            <label for="primarySort">Primary Sort:</label>
+            <select id="primarySort">
+                <option value="dayChange" selected>Day %</option>
+                <option value="priceChange30s">Price Δ 30s</option>
+                <option value="priceChange1m">Price Δ 1m</option>
+                <option value="priceChange2m">Price Δ 2m</option>
+                <option value="priceChange3m">Price Δ 3m</option>
+                <option value="priceChange5m">Price Δ 5m</option>
+                <option value="volumeChange30s">Vol Δ 30s</option>
+                <option value="volumeChange1m">Vol Δ 1m</option>
+                <option value="volumeChange2m">Vol Δ 2m</option>
+                <option value="volumeChange3m">Vol Δ 3m</option>
+                <option value="volumeChange5m">Vol Δ 5m</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="secondarySort">Then By:</label>
+            <select id="secondarySort">
+                <option value="">None</option>
+                <option value="dayChange">Day %</option>
+                <option value="priceChange30s">Price Δ 30s</option>
+                <option value="priceChange1m">Price Δ 1m</option>
+                <option value="priceChange2m">Price Δ 2m</option>
+                <option value="priceChange3m">Price Δ 3m</option>
+                <option value="priceChange5m">Price Δ 5m</option>
+                <option value="volumeChange30s">Vol Δ 30s</option>
+                <option value="volumeChange1m">Vol Δ 1m</option>
+                <option value="volumeChange2m">Vol Δ 2m</option>
+                <option value="volumeChange3m">Vol Δ 3m</option>
+                <option value="volumeChange5m">Vol Δ 5m</option>
             </select>
         </div>
     </div>
