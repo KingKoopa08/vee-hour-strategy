@@ -35,11 +35,16 @@ const VOLUME_TIMEFRAMES = {
 // Get current market session
 function getMarketSession() {
     const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    // Convert to ET (Eastern Time)
+    const etOffset = -5; // EST offset (use -4 for EDT)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const et = new Date(utc + (3600000 * etOffset));
+
+    const hours = et.getHours();
+    const minutes = et.getMinutes();
     const time = hours * 100 + minutes;
 
-    // Adjust these times based on your timezone (EST shown)
+    // Market hours in ET
     if (time >= 400 && time < 930) {
         return 'Pre-Market';
     } else if (time >= 930 && time < 1600) {
@@ -127,9 +132,9 @@ async function getTopGainers() {
                         dayChange = sessionChange;  // In pre-market, day change is the pre-market change
                     }
                 } else {
-                    // Regular hours
-                    currentPrice = t.day?.c || t.min?.c || 0;
-                    regularClosePrice = currentPrice;
+                    // Regular hours - always prefer min.c (latest quote) over day.c
+                    currentPrice = t.min?.c || t.day?.c || 0;
+                    regularClosePrice = t.day?.c || currentPrice;
                     dayChange = t.todaysChangePerc || 0;
                     sessionChange = dayChange;  // During regular hours, session change is day change
 
@@ -195,7 +200,8 @@ async function getTopGainers() {
                 // Get appropriate price based on market session
                 const marketSession = getMarketSession();
                 let displayPrice;
-                if (marketSession === 'After Hours' || marketSession === 'Pre-Market') {
+                // Always prefer min.c (latest quote) for all sessions
+                if (marketSession === 'After Hours' || marketSession === 'Pre-Market' || marketSession === 'Closed') {
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 } else {
                     displayPrice = stock.day?.c || stock.min?.c || stock.prevDay?.c || 0;
