@@ -837,6 +837,11 @@ app.get('/gainers', (req, res) => {
                 if (message.type === 'gainers') {
                     allStocks = message.data;
                     updateDisplay();
+
+                    // Update market session if provided
+                    if (message.marketSession) {
+                        document.getElementById('sessionName').textContent = message.marketSession;
+                    }
                 }
             };
 
