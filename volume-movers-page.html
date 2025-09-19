@@ -299,26 +299,45 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="primarySort">Primary Sort:</label>
-            <select id="primarySort">
-                <option value="dayChange" selected>Day %</option>
-                <option value="priceChange30s">Price Δ 30s</option>
-                <option value="priceChange1m">Price Δ 1m</option>
-                <option value="priceChange2m">Price Δ 2m</option>
-                <option value="priceChange3m">Price Δ 3m</option>
-                <option value="priceChange5m">Price Δ 5m</option>
-                <option value="volumeChange30s">Vol Δ 30s</option>
-                <option value="volumeChange1m">Vol Δ 1m</option>
-                <option value="volumeChange2m">Vol Δ 2m</option>
-                <option value="volumeChange3m">Vol Δ 3m</option>
-                <option value="volumeChange5m">Vol Δ 5m</option>
+            <label for="minPriceChange">Min Price Δ:</label>
+            <select id="minPriceChange">
+                <option value="any">Any</option>
+                <option value="1">≥1%</option>
+                <option value="2">≥2%</option>
+                <option value="5">≥5%</option>
+                <option value="10">≥10%</option>
+                <option value="20">≥20%</option>
+            </select>
+            <select id="priceTimeframe">
+                <option value="30s">30s</option>
+                <option value="1m" selected>1m</option>
+                <option value="2m">2m</option>
+                <option value="3m">3m</option>
+                <option value="5m">5m</option>
             </select>
         </div>
         <div class="filter-group">
-            <label for="secondarySort">Then By:</label>
-            <select id="secondarySort">
-                <option value="">None</option>
-                <option value="dayChange">Day %</option>
+            <label for="minVolChange">Min Vol Δ:</label>
+            <select id="minVolChange">
+                <option value="any">Any</option>
+                <option value="10">≥10%</option>
+                <option value="20">≥20%</option>
+                <option value="50">≥50%</option>
+                <option value="100">≥100%</option>
+                <option value="200">≥200%</option>
+            </select>
+            <select id="volTimeframe">
+                <option value="30s">30s</option>
+                <option value="1m" selected>1m</option>
+                <option value="2m">2m</option>
+                <option value="3m">3m</option>
+                <option value="5m">5m</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="primarySort">Sort By:</label>
+            <select id="primarySort">
+                <option value="dayChange" selected>Day %</option>
                 <option value="priceChange30s">Price Δ 30s</option>
                 <option value="priceChange1m">Price Δ 1m</option>
                 <option value="priceChange2m">Price Δ 2m</option>
