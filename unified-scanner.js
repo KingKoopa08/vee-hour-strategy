@@ -109,10 +109,22 @@ async function getTopGainers() {
                 let afterHoursChange = 0;
 
                 // Get prices based on market session
-                // dayChange should ALWAYS be the regular market hours change
-                dayChange = t.todaysChangePerc || 0;
                 const prevClose = t.prevDay?.c || 0;
                 const regularClose = t.day?.c || 0;
+                const latestPrice = t.min?.c || t.day?.c || 0;
+
+                // Calculate dayChange from actual prices instead of trusting API value
+                // The API's todaysChangePerc is sometimes incorrect
+                if (prevClose > 0 && latestPrice > 0) {
+                    // Calculate the actual change from previous close to latest price
+                    dayChange = ((latestPrice - prevClose) / prevClose) * 100;
+                } else if (prevClose > 0 && regularClose > 0) {
+                    // Fall back to regular close if no latest price
+                    dayChange = ((regularClose - prevClose) / prevClose) * 100;
+                } else {
+                    // Only use API value as last resort
+                    dayChange = t.todaysChangePerc || 0;
+                }
 
                 if (marketSession === 'After Hours') {
                     // After market hours (4:00 PM - 8:00 PM ET)
