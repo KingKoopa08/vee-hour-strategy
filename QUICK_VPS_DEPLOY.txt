@@ -1,0 +1,45 @@
+QUICK VPS DEPLOYMENT COMMANDS
+==============================
+
+Copy and paste these commands directly into your VPS terminal:
+
+Step 1: Clean up and prepare
+-----------------------------
+cd ~
+pm2 delete all 2>/dev/null || true
+rm -rf vee-hour-strategy
+
+Step 2: Clone and setup
+------------------------
+git clone https://github.com/KingKoopa08/vee-hour-strategy.git
+cd vee-hour-strategy
+
+Step 3: Install dependencies (with legacy flag to avoid conflicts)
+-------------------------------------------------------------------
+npm install --legacy-peer-deps
+
+Step 4: Create .env file with new API key
+------------------------------------------
+cat > .env << 'EOF'
+POLYGON_API_KEY=KxOoBWACGCGE5QN_0zQPRNMHVwIRdiTV
+PORT=3050
+WS_PORT=3051
+EOF
+
+Step 5: Start the scanner
+--------------------------
+pm2 start unified-scanner.js --name market-scanner --time
+pm2 save
+
+Step 6: Check it's working
+---------------------------
+pm2 logs market-scanner --lines 20
+
+The scanner should now be running on:
+- Web UI: http://your-vps-ip:3050
+- API: http://your-vps-ip:3050/api/gainers
+- WebSocket: ws://your-vps-ip:3051
+
+To monitor: pm2 monit
+To restart: pm2 restart market-scanner
+To view logs: pm2 logs market-scanner
