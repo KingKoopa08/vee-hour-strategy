@@ -287,19 +287,17 @@ async function getRisingStocks() {
         if (response.data && response.data.tickers) {
             const risingStocks = response.data.tickers
                 .filter(t => {
-                    // Calculate actual change percentage from prices
+                    // Calculate actual change percentage from prices - don't trust API value
                     const currentPrice = t.day?.c || t.min?.c || 0;
                     const prevClose = t.prevDay?.c || 0;
-                    let dayChange = t.todaysChangePerc || 0;
+                    let dayChange = 0;
 
-                    // Validate and correct data if necessary
+                    // Always calculate change from actual prices
                     if (currentPrice > 0 && prevClose > 0) {
-                        const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
-
-                        // If API change is wildly different from calculated (more than 50% difference), use calculated
-                        if (Math.abs(dayChange - calculatedChange) > 50) {
-                            dayChange = calculatedChange;
-                        }
+                        dayChange = ((currentPrice - prevClose) / prevClose) * 100;
+                    } else {
+                        // Only use API value if we can't calculate
+                        dayChange = t.todaysChangePerc || 0;
                     }
 
                     const volume = t.day?.v || t.min?.av || t.prevDay?.v || 0;
