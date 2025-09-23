@@ -454,20 +454,23 @@
         }
 
         function formatPriceChange(change) {
-            if (!change || change === 0) return '<span class="volume-change volume-normal">0.0%</span>';
+            if (!change || change === 0) return '<span class="price-change price-neutral">0.0%</span>';
 
             const absChange = Math.abs(change);
-            let className = 'volume-normal';
+            let intensityClass = '';
+            let directionClass = change > 0 ? 'price-positive' : 'price-negative';
 
             // Use different thresholds for price changes (smaller movements are more significant)
             if (absChange >= 2) {
-                className = 'volume-spike';
+                intensityClass = 'price-spike';
             } else if (absChange >= 0.5) {
-                className = 'volume-surge';
+                intensityClass = 'price-surge';
+            } else {
+                intensityClass = 'price-normal';
             }
 
             const sign = change > 0 ? '+' : '';
-            return `<span class="volume-change ${className}">${sign}${change.toFixed(2)}%</span>`;
+            return `<span class="price-change ${directionClass} ${intensityClass}">${sign}${change.toFixed(2)}%</span>`;
         }
 
         function updateTable(stocks) {
