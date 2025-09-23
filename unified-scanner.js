@@ -168,20 +168,15 @@ async function getTopGainers() {
                     // Use the most recent available price
                     currentPrice = t.min?.c || t.day?.c || 0;
 
-                    // Trust the API's todaysChangePerc during regular hours
-                    // as it has more recent data than our delayed snapshots
-                    if (t.todaysChangePerc !== undefined && t.todaysChangePerc !== null) {
-                        dayChange = t.todaysChangePerc;
-                        sessionChange = t.todaysChangePerc;
-                    } else {
-                        sessionChange = dayChange;
-                    }
+                    // Use our calculated dayChange (from above) which is more accurate
+                    sessionChange = dayChange;
 
-                    // Log if there's a big discrepancy for debugging
-                    if (currentPrice > 0 && prevClose > 0) {
-                        const calculatedChange = ((currentPrice - prevClose) / prevClose) * 100;
-                        if (Math.abs(dayChange - calculatedChange) > 10) {
-                            console.log(`📊 ${t.ticker}: API=${dayChange.toFixed(2)}%, Calc=${calculatedChange.toFixed(2)}%, Price=${currentPrice}, PrevClose=${prevClose}`);
+                    // Log if there's a big discrepancy with API for debugging
+                    if (t.todaysChangePerc !== undefined && t.todaysChangePerc !== null) {
+                        const apiChange = t.todaysChangePerc;
+                        if (Math.abs(dayChange - apiChange) > 10) {
+                            console.log(`📊 ${t.ticker}: Calculated=${dayChange.toFixed(2)}%, API=${apiChange.toFixed(2)}%, Price=${currentPrice}, PrevClose=${prevClose}`);
+                            console.log(`   Using calculated value: ${dayChange.toFixed(2)}%`);
                         }
                     }
                 }
