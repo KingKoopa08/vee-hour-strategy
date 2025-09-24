@@ -1227,7 +1227,7 @@ const startUpdates = () => {
         console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers | Session: ${currentSession}`);
 
         // Check if market session changed to adjust interval
-        if ((currentSession === 'Closed' && interval === 5000) ||
+        if ((currentSession === 'Closed' && interval === 1000) ||
             (currentSession !== 'Closed' && interval === 60000)) {
             startUpdates(); // Restart with new interval
         }
