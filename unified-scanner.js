@@ -1312,12 +1312,43 @@ app.get('/api/whales', async (req, res) => {
     });
 });
 
-// Track historical data independently from API updates
+// Calculate buy pressure for a single stock
+const calculateBuyPressure = (priceChanges, volumeChanges) => {
+    let buyPressure = 50; // Neutral baseline
+
+    // Factor 1: Price movement (40% weight)
+    if (priceChanges['30s'] > 0) {
+        buyPressure += Math.min(20, priceChanges['30s'] * 4); // Max +20
+    } else {
+        buyPressure += Math.max(-20, priceChanges['30s'] * 4); // Max -20
+    }
+
+    // Factor 2: Volume surge with price up (30% weight)
+    if (volumeChanges['30s'] > 0 && priceChanges['30s'] > 0) {
+        buyPressure += Math.min(15, volumeChanges['30s'] / 10); // Buying surge
+    } else if (volumeChanges['30s'] > 0 && priceChanges['30s'] < 0) {
+        buyPressure -= Math.min(15, volumeChanges['30s'] / 10); // Selling surge
+    }
+
+    // Factor 3: Sustained trend (30% weight)
+    const trend1m = priceChanges['1m'] || 0;
+    const trend30s = priceChanges['30s'] || 0;
+    if (trend1m > 0 && trend30s > 0) {
+        buyPressure += 15; // Sustained buying
+    } else if (trend1m < 0 && trend30s < 0) {
+        buyPressure -= 15; // Sustained selling
+    }
+
+    // Clamp to 0-100 range
+    return Math.max(0, Math.min(100, buyPressure));
+};
+
+// Track historical data and update buy pressure independently from API updates
 const trackHistoricalData = () => {
     const now = Date.now();
 
-    // Track data from the current cache every second
-    volumeMoversCache.forEach(stock => {
+    // Track data and update buy pressure for each stock in cache
+    volumeMoversCache = volumeMoversCache.map(stock => {
         const symbol = stock.symbol;
         const currentVolume = stock.volume || stock.currentVolume;
         const currentPrice = stock.price || stock.currentPrice;
@@ -1345,6 +1376,46 @@ const trackHistoricalData = () => {
         while (prcHistory.length > 0 && prcHistory[0].time < fiveMinutesAgo) {
             prcHistory.shift();
         }
+
+        // Calculate current price and volume changes
+        const volumeChanges = {};
+        const priceChanges = {};
+
+        for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
+            const targetTime = now - (seconds * 1000);
+            const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 10000);
+            const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 10000);
+
+            if (oldVolEntry && currentVolume > 0 && oldVolEntry.volume > 0) {
+                volumeChanges[label] = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
+            } else {
+                volumeChanges[label] = 0;
+            }
+
+            if (oldPrcEntry && currentPrice > 0 && oldPrcEntry.price > 0) {
+                priceChanges[label] = ((currentPrice - oldPrcEntry.price) / oldPrcEntry.price) * 100;
+            } else {
+                priceChanges[label] = 0;
+            }
+        }
+
+        // Update buy pressure calculation
+        const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges);
+
+        // Return updated stock with new buy pressure
+        return {
+            ...stock,
+            volumeChanges: volumeChanges,
+            priceChanges: priceChanges,
+            buyPressure: updatedBuyPressure
+        };
+    });
+
+    // Broadcast updated data with fresh buy pressure
+    broadcast({
+        type: 'volumeMovers',
+        data: volumeMoversCache,
+        marketSession: getMarketSession()
     });
 };
 
