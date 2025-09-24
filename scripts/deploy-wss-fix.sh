@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Deploy WebSocket SSL fixes to production
-# This script pushes changes and configures nginx for WSS support
+# Deploy WebSocket SSL fixes - RUN THIS ON THE PRODUCTION SERVER
+# This script pulls changes and configures nginx for WSS support
 
 set -e
 
@@ -17,84 +17,54 @@ echo -e "${CYAN}🚀 DEPLOYING WEBSOCKET SSL FIXES${NC}"
 echo -e "${CYAN}===============================================${NC}"
 echo ""
 
-# Server details
-SERVER_IP="15.204.86.6"
-SERVER_USER="debian"
-REPO_PATH="~/vee-hour-strategy"
-
-echo -e "${YELLOW}📦 Step 1: Committing and pushing changes...${NC}"
-
-# Check for uncommitted changes
-if [ -n "$(git status --porcelain)" ]; then
-    git add .gitignore
-    git add volume-movers-page.html
-    git add scripts/fix-websocket-ssl.sh
-    git add scripts/nginx-wss-config.conf
-    git add scripts/deploy-wss-fix.sh
-
-    git commit -m "Fix WebSocket SSL for HTTPS connections
-
-- Update volume-movers-page.html to detect HTTPS and use wss://
-- Add nginx configuration for /ws proxy path
-- Create deployment script for production
-- WebSocket now works securely over HTTPS
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
-
-    git push origin main
-    echo -e "${GREEN}✅ Changes pushed to GitHub${NC}"
-else
-    echo -e "${GREEN}✅ No changes to commit${NC}"
+# Check if we're in the right directory
+if [ ! -f "unified-scanner.js" ]; then
+    echo -e "${RED}❌ Error: Not in the vee-hour-strategy directory${NC}"
+    echo "Please cd to ~/vee-hour-strategy first"
+    exit 1
 fi
 
-echo ""
-echo -e "${YELLOW}📥 Step 2: Pulling changes on production server...${NC}"
-
-ssh ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
-cd ~/vee-hour-strategy
+echo -e "${YELLOW}📥 Step 1: Pulling latest changes from GitHub...${NC}"
 git pull origin main
-echo "✅ Code updated"
-ENDSSH
+echo -e "${GREEN}✅ Code updated${NC}"
 
 echo ""
-echo -e "${YELLOW}⚙️ Step 3: Applying nginx configuration...${NC}"
-
-ssh ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
-cd ~/vee-hour-strategy
+echo -e "${YELLOW}⚙️ Step 2: Applying nginx configuration...${NC}"
 
 # Check if nginx is running
 if systemctl is-active --quiet nginx; then
     echo "System nginx detected"
 
     # Copy the nginx configuration
-    sudo cp scripts/nginx-wss-config.conf /etc/nginx/sites-available/daily3club-wss
+    if [ -f "scripts/nginx-wss-config.conf" ]; then
+        sudo cp scripts/nginx-wss-config.conf /etc/nginx/sites-available/daily3club-wss
 
-    # Enable the site
-    sudo ln -sf /etc/nginx/sites-available/daily3club-wss /etc/nginx/sites-enabled/daily3club.com
+        # Enable the site
+        sudo ln -sf /etc/nginx/sites-available/daily3club-wss /etc/nginx/sites-enabled/daily3club.com
 
-    # Test nginx configuration
-    if sudo nginx -t; then
-        sudo systemctl reload nginx
-        echo "✅ Nginx configuration applied and reloaded"
+        # Test nginx configuration
+        if sudo nginx -t; then
+            sudo systemctl reload nginx
+            echo -e "${GREEN}✅ Nginx configuration applied and reloaded${NC}"
+        else
+            echo -e "${RED}❌ Nginx configuration test failed${NC}"
+            exit 1
+        fi
     else
-        echo "❌ Nginx configuration test failed"
+        echo -e "${RED}❌ nginx-wss-config.conf not found${NC}"
+        echo "Make sure you pulled the latest changes"
         exit 1
     fi
 else
-    echo "⚠️ System nginx not running - may need manual configuration"
+    echo -e "${YELLOW}⚠️ System nginx not running${NC}"
+    echo "You may need to configure Docker nginx manually"
 fi
-ENDSSH
 
 echo ""
-echo -e "${YELLOW}🔄 Step 4: Restarting application...${NC}"
-
-ssh ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
+echo -e "${YELLOW}🔄 Step 3: Restarting application...${NC}"
 pm2 restart market-scanner
 pm2 status market-scanner
-echo "✅ Application restarted"
-ENDSSH
+echo -e "${GREEN}✅ Application restarted${NC}"
 
 echo ""
 echo -e "${CYAN}===============================================${NC}"
@@ -102,7 +72,7 @@ echo -e "${CYAN}📋 DEPLOYMENT COMPLETE!${NC}"
 echo -e "${CYAN}===============================================${NC}"
 echo ""
 
-echo -e "${GREEN}✅ WebSocket SSL fixes deployed to production${NC}"
+echo -e "${GREEN}✅ WebSocket SSL fixes deployed${NC}"
 echo ""
 echo -e "${YELLOW}Testing Instructions:${NC}"
 echo "1. Open https://daily3club.com/gainers in Chrome"
@@ -112,8 +82,8 @@ echo "4. Check Network tab - should show wss:// connection"
 echo ""
 echo -e "${YELLOW}If you still see errors:${NC}"
 echo "- Clear browser cache (Ctrl+F5)"
-echo "- Check: ssh ${SERVER_USER}@${SERVER_IP} 'pm2 logs market-scanner'"
-echo "- Check: ssh ${SERVER_USER}@${SERVER_IP} 'sudo tail -f /var/log/nginx/error.log'"
+echo "- Check logs: pm2 logs market-scanner"
+echo "- Check nginx: sudo tail -f /var/log/nginx/error.log"
 echo ""
 echo -e "${CYAN}URLs to test:${NC}"
 echo "- https://daily3club.com/gainers (Top Gainers)"
