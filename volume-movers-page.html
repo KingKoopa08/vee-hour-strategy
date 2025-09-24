@@ -460,7 +460,7 @@
                 <th rowspan="2" class="sortable sorted-desc" data-sort="dayChange">Day %</th>
                 <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Price Δ%</th>
                 <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Volume Δ%</th>
-                <th rowspan="2" class="sortable" data-sort="volume">Total Vol</th>
+                <th rowspan="2" class="sortable" data-sort="volume" id="volumeHeader">Volume</th>
             </tr>
             <tr>
                 <th style="font-size: 0.9em;">30s</th>
@@ -620,6 +620,25 @@
                     // Update market session if provided
                     if (data.marketSession) {
                         document.getElementById('sessionName').textContent = data.marketSession;
+
+                        // Update volume header based on market session
+                        const volumeHeader = document.getElementById('volumeHeader');
+                        if (volumeHeader) {
+                            switch(data.marketSession) {
+                                case 'Pre-Market':
+                                    volumeHeader.textContent = 'Pre-Mkt Vol';
+                                    break;
+                                case 'Regular':
+                                case 'Market Open':
+                                    volumeHeader.textContent = 'Market Vol';
+                                    break;
+                                case 'After Hours':
+                                    volumeHeader.textContent = 'AH Vol';
+                                    break;
+                                default:
+                                    volumeHeader.textContent = 'Volume';
+                            }
+                        }
                     }
                 }
             };
@@ -781,7 +800,7 @@
                     <td>${formatVolumeChange(stock.volumeChanges['2m'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['3m'])}</td>
                     <td>${formatVolumeChange(stock.volumeChanges['5m'])}</td>
-                    <td class="${volumeClass}">${(stock.volume / 1000000).toFixed(2)}M</td>
+                    <td class="${volumeClass}" title="${stock.volumeLabel || 'Volume'}">${(stock.volume / 1000000).toFixed(2)}M</td>
                 </tr>
             `}).join('');
         }
@@ -793,6 +812,28 @@
                 const data = await response.json();
                 if (data.success) {
                     updateTable(data.stocks);
+
+                    // Update volume header based on market session
+                    if (data.marketSession) {
+                        document.getElementById('sessionName').textContent = data.marketSession;
+                        const volumeHeader = document.getElementById('volumeHeader');
+                        if (volumeHeader) {
+                            switch(data.marketSession) {
+                                case 'Pre-Market':
+                                    volumeHeader.textContent = 'Pre-Mkt Vol';
+                                    break;
+                                case 'Regular':
+                                case 'Market Open':
+                                    volumeHeader.textContent = 'Market Vol';
+                                    break;
+                                case 'After Hours':
+                                    volumeHeader.textContent = 'AH Vol';
+                                    break;
+                                default:
+                                    volumeHeader.textContent = 'Volume';
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
