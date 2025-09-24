@@ -635,7 +635,8 @@
             }
 
             tbody.innerHTML = whales.map(whale => {
-                const changeClass = whale.change > 0 ? 'positive' : whale.change < 0 ? 'negative' : 'neutral';
+                const change = whale.dayChange || whale.change || 0;
+                const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
                 const spikeClass = whale.volumeSpike > 10 ? 'spike-extreme' :
                                  whale.volumeSpike > 5 ? 'spike-high' : 'spike-moderate';
 
@@ -647,10 +648,10 @@
                         </td>
                         <td>$${whale.price.toFixed(2)}</td>
                         <td class="${changeClass}">
-                            ${whale.change > 0 ? '+' : ''}${whale.change.toFixed(2)}%
+                            ${change > 0 ? '+' : ''}${change.toFixed(2)}%
                         </td>
                         <td>
-                            ${formatVolume(whale.currentVolume)}
+                            ${formatVolume(whale.volume || whale.currentVolume)}
                             <div class="volume-bar">
                                 <div class="volume-fill" style="width: ${Math.min(100, whale.volumeSpike * 10)}%"></div>
                             </div>
@@ -662,7 +663,7 @@
                             </span>
                         </td>
                         <td>${formatDollarVolume(whale.dollarVolume)}</td>
-                        <td>${formatTime(whale.detectedAt)}</td>
+                        <td>${formatTime(whale.timestamp || whale.detectedAt || Date.now())}</td>
                     </tr>
                 `;
             }).join('');
