@@ -1390,6 +1390,20 @@ const startUpdates = () => {
     }, interval);
 
     console.log(`📊 Update interval set to ${interval/1000} seconds (Market: ${marketSession})`);
+
+    // Separate broadcast interval that runs every second during market hours
+    // This ensures clients get updates even if API calls are slow
+    if (marketSession !== 'Closed') {
+        broadcastInterval = setInterval(() => {
+            if (!isUpdating) {
+                broadcast({
+                    type: 'volumeMovers',
+                    data: volumeMoversCache,
+                    marketSession: getMarketSession()
+                });
+            }
+        }, 1000);
+    }
 };
 
 // Start the updates
