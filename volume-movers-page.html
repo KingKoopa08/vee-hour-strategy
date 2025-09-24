@@ -794,6 +794,7 @@
                     <td class="${priceClass}">
                         ${stock.dayChange >= 0 ? '+' : ''}${stock.dayChange.toFixed(2)}%
                     </td>
+                    <td>${formatBuyPressure(stock.buyPressure || 50)}</td>
                     <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['30s'] : 0)}</td>
                     <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['1m'] : 0)}</td>
                     <td>${formatPriceChange(stock.priceChanges ? stock.priceChanges['2m'] : 0)}</td>
