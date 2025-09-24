@@ -1434,8 +1434,8 @@ const trackHistoricalData = () => {
         // Update buy pressure calculation
         const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges);
 
-        // Debug log for first stock around problem time
-        if (seconds >= 40 || seconds <= 5 && processedStocks.length === 0) {
+        // Debug log for first few stocks around problem time
+        if ((seconds >= 40 || seconds <= 5) && volumeMoversCache.indexOf(stock) < 3) {
             console.log(`   🎯 ${symbol}: volHistory=${volHistory.length}, prcHistory=${prcHistory.length}, BP=${updatedBuyPressure}`);
         }
 
