@@ -610,6 +610,11 @@
                     compareValue = b.volume - a.volume;
                 }
 
+                // Apply sort direction
+                if (filters.primarySortDirection === 'asc') {
+                    compareValue = -compareValue;
+                }
+
                 // If primary values are equal, apply price sort if selected
                 if (compareValue === 0 && filters.priceSortBy !== 'none') {
                     const timeframe = filters.priceSortBy.replace('priceChange', '');
