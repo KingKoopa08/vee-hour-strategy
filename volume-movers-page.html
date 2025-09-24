@@ -498,9 +498,13 @@
         // Initialize sorting functionality
         function initializeSorting() {
             // Add click handlers for sortable headers
-            document.querySelectorAll('th.sortable').forEach(th => {
+            const sortableHeaders = document.querySelectorAll('th.sortable');
+            console.log('Found sortable headers:', sortableHeaders.length);
+
+            sortableHeaders.forEach(th => {
                 th.addEventListener('click', function() {
                     const sortField = this.dataset.sort;
+                    console.log('Header clicked:', sortField);
 
                     // If clicking the same field, toggle direction
                     if (filters.primarySort === sortField) {
@@ -510,6 +514,8 @@
                         filters.primarySort = sortField;
                         filters.primarySortDirection = 'desc';
                     }
+
+                    console.log('Sort settings:', filters.primarySort, filters.primarySortDirection);
 
                     // Update UI to show sort direction
                     document.querySelectorAll('th.sortable').forEach(header => {
