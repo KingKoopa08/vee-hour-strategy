@@ -379,35 +379,8 @@ async function getVolumeMovers() {
         // Use the same data as Top Gainers to ensure consistency
         const now = Date.now();
 
-        // Update volume and price history for all stocks in topGainersCache
-        topGainersCache.forEach(stock => {
-            const symbol = stock.symbol;
-            const currentVolume = stock.volume;
-            const currentPrice = stock.price;
-
-            // Initialize or update volume history
-            if (!volumeHistory.has(symbol)) {
-                volumeHistory.set(symbol, []);
-            }
-            if (!priceHistory.has(symbol)) {
-                priceHistory.set(symbol, []);
-            }
-
-            const volHistory = volumeHistory.get(symbol);
-            const prcHistory = priceHistory.get(symbol);
-
-            volHistory.push({ time: now, volume: currentVolume });
-            prcHistory.push({ time: now, price: currentPrice });
-
-            // Clean old entries (keep only last 5 minutes)
-            const fiveMinutesAgo = now - (5 * 60 * 1000);
-            while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
-                volHistory.shift();
-            }
-            while (prcHistory.length > 0 && prcHistory[0].time < fiveMinutesAgo) {
-                prcHistory.shift();
-            }
-        });
+        // Historical tracking is now done independently by trackHistoricalData()
+        // This ensures we don't lose data during API delays at :42 mark
 
         // Add volume and price change calculations to each stock from topGainersCache
         let movers = topGainersCache.map(stock => {
