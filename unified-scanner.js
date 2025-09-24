@@ -1208,8 +1208,8 @@ const startUpdates = () => {
     if (updateInterval) clearInterval(updateInterval);
 
     const marketSession = getMarketSession();
-    // Use 5 seconds during market hours, 60 seconds when closed
-    const interval = marketSession === 'Closed' ? 60000 : 5000;
+    // Use 1 second during market hours for real-time updates, 60 seconds when closed
+    const interval = marketSession === 'Closed' ? 60000 : 1000;
 
     updateInterval = setInterval(async () => {
         await getTopGainers();
