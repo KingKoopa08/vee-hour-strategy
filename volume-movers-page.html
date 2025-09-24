@@ -686,6 +686,7 @@
                 );
 
             // Apply complex multi-criteria sorting
+            console.log('Sorting by:', filters.primarySort, filters.primarySortDirection);
             filteredStocks.sort((a, b) => {
                 let compareValue = 0;
 
