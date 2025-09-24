@@ -615,7 +615,16 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'volumeMovers') {
-                    updateTable(data.data);
+                    // Store the raw data
+                    allStocks = data.data;
+
+                    // Apply current filters and sorting
+                    updateTable(allStocks);
+
+                    // Update last update time with WebSocket indicator
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString();
+                    document.getElementById('lastUpdate').innerHTML = `${timeString} <span style="color: #00ff41;">●</span>`;
 
                     // Update market session if provided
                     if (data.marketSession) {
