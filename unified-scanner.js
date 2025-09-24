@@ -596,6 +596,10 @@ async function getWhaleOrders() {
 
 // Main landing page with navigation
 app.get('/', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.send(`
 <!DOCTYPE html>
 <html>
@@ -832,6 +836,10 @@ app.get('/', (req, res) => {
 
 // Top Gainers page
 app.get('/gainers', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.send(`
 <!DOCTYPE html>
 <html>
@@ -1218,12 +1226,20 @@ app.get('/gainers', (req, res) => {
 
 // Volume Movers page
 app.get('/volume', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const htmlContent = fs.readFileSync(path.join(__dirname, 'volume-movers-page.html'), 'utf8');
     res.send(htmlContent);
 });
 
 // Whale detector page
 app.get('/whales', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const htmlContent = fs.readFileSync(path.join(__dirname, 'whales-page.html'), 'utf8');
     res.send(htmlContent);
 });
