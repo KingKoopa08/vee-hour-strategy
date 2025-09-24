@@ -874,6 +874,10 @@ Note: Resets to 50 when no trades occur">?</span>
                         compareValue = b.price - a.price;
                     } else if (filters.primarySort === 'volume') {
                         compareValue = b.volume - a.volume;
+                    } else if (filters.primarySort === 'buyPressure') {
+                        const aBuyPressure = a.buyPressure || 50;
+                        const bBuyPressure = b.buyPressure || 50;
+                        compareValue = bBuyPressure - aBuyPressure;
                     }
 
                     // Apply sort direction for primary sort
