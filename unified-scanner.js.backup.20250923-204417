@@ -668,7 +668,20 @@ app.get('/', (req, res) => {
                 </div>
             </a>
 
-            
+            <a href="/rising" class="scanner-card">
+                <h2>📊 Rising Stocks</h2>
+                <p>Stocks up 1.2%+ with significant volume activity</p>
+                <div class="scanner-stats">
+                    <div class="stat">
+                        <div class="stat-label">Min Gain</div>
+                        <div class="stat-value">+1.2%</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Min Volume</div>
+                        <div class="stat-value">500K</div>
+                    </div>
+                </div>
+            </a>
 
             <a href="/volume" class="scanner-card">
                 <h2>📈 Volume Movers</h2>
@@ -685,12 +698,27 @@ app.get('/', (req, res) => {
                 </div>
             </a>
 
-            
+            <a href="/spikes" class="scanner-card">
+                <h2>⚡ Spike Detector</h2>
+                <p>Advanced spike detection with volume burst analysis</p>
+                <div class="scanner-stats">
+                    <div class="stat">
+                        <div class="stat-label">Detection</div>
+                        <div class="stat-value">Real-time</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Analysis</div>
+                        <div class="stat-value">Volume</div>
+                    </div>
+                </div>
+            </a>
         </div>
 
         <div class="api-endpoints">
             <h3>🔌 API Endpoints</h3>
             <div class="endpoint">GET /api/gainers - Get current top gainers</div>
+            <div class="endpoint">GET /api/rising - Get rising stocks</div>
+            <div class="endpoint">GET /api/spikes - Get spike detection data</div>
             <div class="endpoint">WS ws://localhost:${WS_PORT} - WebSocket for real-time updates</div>
         </div>
     </div>
@@ -894,7 +922,9 @@ app.get('/gainers', (req, res) => {
         <div class="nav-links">
             <a href="/">🏠 Home</a>
             <a href="/gainers" class="active">🔥 Top Gainers</a>
-                                </div>
+            <a href="/rising">📊 Rising Stocks</a>
+            <a href="/spikes">⚡ Spike Detector</a>
+        </div>
         <div id="connection-status">🔴 Connecting...</div>
     </div>
 
@@ -1078,10 +1108,310 @@ app.get('/gainers', (req, res) => {
     `);
 });
 
-// Auto-refresh every 10 seconds
+// Rising stocks page
+app.get('/rising', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rising Stocks Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #00ff41;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .nav-links a.active {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid rgba(0, 255, 65, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #00ff41, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .criteria {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #00ff41, #00cc33);
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 30px;
+        }
+
+        button:hover {
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
+        }
+
+        #count {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #00ffff;
+        }
+
+        table {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+        }
+
+        th {
+            background: rgba(0, 255, 65, 0.1);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #00ff41;
+            border-bottom: 2px solid rgba(0, 255, 65, 0.3);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        .symbol {
+            font-weight: bold;
+            color: #00ffff;
+            font-size: 1.1em;
+        }
+
+        .positive {
+            color: #00ff41;
+            font-weight: 500;
+        }
+
+        .high-volume {
+            color: #ffd700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="/">🏠 Home</a>
+            <a href="/gainers">🔥 Top Gainers</a>
+            <a href="/rising" class="active">📊 Rising Stocks</a>
+            <a href="/spikes">⚡ Spike Detector</a>
+        </div>
+    </div>
+
+    <h1>📈 Rising Stocks Scanner</h1>
+    <p class="criteria">Showing stocks up 1.2%+ with 500K+ volume</p>
+    <button onclick="refresh()">🔄 Refresh</button>
+    <div id="count"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Price</th>
+                <th>Day Change</th>
+                <th>Volume</th>
+                <th>$ Volume</th>
+                <th>Range</th>
+            </tr>
+        </thead>
+        <tbody id="stocksBody"></tbody>
+    </table>
+
+    <script>
+        async function refresh() {
+            const response = await fetch('/api/rising');
+            const data = await response.json();
+
+            document.getElementById('count').innerHTML = '<h2>Found ' + data.count + ' stocks</h2>';
+
+            const tbody = document.getElementById('stocksBody');
+            tbody.innerHTML = '';
+
+            data.stocks.forEach(stock => {
+                const row = tbody.insertRow();
+                const volumeClass = stock.volume > 5000000 ? 'high-volume' : '';
+                row.innerHTML = \`
+                    <td class="symbol">\${stock.symbol}</td>
+                    <td>$\${stock.price.toFixed(2)}</td>
+                    <td class="positive">+\${stock.dayChange.toFixed(2)}%</td>
+                    <td class="\${volumeClass}">\${(stock.volume/1000000).toFixed(1)}M</td>
+                    <td>$\${(stock.dollarVolume/1000000).toFixed(1)}M</td>
+                    <td>$\${stock.low.toFixed(2)} - $\${stock.high.toFixed(2)}</td>
+                \`;
+            });
+        }
+
+        // Auto-refresh every 10 seconds
         refresh();
         setInterval(refresh, 10000);
     </script>
+</body>
+</html>
+    `);
+});
+
+// Spike detector page (placeholder)
+app.get('/spikes', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spike Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #00ff41;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .nav-links a.active {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid rgba(0, 255, 65, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #00ff41, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            text-align: center;
+        }
+
+        .coming-soon {
+            font-size: 1.5em;
+            color: #00ffff;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            color: #888;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="/">🏠 Home</a>
+            <a href="/gainers">🔥 Top Gainers</a>
+            <a href="/rising">📊 Rising Stocks</a>
+            <a href="/spikes" class="active">⚡ Spike Detector</a>
+        </div>
+    </div>
+
+    <h1>⚡ Spike Detector</h1>
+
+    <div class="content">
+        <p class="coming-soon">Advanced Spike Detection</p>
+        <p class="description">
+            Real-time monitoring for volume spikes and unusual trading activity.<br><br>
+            Features include volume burst detection, momentum tracking, and automated alerts
+            for stocks showing sudden increases in trading activity.
+        </p>
+    </div>
 </body>
 </html>
     `);
@@ -1203,7 +1533,9 @@ app.listen(PORT, () => {
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     console.log(`📡 Main Hub: http://localhost:${PORT}`);
     console.log(`📡 Top Gainers: http://localhost:${PORT}/gainers`);
+    console.log(`📡 Rising Stocks: http://localhost:${PORT}/rising`);
     console.log(`📡 Volume Movers: http://localhost:${PORT}/volume`);
+    console.log(`📡 Spike Detector: http://localhost:${PORT}/spikes`);
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
