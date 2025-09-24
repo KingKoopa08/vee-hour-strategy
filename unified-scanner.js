@@ -1315,6 +1315,7 @@ const startUpdates = () => {
     updateInterval = setInterval(async () => {
         await getTopGainers();
         await getVolumeMovers(); // Update volume movers data
+        await getWhaleOrders(); // Update whale orders data
 
         const currentSession = getMarketSession();
 
@@ -1325,7 +1326,13 @@ const startUpdates = () => {
             marketSession: currentSession
         });
 
-        console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers | Session: ${currentSession}`);
+        // Broadcast whale orders to WebSocket clients
+        broadcast({
+            type: 'whales',
+            whales: whaleOrdersCache
+        });
+
+        console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume, ${whaleOrdersCache.length} whales | Session: ${currentSession}`);
 
         // Check if market session changed to adjust interval
         if ((currentSession === 'Closed' && interval === 1000) ||
