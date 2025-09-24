@@ -1203,6 +1203,12 @@ app.get('/volume', (req, res) => {
     res.send(htmlContent);
 });
 
+// Whale detector page
+app.get('/whales', (req, res) => {
+    const htmlContent = fs.readFileSync(path.join(__dirname, 'whales-page.html'), 'utf8');
+    res.send(htmlContent);
+});
+
 // API endpoints
 app.get('/api/gainers', async (req, res) => {
     const gainers = await getTopGainers();
