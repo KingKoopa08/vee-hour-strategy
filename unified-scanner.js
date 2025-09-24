@@ -19,8 +19,10 @@ let topGainersCache = [];
 let risingStocksCache = [];
 let spikeDetectorCache = [];
 let volumeMoversCache = [];
+let whaleOrdersCache = [];
 let volumeHistory = new Map(); // Store volume history for timeframe analysis
 let priceHistory = new Map(); // Store price history for timeframe analysis
+let tradeHistory = new Map(); // Store recent trades for whale detection
 let lastUpdate = Date.now();
 
 // Volume tracking timeframes (in seconds)
