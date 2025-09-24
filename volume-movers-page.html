@@ -706,12 +706,14 @@
         function updateTable(stocks) {
             allStocks = stocks;
 
-            // Apply filters
+            // Apply filters - use totalVolume for filtering, not session-specific volume
             let filteredStocks = stocks
-                .filter(stock =>
-                    stock.volume >= filters.minVolume &&
-                    stock.dayChange >= filters.minGain
-                );
+                .filter(stock => {
+                    // Use totalVolume if available, otherwise fall back to volume
+                    const volumeToCheck = stock.totalVolume || stock.volume || 0;
+                    return volumeToCheck >= filters.minVolume &&
+                           stock.dayChange >= filters.minGain;
+                });
 
             // Apply complex multi-criteria sorting
             console.log('Sorting by:', filters.primarySort, 'Price:', filters.priceSortBy, 'Vol:', filters.volumeSortBy);
