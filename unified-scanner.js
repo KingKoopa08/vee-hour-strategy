@@ -441,6 +441,35 @@ async function getVolumeMovers() {
             const avgVolumeRate = volHistory.length > 1 ?
                 (currentVolume - volHistory[0].volume) / ((now - volHistory[0].time) / 60000) : 0;
 
+            // Calculate Buy Pressure Indicator (0-100 scale)
+            let buyPressure = 50; // Neutral baseline
+
+            // Factor 1: Price movement (40% weight)
+            if (priceChanges['30s'] > 0) {
+                buyPressure += Math.min(20, priceChanges['30s'] * 4); // Max +20
+            } else {
+                buyPressure += Math.max(-20, priceChanges['30s'] * 4); // Max -20
+            }
+
+            // Factor 2: Volume surge with price up (30% weight)
+            if (volumeChanges['30s'] > 0 && priceChanges['30s'] > 0) {
+                buyPressure += Math.min(15, volumeChanges['30s'] / 10); // Buying surge
+            } else if (volumeChanges['30s'] > 0 && priceChanges['30s'] < 0) {
+                buyPressure -= Math.min(15, volumeChanges['30s'] / 10); // Selling surge
+            }
+
+            // Factor 3: Sustained trend (30% weight)
+            const trend1m = priceChanges['1m'] || 0;
+            const trend30s = priceChanges['30s'] || 0;
+            if (trend1m > 0 && trend30s > 0) {
+                buyPressure += 15; // Sustained buying
+            } else if (trend1m < 0 && trend30s < 0) {
+                buyPressure -= 15; // Sustained selling
+            }
+
+            // Clamp to 0-100 range
+            buyPressure = Math.max(0, Math.min(100, buyPressure));
+
             return {
                 symbol: stock.symbol,
                 price: stock.price,
@@ -451,6 +480,7 @@ async function getVolumeMovers() {
                 volumeChanges: volumeChanges,
                 priceChanges: priceChanges,
                 avgVolumeRate: avgVolumeRate,
+                buyPressure: buyPressure,
                 high: stock.high,
                 low: stock.low,
                 positionChange: stock.positionChange || 0,
