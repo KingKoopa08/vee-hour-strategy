@@ -334,6 +334,44 @@
         <span id="sessionName" style="color: #00ff41; font-weight: bold;">Loading...</span>
     </div>
 
+    <!-- Buy Pressure Indicator Explanation -->
+    <div style="
+        background: linear-gradient(135deg, rgba(0, 100, 200, 0.1) 0%, rgba(0, 50, 150, 0.05) 100%);
+        border: 1px solid rgba(0, 150, 255, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    ">
+        <h3 style="color: #00aaff; margin-top: 0; margin-bottom: 10px; font-size: 1.1em;">📊 Buy Pressure Indicator</h3>
+        <div style="color: #ccc; font-size: 0.9em; line-height: 1.6;">
+            <p style="margin: 0 0 10px 0;">
+                The <strong style="color: #00ff41;">Buy Pressure Indicator</strong> estimates buying strength on a 0-100 scale by analyzing:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;">
+                    <strong style="color: #00aaff;">📈 Price Movement (40%)</strong><br>
+                    <span style="font-size: 0.85em;">Recent price changes indicate direction</span>
+                </div>
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;">
+                    <strong style="color: #00aaff;">📊 Volume Surge (30%)</strong><br>
+                    <span style="font-size: 0.85em;">High volume with price rise suggests buying</span>
+                </div>
+                <div style="background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 5px;">
+                    <strong style="color: #00aaff;">📉 Trend Analysis (30%)</strong><br>
+                    <span style="font-size: 0.85em;">Sustained movements across timeframes</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; align-items: center; justify-content: center; margin-top: 10px;">
+                <span>🔴 <strong>&lt;30</strong> = Selling Pressure</span>
+                <span>➖ <strong>40-60</strong> = Neutral</span>
+                <span>🟢 <strong>&gt;70</strong> = Buying Pressure</span>
+            </div>
+            <p style="margin: 10px 0 0 0; color: #999; font-size: 0.85em; font-style: italic;">
+                Note: This is an approximation based on price/volume patterns. Actual buy/sell volume requires Level 2 data.
+            </p>
+        </div>
+    </div>
+
     <!-- Change Indicators Legend -->
     <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
         <h3 style="color: #00ffff; margin-bottom: 15px; font-size: 1.1em; text-align: center;">Change Indicators</h3>
