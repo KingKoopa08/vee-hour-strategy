@@ -714,38 +714,43 @@
                 );
 
             // Apply complex multi-criteria sorting
-            console.log('Sorting by:', filters.primarySort, filters.primarySortDirection);
+            console.log('Sorting by:', filters.primarySort, 'Price:', filters.priceSortBy, 'Vol:', filters.volumeSortBy);
             filteredStocks.sort((a, b) => {
                 let compareValue = 0;
 
-                // Primary sort (always applied)
-                if (filters.primarySort === 'dayChange') {
-                    compareValue = b.dayChange - a.dayChange;
-                } else if (filters.primarySort === 'price') {
-                    compareValue = b.price - a.price;
-                } else if (filters.primarySort === 'volume') {
-                    compareValue = b.volume - a.volume;
-                }
-
-                // Apply sort direction
-                if (filters.primarySortDirection === 'asc') {
-                    compareValue = -compareValue;
-                }
-
-                // If primary values are equal, apply price sort if selected
-                if (compareValue === 0 && filters.priceSortBy !== 'none') {
+                // Check if price or volume sort overrides primary sort
+                if (filters.priceSortBy !== 'none') {
+                    // Price sort takes precedence
                     const timeframe = filters.priceSortBy.replace('priceChange', '');
                     const aPriceChange = a.priceChanges?.[timeframe] || 0;
                     const bPriceChange = b.priceChanges?.[timeframe] || 0;
                     compareValue = bPriceChange - aPriceChange;
-                }
-
-                // If still equal, apply volume sort if selected
-                if (compareValue === 0 && filters.volumeSortBy !== 'none') {
+                    console.log(`Sorting by price ${timeframe}: ${a.symbol} (${aPriceChange}) vs ${b.symbol} (${bPriceChange})`);
+                } else if (filters.volumeSortBy !== 'none') {
+                    // Volume sort takes precedence
                     const timeframe = filters.volumeSortBy.replace('volumeChange', '');
                     const aVolChange = a.volumeChanges?.[timeframe] || 0;
                     const bVolChange = b.volumeChanges?.[timeframe] || 0;
                     compareValue = bVolChange - aVolChange;
+                } else {
+                    // Use primary sort
+                    if (filters.primarySort === 'dayChange') {
+                        compareValue = b.dayChange - a.dayChange;
+                    } else if (filters.primarySort === 'price') {
+                        compareValue = b.price - a.price;
+                    } else if (filters.primarySort === 'volume') {
+                        compareValue = b.volume - a.volume;
+                    }
+
+                    // Apply sort direction for primary sort
+                    if (filters.primarySortDirection === 'asc') {
+                        compareValue = -compareValue;
+                    }
+                }
+
+                // If equal, fall back to day change
+                if (compareValue === 0) {
+                    compareValue = b.dayChange - a.dayChange;
                 }
 
                 return compareValue;
