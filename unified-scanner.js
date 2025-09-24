@@ -1321,8 +1321,14 @@ const calculateBuyPressure = (priceChanges, volumeChanges) => {
 const trackHistoricalData = () => {
     const now = Date.now();
 
-    // Track data and update buy pressure for each stock in cache
-    volumeMoversCache = volumeMoversCache.map(stock => {
+    // Use topGainersCache as the source (it contains all stocks)
+    // Only update volumeMoversCache if we have data
+    if (topGainersCache.length === 0) {
+        return; // No data yet
+    }
+
+    // Process all stocks from topGainersCache
+    const processedStocks = topGainersCache.map(stock => {
         const symbol = stock.symbol;
         const currentVolume = stock.volume || stock.currentVolume;
         const currentPrice = stock.price || stock.currentPrice;
