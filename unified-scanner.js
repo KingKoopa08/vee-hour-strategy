@@ -1415,8 +1415,24 @@ const trackHistoricalData = () => {
 
         for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
             const targetTime = now - (seconds * 1000);
-            const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 10000);
-            const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 10000);
+            // Use more lenient tolerance or fallback to oldest available data
+            let oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 10000);
+            let oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 10000);
+
+            // If no exact match and we have some history, use the oldest available
+            if (!oldVolEntry && volHistory.length > 0 && seconds === 30) {
+                // For 30s timeframe, use oldest if we have less than 30s of data
+                const oldestVol = volHistory[0];
+                if (now - oldestVol.time < 30000) {
+                    oldVolEntry = oldestVol;
+                }
+            }
+            if (!oldPrcEntry && prcHistory.length > 0 && seconds === 30) {
+                const oldestPrc = prcHistory[0];
+                if (now - oldestPrc.time < 30000) {
+                    oldPrcEntry = oldestPrc;
+                }
+            }
 
             if (oldVolEntry && currentVolume > 0 && oldVolEntry.volume > 0) {
                 volumeChanges[label] = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
@@ -1436,7 +1452,9 @@ const trackHistoricalData = () => {
 
         // Debug log for first few stocks around problem time
         if ((seconds >= 40 || seconds <= 5) && volumeMoversCache.indexOf(stock) < 3) {
-            console.log(`   🎯 ${symbol}: volHistory=${volHistory.length}, prcHistory=${prcHistory.length}, BP=${updatedBuyPressure}`);
+            const oldestEntry = volHistory.length > 0 ? volHistory[0] : null;
+            const ageInSeconds = oldestEntry ? Math.floor((now - oldestEntry.time) / 1000) : 0;
+            console.log(`   🎯 ${symbol}: hist=${volHistory.length} entries, oldest=${ageInSeconds}s ago, 30s-change=${priceChanges['30s']?.toFixed(2)}%, BP=${updatedBuyPressure}`);
         }
 
         // Return updated stock with new buy pressure
