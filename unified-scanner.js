@@ -469,7 +469,9 @@ async function getVolumeMovers() {
             stock.volumePositionChange = volumePositionChange;
         });
 
-        volumeMoversCache = movers;
+        // Don't overwrite the cache - let trackHistoricalData manage it
+        // This prevents losing historical data during API updates
+        // volumeMoversCache = movers;  // DISABLED - managed by trackHistoricalData
 
         // Broadcast to WebSocket clients
         wss.clients.forEach(client => {
