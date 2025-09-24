@@ -149,6 +149,32 @@
             border-bottom: 2px solid rgba(0, 255, 65, 0.3);
         }
 
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th.sortable:hover {
+            background: rgba(0, 255, 65, 0.15);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.3;
+            font-size: 0.8em;
+        }
+
+        th.sortable.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sortable.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
         td {
             padding: 12px 15px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
