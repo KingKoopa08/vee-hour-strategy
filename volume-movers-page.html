@@ -779,64 +779,6 @@
             `}).join('');
         }
 
-        // Add click handlers for sortable headers
-        document.querySelectorAll('th.sortable').forEach(th => {
-            th.addEventListener('click', function() {
-                const sortField = this.dataset.sort;
-
-                // If clicking the same field, toggle direction
-                if (filters.primarySort === sortField) {
-                    filters.primarySortDirection = filters.primarySortDirection === 'desc' ? 'asc' : 'desc';
-                } else {
-                    // New field, default to descending
-                    filters.primarySort = sortField;
-                    filters.primarySortDirection = 'desc';
-                }
-
-                // Update UI to show sort direction
-                document.querySelectorAll('th.sortable').forEach(header => {
-                    header.classList.remove('sorted-asc', 'sorted-desc');
-                });
-                this.classList.add('sorted-' + filters.primarySortDirection);
-
-                // Update dropdown to match
-                document.getElementById('primarySort').value = sortField;
-
-                updateTable(allStocks);
-            });
-        });
-
-        // Setup event listeners
-        document.getElementById('stockLimit').addEventListener('change', (e) => {
-            filters.stockLimit = parseInt(e.target.value);
-            updateTable(allStocks);
-        });
-
-        document.getElementById('minGain').addEventListener('input', (e) => {
-            filters.minGain = parseFloat(e.target.value) || 0;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('minVolume').addEventListener('change', (e) => {
-            filters.minVolume = parseInt(e.target.value);
-            updateTable(allStocks);
-        });
-
-        document.getElementById('primarySort').addEventListener('change', (e) => {
-            filters.primarySort = e.target.value;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('priceSortBy').addEventListener('change', (e) => {
-            filters.priceSortBy = e.target.value;
-            updateTable(allStocks);
-        });
-
-        document.getElementById('volumeSortBy').addEventListener('change', (e) => {
-            filters.volumeSortBy = e.target.value;
-            updateTable(allStocks);
-        });
-
         // Fetch initial data
         async function fetchInitialData() {
             try {
