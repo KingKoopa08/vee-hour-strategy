@@ -1153,14 +1153,6 @@ app.get('/api/volume', async (req, res) => {
     });
 });
 
-app.get('/api/spikes', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Spike detection endpoint - coming soon',
-        spikes: []
-    });
-});
-
 // Update data every second
 setInterval(async () => {
     await getTopGainers();
