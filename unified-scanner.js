@@ -243,19 +243,46 @@ async function getTopGainers() {
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 }
 
+                // Get session-specific volume
+                let sessionVolume = 0;
+                let volumeLabel = 'Volume';
+                const session = getMarketSession();
+
+                if (session === 'Pre-Market') {
+                    // During pre-market, show accumulated volume (includes pre-market)
+                    sessionVolume = stock.min?.av || 0;
+                    volumeLabel = 'Pre-Market Vol';
+                } else if (session === 'Regular' || session === 'Market Open') {
+                    // During regular hours, show today's volume
+                    sessionVolume = stock.day?.v || 0;
+                    volumeLabel = 'Market Vol';
+                } else if (session === 'After Hours') {
+                    // During after-hours, show accumulated volume minus regular volume
+                    const totalVolume = stock.min?.av || 0;
+                    const regularVolume = stock.day?.v || 0;
+                    sessionVolume = totalVolume > regularVolume ? totalVolume - regularVolume : 0;
+                    volumeLabel = 'After-Hours Vol';
+                } else {
+                    // Market closed - show today's total volume
+                    sessionVolume = stock.day?.v || stock.prevDay?.v || 0;
+                    volumeLabel = 'Day Vol';
+                }
+
                 return {
                     symbol: stock.ticker,
                     price: displayPrice,
                     dayChange: stock.validatedDayChange || stock.todaysChangePerc || 0,
                     sessionChange: stock.sessionChange || 0,
                     afterHoursChange: stock.afterHoursChange || 0,
-                    volume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
+                    volume: sessionVolume,
+                    volumeLabel: volumeLabel,
+                    totalVolume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
                     high: stock.day?.h || stock.prevDay?.h || 0,
                     low: stock.day?.l || stock.prevDay?.l || 0,
                     positionChange,
                     currentRank,
-                    marketSession: getMarketSession()
+                    marketSession: session
                 };
             });
 
@@ -419,13 +446,16 @@ async function getVolumeMovers() {
                 price: stock.price,
                 dayChange: stock.dayChange,
                 volume: stock.volume,
+                volumeLabel: stock.volumeLabel,
+                totalVolume: stock.totalVolume,
                 volumeChanges: volumeChanges,
                 priceChanges: priceChanges,
                 avgVolumeRate: avgVolumeRate,
                 high: stock.high,
                 low: stock.low,
                 positionChange: stock.positionChange || 0,
-                currentRank: stock.currentRank || 0
+                currentRank: stock.currentRank || 0,
+                marketSession: stock.marketSession
             };
         });
 
@@ -465,7 +495,8 @@ async function getVolumeMovers() {
                 client.send(JSON.stringify({
                     type: 'volumeMovers',
                     data: movers.slice(0, 50), // Send top 50 to clients
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    marketSession: getMarketSession()
                 }));
             }
         });
