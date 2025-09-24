@@ -765,6 +765,21 @@ app.get('/', (req, res) => {
                 </div>
             </a>
 
+            <a href="/whales" class="scanner-card">
+                <h2>🐋 Whale Detector</h2>
+                <p>Track large orders and unusual volume activity</p>
+                <div class="scanner-stats">
+                    <div class="stat">
+                        <div class="stat-label">Min Size</div>
+                        <div class="stat-value">$500K+</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Alerts</div>
+                        <div class="stat-value">Real-time</div>
+                    </div>
+                </div>
+            </a>
+
             </div>
 
         <div class="api-endpoints">
