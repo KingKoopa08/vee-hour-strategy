@@ -418,8 +418,9 @@ async function getVolumeMovers() {
 
             for (const [label, seconds] of Object.entries(VOLUME_TIMEFRAMES)) {
                 const targetTime = now - (seconds * 1000);
-                const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 5000); // 5s tolerance
-                const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 5000);
+                // Increase tolerance to 10 seconds for better data matching
+                const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 10000); // 10s tolerance
+                const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 10000);
 
                 if (oldVolEntry && oldVolEntry.volume > 0) {
                     const change = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
