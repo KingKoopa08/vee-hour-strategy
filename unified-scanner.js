@@ -1391,6 +1391,9 @@ const trackHistoricalData = () => {
         };
     });
 
+    // Update the volumeMoversCache with processed stocks
+    volumeMoversCache = processedStocks;
+
     // Broadcast updated data with fresh buy pressure
     broadcast({
         type: 'volumeMovers',
