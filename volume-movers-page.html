@@ -740,8 +740,26 @@
                 .filter(stock => {
                     // Use totalVolume if available, otherwise fall back to volume
                     const volumeToCheck = stock.totalVolume || stock.volume || 0;
+
+                    // Apply price filter
+                    let priceMatch = true;
+                    const priceFilter = document.getElementById('priceFilter').value;
+                    if (priceFilter !== 'all') {
+                        const price = stock.price || 0;
+                        if (priceFilter === 'penny') {
+                            priceMatch = price < 5;
+                        } else if (priceFilter === 'low') {
+                            priceMatch = price >= 5 && price <= 20;
+                        } else if (priceFilter === 'mid') {
+                            priceMatch = price > 20 && price <= 100;
+                        } else if (priceFilter === 'high') {
+                            priceMatch = price > 100;
+                        }
+                    }
+
                     return volumeToCheck >= filters.minVolume &&
-                           stock.dayChange >= filters.minGain;
+                           stock.dayChange >= filters.minGain &&
+                           priceMatch;
                 });
 
             // Apply complex multi-criteria sorting
