@@ -495,6 +495,14 @@
             stockLimit: 50
         };
 
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSorting();
+            initializeFilters();
+            connect();
+            fetchInitialData();
+        });
+
         // Connect to WebSocket
         function connect() {
             const wsHost = window.location.hostname || 'localhost';
