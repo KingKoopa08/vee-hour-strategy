@@ -665,21 +665,25 @@
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                console.log('Received WebSocket message:', data.type);
 
                 if (data.type === 'volumeMovers') {
-                    console.log('Updating volume movers, stock count:', data.data.length);
-
                     // Store the raw data
                     allStocks = data.data;
 
                     // Apply current filters and sorting
                     updateTable(allStocks);
 
-                    // Update last update time with WebSocket indicator
+                    // Update last update time with milliseconds to show real-time updates
                     const now = new Date();
-                    const timeString = now.toLocaleTimeString();
+                    const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
                     document.getElementById('lastUpdate').innerHTML = `${timeString} <span style="color: #00ff41;">●</span>`;
+
+                    // Flash indicator to show update received
+                    const indicator = document.getElementById('connection-status');
+                    indicator.style.background = 'rgba(0, 255, 65, 0.3)';
+                    setTimeout(() => {
+                        indicator.style.background = '';
+                    }, 100);
 
                     // Update market session if provided
                     if (data.marketSession) {
