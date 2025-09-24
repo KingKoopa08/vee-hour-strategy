@@ -571,8 +571,9 @@
                 // Dollar volume filter
                 if (whale.dollarVolume < filters.minDollarVolume) return false;
 
-                // Volume spike filter
-                if (whale.volumeSpike < filters.minSpike) return false;
+                // Volume spike filter - currently all are 1x because we're comparing to itself
+                // Skip this filter for now since volumeSpike calculation needs fixing
+                // if (whale.volumeSpike < filters.minSpike) return false;
 
                 // Price range filter
                 if (filters.priceRange !== 'all') {
@@ -582,9 +583,9 @@
                     if (filters.priceRange === 'high' && price <= 50) return false;
                 }
 
-                // Time frame filter
-                const minutesAgo = (Date.now() - new Date(whale.detectedAt)) / 60000;
-                if (minutesAgo > filters.timeFrame) return false;
+                // Time frame filter - skip for now since timestamps are in future
+                // const minutesAgo = (Date.now() - (whale.timestamp || whale.detectedAt || Date.now())) / 60000;
+                // if (minutesAgo > filters.timeFrame) return false;
 
                 return true;
             });
