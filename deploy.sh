@@ -21,7 +21,7 @@ echo ""
 
 # Step 1: Pull latest changes from GitHub
 echo -e "${YELLOW}📋 Step 1: Pulling latest changes from GitHub...${NC}"
-cd /root/PreMarket_Stratedy
+cd /opt/vee-hour-strategy
 git pull origin main
 echo -e "${GREEN}✅ Code updated${NC}"
 
