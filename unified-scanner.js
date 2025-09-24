@@ -469,21 +469,36 @@ async function getVolumeMovers() {
             stock.volumePositionChange = volumePositionChange;
         });
 
-        // Don't overwrite the cache - let trackHistoricalData manage it
-        // This prevents losing historical data during API updates
-        // volumeMoversCache = movers;  // DISABLED - managed by trackHistoricalData
+        // Initialize volumeMoversCache only if empty (first time)
+        // Otherwise, merge the new data while preserving historical tracking
+        if (volumeMoversCache.length === 0) {
+            volumeMoversCache = movers;
+            console.log(`🎯 [${new Date().toISOString()}] Initialized volumeMoversCache with ${movers.length} stocks`);
+        } else {
+            // Merge new stocks while preserving historical data
+            const existingMap = new Map(volumeMoversCache.map(s => [s.symbol, s]));
 
-        // Broadcast to WebSocket clients
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                    type: 'volumeMovers',
-                    data: movers.slice(0, 50), // Send top 50 to clients
-                    timestamp: Date.now(),
-                    marketSession: getMarketSession()
-                }));
+            movers.forEach(newStock => {
+                const existing = existingMap.get(newStock.symbol);
+                if (existing && existing.buyPressure !== undefined) {
+                    // Preserve buy pressure and historical data
+                    newStock.buyPressure = existing.buyPressure;
+                    newStock.volumeChanges = existing.volumeChanges;
+                    newStock.priceChanges = existing.priceChanges;
+                }
+            });
+
+            // Update cache with merged data
+            volumeMoversCache = movers;
+
+            const seconds = new Date().getSeconds();
+            if (seconds >= 40 || seconds <= 5) {
+                console.log(`✅ [${new Date().toISOString()}] Merged data at :${seconds}s, preserved buy pressure`);
             }
-        });
+        }
+
+        // Don't broadcast here - let trackHistoricalData handle broadcasting
+        // This prevents duplicate broadcasts and ensures consistent data
     } catch (error) {
         console.error('Error processing volume movers:', error.message);
     }
