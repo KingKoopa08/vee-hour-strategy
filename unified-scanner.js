@@ -1340,10 +1340,10 @@ const trackHistoricalData = () => {
     const seconds = new Date().getSeconds();
 
     // Log around the problem time
-    if (seconds >= 40 && seconds <= 5) {
-        console.log(`🔍 [${new Date().toISOString()}] trackHistoricalData called at :${seconds}s`);
-        console.log(`   - topGainersCache length: ${topGainersCache.length}`);
-        console.log(`   - volumeMoversCache length: ${volumeMoversCache.length}`);
+    if (seconds >= 40 || seconds <= 5) {
+        console.log(`📊 [${new Date().toISOString()}] Historical tracking at :${seconds}s`);
+        console.log(`   - volumeMoversCache: ${volumeMoversCache.length} stocks`);
+        console.log(`   - Tracking independent of API updates`);
     }
 
     // Use volumeMoversCache as the source if it has data, otherwise skip
@@ -1462,12 +1462,15 @@ const startUpdates = () => {
     updateInterval = setInterval(async () => {
         const seconds = new Date().getSeconds();
 
+        // Enhanced logging for debugging the pause
+        if (seconds >= 40 || seconds <= 5) {
+            console.log(`\n🔵 [${new Date().toISOString()}] Update interval triggered at :${seconds}s`);
+            console.log(`   isUpdating: ${isUpdating}`);
+            console.log(`   volumeMoversCache: ${volumeMoversCache.length} stocks`);
+        }
+
         if (isUpdating) {
-            if (seconds >= 40 || seconds <= 5) {
-                console.log(`⏳ [${new Date().toISOString()}] Previous update still in progress at :${seconds}s, skipping...`);
-            } else {
-                console.log('⏳ Previous update still in progress, skipping...');
-            }
+            console.log(`⏳ [${new Date().toISOString()}] SKIPPED at :${seconds}s - Previous update still running`);
             return;
         }
 
@@ -1475,25 +1478,51 @@ const startUpdates = () => {
         // Run all three updates in parallel to prevent blocking
         const startTime = Date.now();
 
-        if (seconds >= 40 || seconds <= 5) {
-            console.log(`🔄 [${new Date().toISOString()}] Starting API update at :${seconds}s`);
-        }
+        console.log(`🔄 [${new Date().toISOString()}] Starting API updates at :${seconds}s`);
 
         try {
-            await Promise.all([
-                getTopGainers().catch(err => console.error('Error updating gainers:', err)),
-                getVolumeMovers().catch(err => console.error('Error updating volume movers:', err)),
-                getWhaleOrders().catch(err => console.error('Error updating whale orders:', err))
+            // Log individual API call timing
+            const [gainersResult, volumeResult, whalesResult] = await Promise.all([
+                getTopGainers().then(r => {
+                    const time = Date.now() - startTime;
+                    if (seconds >= 40 || seconds <= 5) {
+                        console.log(`   ✓ Gainers API: ${time}ms`);
+                    }
+                    return r;
+                }).catch(err => {
+                    console.error('Error updating gainers:', err);
+                    return null;
+                }),
+                getVolumeMovers().then(r => {
+                    const time = Date.now() - startTime;
+                    if (seconds >= 40 || seconds <= 5) {
+                        console.log(`   ✓ Volume API: ${time}ms`);
+                    }
+                    return r;
+                }).catch(err => {
+                    console.error('Error updating volume movers:', err);
+                    return null;
+                }),
+                getWhaleOrders().then(r => {
+                    const time = Date.now() - startTime;
+                    if (seconds >= 40 || seconds <= 5) {
+                        console.log(`   ✓ Whales API: ${time}ms`);
+                    }
+                    return r;
+                }).catch(err => {
+                    console.error('Error updating whale orders:', err);
+                    return null;
+                })
             ]);
+
             const updateTime = Date.now() - startTime;
+            const endSeconds = new Date().getSeconds();
 
-            if (seconds >= 40 || seconds <= 5) {
-                console.log(`✅ [${new Date().toISOString()}] API update completed in ${updateTime}ms at :${new Date().getSeconds()}s`);
+            if (updateTime > 1500) {
+                console.log(`⚠️ SLOW UPDATE: ${updateTime}ms (from :${seconds}s to :${endSeconds}s)`);
             }
 
-            if (updateTime > 1000) {
-                console.log(`⚠️ Slow update: ${updateTime}ms`);
-            }
+            console.log(`✅ [${new Date().toISOString()}] Updates completed in ${updateTime}ms at :${endSeconds}s`);
         } finally {
             isUpdating = false;
         }
