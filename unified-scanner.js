@@ -487,6 +487,76 @@ async function getVolumeMovers() {
     return volumeMoversCache;
 }
 
+// Detect whale orders using aggregated trade data
+async function getWhaleOrders() {
+    try {
+        // For now, we'll analyze the existing data for unusual volume patterns
+        // In a real implementation, we'd use Polygon's trades endpoint or WebSocket
+        const whales = [];
+        const now = Date.now();
+
+        // Analyze top gainers for unusual volume patterns
+        for (const stock of topGainersCache.slice(0, 50)) {
+            const symbol = stock.symbol;
+            const currentVolume = stock.volume || 0;
+            const price = stock.price || 0;
+
+            // Calculate dollar volume
+            const dollarVolume = currentVolume * price;
+
+            // Get volume history
+            const volHistory = volumeHistory.get(symbol) || [];
+
+            // Calculate average volume over last 5 minutes
+            let avgVolume = 0;
+            if (volHistory.length > 2) {
+                const recentVolumes = volHistory.slice(-10);
+                avgVolume = recentVolumes.reduce((sum, h) => sum + h.volume, 0) / recentVolumes.length;
+            }
+
+            // Detect volume spikes (3x average or $1M+ in dollar volume)
+            const volumeSpike = avgVolume > 0 ? currentVolume / avgVolume : 1;
+            const isWhale = (volumeSpike > 3 && dollarVolume > 500000) || dollarVolume > 1000000;
+
+            if (isWhale) {
+                // Calculate volume rate (volume per minute)
+                let volumeRate = 0;
+                if (volHistory.length > 1) {
+                    const oldestEntry = volHistory[0];
+                    const timeDiff = (now - oldestEntry.time) / 60000; // in minutes
+                    if (timeDiff > 0) {
+                        volumeRate = (currentVolume - oldestEntry.volume) / timeDiff;
+                    }
+                }
+
+                whales.push({
+                    symbol: symbol,
+                    price: price,
+                    dayChange: stock.dayChange || 0,
+                    volume: currentVolume,
+                    dollarVolume: dollarVolume,
+                    volumeSpike: volumeSpike,
+                    volumeRate: volumeRate,
+                    avgVolume: avgVolume,
+                    timestamp: now,
+                    alert: volumeSpike > 5 ? 'EXTREME' : volumeSpike > 3 ? 'HIGH' : 'MODERATE'
+                });
+            }
+        }
+
+        // Sort by dollar volume
+        whales.sort((a, b) => b.dollarVolume - a.dollarVolume);
+
+        // Keep top 20 whale orders
+        whaleOrdersCache = whales.slice(0, 20);
+
+        return whaleOrdersCache;
+    } catch (error) {
+        console.error('Error detecting whale orders:', error.message);
+        return whaleOrdersCache;
+    }
+}
+
 // Main landing page with navigation
 app.get('/', (req, res) => {
     res.send(`
