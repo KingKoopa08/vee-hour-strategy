@@ -506,7 +506,44 @@
                 <th rowspan="2">Symbol</th>
                 <th rowspan="2" class="sortable" data-sort="price">Price</th>
                 <th rowspan="2" class="sortable sorted-desc" data-sort="dayChange">Day %</th>
-                <th rowspan="2" class="sortable" data-sort="buyPressure" title="Buy Pressure Indicator (0-100)">Buy Pressure</th>
+                <th rowspan="2" class="sortable" data-sort="buyPressure">
+                    Buy Pressure
+                    <span style="
+                        display: inline-block;
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 50%;
+                        background: #0088ff;
+                        color: white;
+                        font-size: 11px;
+                        line-height: 16px;
+                        text-align: center;
+                        cursor: help;
+                        margin-left: 4px;
+                        font-weight: bold;
+                    " title="Buy Pressure Calculation:
+
+Base: 50 (neutral)
+
+1. Price Movement (±20 points max):
+   • If price ↑ in 30s: +min(20, price% × 4)
+   • If price ↓ in 30s: -min(20, price% × 4)
+
+2. Volume Surge (±15 points max):
+   • Volume ↑ + Price ↑: +min(15, vol%/10)
+   • Volume ↑ + Price ↓: -min(15, vol%/10)
+
+3. Sustained Trend (±15 points):
+   • 1m + 30s both ↑: +15 (buying trend)
+   • 1m + 30s both ↓: -15 (selling trend)
+
+Final: Clamped to 0-100 range
+• >70 = Strong Buy Pressure 🟢
+• 40-60 = Neutral ➖
+• <30 = Strong Sell Pressure 🔴
+
+Note: Resets to 50 when no trades occur">?</span>
+                </th>
                 <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Price Δ%</th>
                 <th colspan="5" style="text-align: center; border-bottom: 1px solid rgba(0, 255, 65, 0.2);">Volume Δ%</th>
                 <th rowspan="2" class="sortable" data-sort="volume" id="volumeHeader">Total Volume</th>
