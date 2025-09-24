@@ -1359,6 +1359,7 @@ app.listen(PORT, () => {
     console.log(`📡 Main Hub: http://localhost:${PORT}`);
     console.log(`📡 Top Gainers: http://localhost:${PORT}/gainers`);
     console.log(`📡 Volume Movers: http://localhost:${PORT}/volume`);
+    console.log(`📡 Whale Detector: http://localhost:${PORT}/whales`);
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
