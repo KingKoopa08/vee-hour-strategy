@@ -1346,17 +1346,16 @@ const trackHistoricalData = () => {
         console.log(`   - volumeMoversCache length: ${volumeMoversCache.length}`);
     }
 
-    // Use topGainersCache as the source (it contains all stocks)
-    // Only update volumeMoversCache if we have data
-    if (topGainersCache.length === 0) {
+    // Use volumeMoversCache as the source if it has data, otherwise skip
+    if (volumeMoversCache.length === 0) {
         if (seconds >= 40 || seconds <= 5) {
-            console.log(`⚠️ [${new Date().toISOString()}] No data in topGainersCache at :${seconds}s`);
+            console.log(`⚠️ [${new Date().toISOString()}] No data in volumeMoversCache at :${seconds}s`);
         }
         return; // No data yet
     }
 
-    // Process all stocks from topGainersCache
-    const processedStocks = topGainersCache.map(stock => {
+    // Process stocks from existing volumeMoversCache (preserving all data)
+    const processedStocks = volumeMoversCache.map(stock => {
         const symbol = stock.symbol;
         const currentVolume = stock.volume || stock.currentVolume;
         const currentPrice = stock.price || stock.currentPrice;
