@@ -1444,14 +1444,25 @@ const startUpdates = () => {
     }
 
     updateInterval = setInterval(async () => {
+        const seconds = new Date().getSeconds();
+
         if (isUpdating) {
-            console.log('⏳ Previous update still in progress, skipping...');
+            if (seconds >= 40 || seconds <= 5) {
+                console.log(`⏳ [${new Date().toISOString()}] Previous update still in progress at :${seconds}s, skipping...`);
+            } else {
+                console.log('⏳ Previous update still in progress, skipping...');
+            }
             return;
         }
 
         isUpdating = true;
         // Run all three updates in parallel to prevent blocking
         const startTime = Date.now();
+
+        if (seconds >= 40 || seconds <= 5) {
+            console.log(`🔄 [${new Date().toISOString()}] Starting API update at :${seconds}s`);
+        }
+
         try {
             await Promise.all([
                 getTopGainers().catch(err => console.error('Error updating gainers:', err)),
@@ -1459,6 +1470,11 @@ const startUpdates = () => {
                 getWhaleOrders().catch(err => console.error('Error updating whale orders:', err))
             ]);
             const updateTime = Date.now() - startTime;
+
+            if (seconds >= 40 || seconds <= 5) {
+                console.log(`✅ [${new Date().toISOString()}] API update completed in ${updateTime}ms at :${new Date().getSeconds()}s`);
+            }
+
             if (updateTime > 1000) {
                 console.log(`⚠️ Slow update: ${updateTime}ms`);
             }
