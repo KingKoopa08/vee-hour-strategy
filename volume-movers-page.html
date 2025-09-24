@@ -480,11 +480,11 @@
             if (wsHost === 'localhost' || wsHost === '127.0.0.1') {
                 // Local development
                 wsUrl = `ws://${wsHost}:3051`;
-            } else if (wsHost === 'daily3club.com') {
-                // Production domain with nginx proxy
+            } else if (wsProtocol === 'wss:') {
+                // HTTPS connection - use WSS through nginx proxy
                 wsUrl = `${wsProtocol}//${wsHost}/ws`;
             } else {
-                // Direct IP access - connect directly to WebSocket port
+                // Direct HTTP/IP access - connect directly to WebSocket port
                 wsUrl = `ws://${wsHost}:3051`;
             }
             ws = new WebSocket(wsUrl);
