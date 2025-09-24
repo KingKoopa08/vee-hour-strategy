@@ -701,9 +701,29 @@ Note: Resets to 50 when no trades occur">?</span>
             };
 
             ws.onmessage = (event) => {
+                const now = new Date();
+                const seconds = now.getSeconds();
+                const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+
+                // Enhanced debug logging around :42 to :01 window
+                if (seconds >= 40 || seconds <= 5) {
+                    console.log(`📨 [${timeString}] WebSocket message received at :${seconds}s`);
+                    console.log(`   Message size: ${event.data.length} bytes`);
+                }
+
                 const data = JSON.parse(event.data);
 
                 if (data.type === 'volumeMovers') {
+                    // Log data details during critical window
+                    if (seconds >= 40 || seconds <= 5) {
+                        console.log(`   Data type: volumeMovers`);
+                        console.log(`   Stocks count: ${data.data ? data.data.length : 0}`);
+                        if (data.data && data.data.length > 0) {
+                            const sample = data.data[0];
+                            console.log(`   Sample stock: ${sample.symbol} - Buy Pressure: ${sample.buyPressure}`);
+                        }
+                    }
+
                     // Store the raw data
                     allStocks = data.data;
 
@@ -711,9 +731,12 @@ Note: Resets to 50 when no trades occur">?</span>
                     updateTable(allStocks);
 
                     // Update last update time with milliseconds to show real-time updates
-                    const now = new Date();
-                    const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
                     document.getElementById('lastUpdate').innerHTML = `${timeString} <span style="color: #00ff41;">●</span>`;
+
+                    // Log update completion
+                    if (seconds >= 40 || seconds <= 5) {
+                        console.log(`✅ Table updated at :${seconds}s`);
+                    }
 
                     // Flash indicator to show update received
                     const indicator = document.getElementById('connection-status');
