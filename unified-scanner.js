@@ -1349,9 +1349,17 @@ const startUpdates = () => {
     const interval = marketSession === 'Closed' ? 60000 : 1000;
 
     updateInterval = setInterval(async () => {
-        await getTopGainers();
-        await getVolumeMovers(); // Update volume movers data
-        await getWhaleOrders(); // Update whale orders data
+        // Run all three updates in parallel to prevent blocking
+        const startTime = Date.now();
+        await Promise.all([
+            getTopGainers().catch(err => console.error('Error updating gainers:', err)),
+            getVolumeMovers().catch(err => console.error('Error updating volume movers:', err)),
+            getWhaleOrders().catch(err => console.error('Error updating whale orders:', err))
+        ]);
+        const updateTime = Date.now() - startTime;
+        if (updateTime > 1000) {
+            console.log(`⚠️ Slow update: ${updateTime}ms`);
+        }
 
         const currentSession = getMarketSession();
 
