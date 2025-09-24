@@ -569,10 +569,14 @@ Note: Resets to 50 when no trades occur">?</span>
     </table>
 
     <script>
+        // Version timestamp to verify page refresh
+        const PAGE_VERSION = '2025-09-24-v3';
+
         // Immediate debug output - runs as soon as script loads
         console.log('=====================================');
         console.log('🚀 Volume Movers Page - Debug Mode ON');
         console.log(`📅 Page loaded at: ${new Date().toLocaleTimeString()}`);
+        console.log(`📦 Version: ${PAGE_VERSION}`);
         console.log('👀 Monitoring :40 to :05 seconds');
         console.log('=====================================');
 
