@@ -700,10 +700,28 @@ Note: Resets to 50 when no trades occur">?</span>
                 }
             };
 
+            // Track last message time for gap detection
+            let lastMessageTime = Date.now();
+
+            // Monitor for gaps in messages every second
+            setInterval(() => {
+                const now = Date.now();
+                const seconds = new Date().getSeconds();
+                const timeSinceLastMessage = now - lastMessageTime;
+
+                // Alert if no message for more than 2 seconds during critical window
+                if (timeSinceLastMessage > 2000 && (seconds >= 40 || seconds <= 5)) {
+                    console.warn(`⚠️ [${new Date().toLocaleTimeString()}] No WebSocket messages for ${(timeSinceLastMessage/1000).toFixed(1)}s at :${seconds}s`);
+                }
+            }, 1000);
+
             ws.onmessage = (event) => {
                 const now = new Date();
                 const seconds = now.getSeconds();
                 const timeString = now.toLocaleTimeString() + '.' + now.getMilliseconds().toString().padStart(3, '0');
+
+                // Update last message time
+                lastMessageTime = Date.now();
 
                 // Enhanced debug logging around :42 to :01 window
                 if (seconds >= 40 || seconds <= 5) {
