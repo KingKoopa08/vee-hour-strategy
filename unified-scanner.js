@@ -1292,6 +1292,17 @@ app.get('/api/spikes', (req, res) => {
     });
 });
 
+// Whale detector API
+app.get('/api/whales', async (req, res) => {
+    const whales = await getWhaleOrders();
+    res.json({
+        success: true,
+        count: whales.length,
+        whales: whales,
+        marketSession: getMarketSession()
+    });
+});
+
 // Dynamic update interval based on market hours
 let updateInterval;
 const startUpdates = () => {
