@@ -1,6 +1,6 @@
-# Trading Analysis Platform
+# 📈 PreMarket Strategy - Real-Time Market Scanner
 
-A comprehensive pre-market trading analysis platform implementing the VEE/HOUR/ISPC strategy with real-time data from Polygon.io.
+A high-performance market scanner and trading analysis platform that tracks top gainers, volume movers, and implements the VEE/HOUR/ISPC strategy using Polygon.io real-time data.
 
 ## Features
 
