@@ -594,8 +594,25 @@
         // Sort whales
         function sortWhales(whales) {
             return [...whales].sort((a, b) => {
-                const aVal = a[currentSort.field];
-                const bVal = b[currentSort.field];
+                let aVal, bVal;
+
+                // Map sort fields to actual data fields
+                if (currentSort.field === 'change') {
+                    aVal = a.dayChange || a.change || 0;
+                    bVal = b.dayChange || b.change || 0;
+                } else if (currentSort.field === 'volume') {
+                    aVal = a.volume || a.currentVolume || 0;
+                    bVal = b.volume || b.currentVolume || 0;
+                } else if (currentSort.field === 'spike') {
+                    aVal = a.volumeSpike || 1;
+                    bVal = b.volumeSpike || 1;
+                } else if (currentSort.field === 'time') {
+                    aVal = a.timestamp || a.detectedAt || 0;
+                    bVal = b.timestamp || b.detectedAt || 0;
+                } else {
+                    aVal = a[currentSort.field];
+                    bVal = b[currentSort.field];
+                }
 
                 if (currentSort.direction === 'asc') {
                     return aVal > bVal ? 1 : -1;
