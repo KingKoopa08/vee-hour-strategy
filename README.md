@@ -2,47 +2,95 @@
 
 A high-performance market scanner and trading analysis platform that tracks top gainers, volume movers, and implements the VEE/HOUR/ISPC strategy using Polygon.io real-time data.
 
-## Features
+## 🚀 Features
 
-- **Real-time Market Data**: Live price feeds via Polygon.io WebSocket
+### Market Scanner
+- **Real-time Top Gainers** - Track stocks with highest daily gains
+- **Volume Analysis** - Monitor unusual volume patterns and spikes
+- **Price Change Tracking** - 30s, 1m, 2m, 3m, 5m price movements
+- **WebSocket Updates** - Live data streaming without page refresh
+- **Market Session Aware** - Pre-market, Regular Hours, After-hours tracking
+- **Accurate Calculations** - Price changes calculated from actual prices
+
+### Trading Platform
 - **Technical Indicators**: VWAP, RSI, Bollinger Bands, SMA, EMA
 - **Time-Based Analysis**: Critical pre-market windows (6:05 AM, 6:35 AM, 7:55 AM MT)
 - **Safety Scoring**: Algorithmic assessment of stock safety
 - **Signal Generation**: Automated buy/sell/warning signals
 - **Interactive Charts**: Real-time candlestick charts with indicators
-- **Volume Analysis**: Pre-market volume comparison and tracking
 
-## Quick Start
+## 📊 Live Access
+
+- **Production**: https://daily3club.com (Market Scanner)
+- **Trading Platform**: http://15.204.86.6:3010
+- **API Endpoint**: https://daily3club.com/api/gainers
+
+## 🔧 Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Polygon.io API key
+- Node.js 18+
+- PM2 (`npm install -g pm2`)
+- Polygon.io API key (Current: KxOoBWACGCGE5QN_0zQPRNMHVwIRdiTV)
+- Docker and Docker Compose (for trading platform)
 
-### Installation
+### Installation - Market Scanner
 
-1. Clone the repository:
+1. Clone and setup:
 ```bash
-git clone <repository-url>
-cd PreMarket_Strategy
+git clone https://github.com/KingKoopa08/vee-hour-strategy.git
+cd vee-hour-strategy
+npm install
 ```
 
-2. Create environment file:
+2. Configure environment:
 ```bash
 cp .env.example .env
-# Edit .env and add your Polygon.io API key
+# Edit .env with your Polygon API key
 ```
 
-3. Start the application:
+3. Start the scanner:
 ```bash
-docker-compose up --build
+# Development
+node unified-scanner.js
+
+# Production with PM2
+pm2 start unified-scanner.js --name market-scanner
 ```
 
-4. Access the application:
-- Frontend: http://localhost:3010
-- Backend API: http://localhost:3001
-- WebSocket: ws://localhost:3002
+4. Access:
+- Scanner: http://localhost:3050
+- Volume Movers: http://localhost:3050/volume
+- API: http://localhost:3050/api/gainers
 
-## Critical Trading Windows (Mountain Time)
+### Installation - Trading Platform
+
+```bash
+# Using Docker Compose
+docker-compose up --build
+
+# Access at:
+# Frontend: http://localhost:3010
+# Backend: http://localhost:3001
+
+## 📁 Project Structure
+
+```
+PreMarket_Strategy/
+├── unified-scanner.js      # Market scanner server
+├── volume-movers-page.html # Volume tracking interface
+├── docker-compose.yml      # Trading platform containers
+├── scripts/                # Deployment and setup scripts
+│   ├── deploy.sh          # Production deployment
+│   ├── setup-domain.sh    # Domain configuration
+│   ├── setup-ssl.sh       # SSL certificate setup
+│   ├── fix-routing.sh     # Fix routing issues
+│   └── setup-both-apps.sh # Multi-app setup
+├── TRAFFIC-ROUTING.md      # Nginx routing guide
+├── DOMAIN-SETUP.md        # Domain configuration
+└── README.md              # This file
+```
+
+## ⏰ Critical Trading Windows (Mountain Time)
 
 - **5:00-6:00 AM**: Early volume analysis
 - **6:05 AM**: Primary entry signal (KEY WINDOW)
