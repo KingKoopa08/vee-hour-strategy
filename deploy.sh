@@ -1,187 +1,127 @@
 #!/bin/bash
 
-# Market Scanner Hub - Deployment Script
-# This script automates the deployment process to a VPS
+# ============================================
+# PRODUCTION DEPLOYMENT SCRIPT
+# Run this directly on the production server
+# ============================================
 
-set -e  # Exit on error
+set -e
 
-echo "====================================="
-echo "🚀 Market Scanner Hub Deployment"
-echo "====================================="
-
-# Configuration
-REPO_URL=${REPO_URL:-""}
-DEPLOY_PATH=${DEPLOY_PATH:-"/var/www/market-scanner"}
-PM2_APP_NAME="market-scanner"
-NODE_ENV="production"
-
-# Colors for output
-RED='\033[0;31m'
+# Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-# Check if running as root (not recommended)
-if [ "$EUID" -eq 0 ]; then
-   print_warning "Running as root is not recommended. Consider using a regular user with sudo."
-fi
-
-# Step 1: Check prerequisites
+echo -e "${CYAN}============================================${NC}"
+echo -e "${CYAN}🚀 DEPLOYING TO PRODUCTION${NC}"
+echo -e "${CYAN}============================================${NC}"
 echo ""
-echo "📋 Checking prerequisites..."
 
-# Check Node.js
-if ! command -v node &> /dev/null; then
-    print_error "Node.js is not installed. Please install Node.js 16+ first."
-    echo "Run: curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs"
-    exit 1
-else
-    NODE_VERSION=$(node -v)
-    print_status "Node.js installed: $NODE_VERSION"
-fi
+# Step 1: Pull latest changes from GitHub
+echo -e "${YELLOW}📋 Step 1: Pulling latest changes from GitHub...${NC}"
+cd /root/PreMarket_Stratedy
+git pull origin main
+echo -e "${GREEN}✅ Code updated${NC}"
 
-# Check npm
-if ! command -v npm &> /dev/null; then
-    print_error "npm is not installed."
-    exit 1
-else
-    NPM_VERSION=$(npm -v)
-    print_status "npm installed: $NPM_VERSION"
-fi
-
-# Check git
-if ! command -v git &> /dev/null; then
-    print_error "Git is not installed. Installing..."
-    sudo apt-get update && sudo apt-get install -y git
-fi
-
-# Step 2: Install PM2 globally if not installed
+# Step 2: Stop existing services
 echo ""
-echo "📦 Checking PM2..."
-if ! command -v pm2 &> /dev/null; then
-    print_warning "PM2 not found. Installing globally..."
-    sudo npm install -g pm2
-    print_status "PM2 installed"
-else
-    print_status "PM2 already installed"
-fi
+echo -e "${YELLOW}📋 Step 2: Stopping existing services...${NC}"
+pm2 kill 2>/dev/null || true
+pkill -9 -f node 2>/dev/null || true
+fuser -k 3050/tcp 2>/dev/null || true
+fuser -k 3051/tcp 2>/dev/null || true
+echo -e "${GREEN}✅ Services stopped${NC}"
 
-# Step 3: Clone or update repository
+# Step 3: Stop Docker containers
 echo ""
-echo "📥 Setting up application..."
+echo -e "${YELLOW}📋 Step 3: Stopping Docker containers...${NC}"
+docker-compose -f docker-compose.market-scanner.yml down 2>/dev/null || true
+docker rm -f market-scanner market-scanner-ws 2>/dev/null || true
+echo -e "${GREEN}✅ Containers stopped${NC}"
 
-if [ -z "$REPO_URL" ]; then
-    print_error "Repository URL not set!"
-    echo "Please set REPO_URL environment variable:"
-    echo "export REPO_URL='https://github.com/yourusername/your-repo.git'"
-    exit 1
-fi
-
-# Create deploy directory if it doesn't exist
-sudo mkdir -p "$DEPLOY_PATH"
-sudo chown $USER:$USER "$DEPLOY_PATH"
-
-if [ -d "$DEPLOY_PATH/.git" ]; then
-    print_status "Repository exists. Pulling latest changes..."
-    cd "$DEPLOY_PATH"
-    git stash
-    git pull origin main
-else
-    print_status "Cloning repository..."
-    git clone "$REPO_URL" "$DEPLOY_PATH"
-    cd "$DEPLOY_PATH"
-fi
-
-# Step 4: Install dependencies
+# Step 4: Rebuild Docker image (with cache for faster builds)
 echo ""
-echo "📚 Installing dependencies..."
-npm ci --production || npm install --production
-print_status "Dependencies installed"
+echo -e "${YELLOW}📋 Step 4: Building Docker image...${NC}"
+echo "Use --no-cache flag if you need a clean rebuild"
+docker-compose -f docker-compose.market-scanner.yml build
+echo -e "${GREEN}✅ Docker image built${NC}"
 
-# Step 5: Set up environment variables
+# Step 5: Start fresh containers
 echo ""
-echo "🔐 Setting up environment..."
+echo -e "${YELLOW}📋 Step 5: Starting containers...${NC}"
+docker-compose -f docker-compose.market-scanner.yml up -d
+echo -e "${GREEN}✅ Containers started${NC}"
 
-if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        print_warning ".env file created from template. Please edit it to add your API keys:"
-        echo "  nano $DEPLOY_PATH/.env"
-        echo ""
-        read -p "Press Enter after you've added your POLYGON_API_KEY to continue..."
+# Step 6: Clear nginx cache
+echo ""
+echo -e "${YELLOW}📋 Step 6: Clearing nginx cache...${NC}"
+docker exec thc-nginx rm -rf /var/cache/nginx/* 2>/dev/null || true
+docker exec thc-nginx nginx -s reload 2>/dev/null || true
+echo -e "${GREEN}✅ Nginx cache cleared${NC}"
+
+# Step 7: Wait for services to start
+echo ""
+echo -e "${YELLOW}📋 Step 7: Waiting for services to start...${NC}"
+sleep 5
+
+# Step 8: Verify deployment
+echo ""
+echo -e "${YELLOW}📋 Step 8: Verifying deployment...${NC}"
+echo ""
+
+# Check container status
+echo "Container status:"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep market- || echo -e "${RED}No market containers running!${NC}"
+
+# Check if site is responding
+echo ""
+echo "Testing site response..."
+if curl -s https://daily3club.com > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Site is responding on https://daily3club.com${NC}"
+
+    # Check specific pages
+    echo ""
+    echo "Testing pages:"
+    for page in "" "/gainers" "/volume"; do
+        if curl -s "https://daily3club.com${page}" > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ https://daily3club.com${page} is working${NC}"
+        else
+            echo -e "${RED}❌ https://daily3club.com${page} is not responding${NC}"
+        fi
+    done
+
+    # Check if removed features are gone
+    echo ""
+    if curl -s https://daily3club.com | grep -q "/rising\|/spikes"; then
+        echo -e "${YELLOW}⚠️  Old features (Rising/Spike) still visible - may need cache clear${NC}"
     else
-        print_error ".env.example not found!"
-        exit 1
+        echo -e "${GREEN}✅ Old features successfully removed${NC}"
     fi
 else
-    print_status ".env file already exists"
+    echo -e "${RED}❌ Site not responding!${NC}"
+    echo ""
+    echo "Container logs:"
+    docker logs market-scanner --tail 30
 fi
 
-# Step 6: Create logs directory
+# Step 9: Show container logs
 echo ""
-echo "📝 Setting up logging..."
-mkdir -p logs
-print_status "Logs directory created"
+echo -e "${YELLOW}📋 Recent container logs:${NC}"
+docker logs market-scanner --tail 10
 
-# Step 7: Stop existing PM2 process if running
 echo ""
-echo "🔄 Managing PM2 process..."
-if pm2 list | grep -q "$PM2_APP_NAME"; then
-    print_status "Stopping existing process..."
-    pm2 stop "$PM2_APP_NAME"
-    pm2 delete "$PM2_APP_NAME"
-fi
-
-# Step 8: Start application with PM2
+echo -e "${CYAN}============================================${NC}"
+echo -e "${CYAN}✅ DEPLOYMENT COMPLETE${NC}"
+echo -e "${CYAN}============================================${NC}"
 echo ""
-echo "🚀 Starting application..."
-NODE_ENV=$NODE_ENV pm2 start ecosystem.config.js
-
-# Save PM2 configuration
-pm2 save
-
-# Setup PM2 to start on system boot
+echo "Site URLs:"
+echo "• https://daily3club.com"
+echo "• https://daily3club.com/gainers"
+echo "• https://daily3club.com/volume"
 echo ""
-echo "⚙️  Setting up auto-start on boot..."
-pm2 startup systemd -u $USER --hp $HOME | grep sudo | bash
-
-print_status "PM2 auto-start configured"
-
-# Step 9: Check application status
-echo ""
-echo "📊 Application Status:"
-pm2 status "$PM2_APP_NAME"
-
-# Step 10: Display access information
-echo ""
-echo "====================================="
-echo "✅ Deployment Complete!"
-echo "====================================="
-echo ""
-echo "📡 Access your application at:"
-echo "  Main Hub: http://$(hostname -I | awk '{print $1}'):3000"
-echo "  Top Gainers: http://$(hostname -I | awk '{print $1}'):3000/gainers"
-echo "  Rising Stocks: http://$(hostname -I | awk '{print $1}'):3000/rising"
-echo ""
-echo "📝 Useful commands:"
-echo "  View logs: pm2 logs $PM2_APP_NAME"
-echo "  Monitor: pm2 monit"
-echo "  Restart: pm2 restart $PM2_APP_NAME"
-echo "  Stop: pm2 stop $PM2_APP_NAME"
-echo "  Status: pm2 status"
-echo ""
-
-echo "🎉 Deployment script completed!"
+echo "Monitoring commands:"
+echo "• docker logs -f market-scanner"
+echo "• docker ps | grep market-"
+echo "• curl -s https://daily3club.com | head -20"
