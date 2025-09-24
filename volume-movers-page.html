@@ -806,26 +806,9 @@
                 if (data.success) {
                     updateTable(data.stocks);
 
-                    // Update volume header based on market session
+                    // Update market session if provided
                     if (data.marketSession) {
                         document.getElementById('sessionName').textContent = data.marketSession;
-                        const volumeHeader = document.getElementById('volumeHeader');
-                        if (volumeHeader) {
-                            switch(data.marketSession) {
-                                case 'Pre-Market':
-                                    volumeHeader.textContent = 'Pre-Mkt Vol';
-                                    break;
-                                case 'Regular':
-                                case 'Market Open':
-                                    volumeHeader.textContent = 'Market Vol';
-                                    break;
-                                case 'After Hours':
-                                    volumeHeader.textContent = 'AH Vol';
-                                    break;
-                                default:
-                                    volumeHeader.textContent = 'Volume';
-                            }
-                        }
                     }
                 }
             } catch (error) {
