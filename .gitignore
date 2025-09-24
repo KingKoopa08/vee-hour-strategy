@@ -55,4 +55,4 @@ docker-compose.override.yml
 # Misc
 *.bak
 *.tmp
-.temp/
+.temp/unified-scanner-polygon-backup.js
