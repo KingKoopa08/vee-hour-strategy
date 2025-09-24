@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whale Detector - Daily3Club</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e1a;
+            color: #e0e6ed;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .nav-links a.active {
+            border-bottom: 2px solid white;
+            padding-bottom: 2px;
+        }
+
+        .market-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .filters-section {
+            background: #1a1f2e;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .filters-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #e0e6ed;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .filter-input {
+            padding: 0.5rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select.filter-input {
+            cursor: pointer;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1a1f2e;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .whales-table {
+            background: #1a1f2e;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .table-header {
+            padding: 1rem 1.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .refresh-indicator {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #0f172a;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            border-bottom: 2px solid #334155;
+            cursor: pointer;
+            user-select: none;
+            position: sticky;
+            top: 0;
+        }
+
+        th.sortable:hover {
+            background: #1e293b;
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            color: #667eea;
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            color: #667eea;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .ticker {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .volume-bar {
+            background: #334155;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.25rem;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .spike-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .spike-extreme {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .spike-high {
+            background: rgba(251, 146, 60, 0.2);
+            color: #fb923c;
+        }
+
+        .spike-moderate {
+            background: rgba(250, 204, 21, 0.2);
+            color: #facc15;
+        }
+
+        .price-change {
+            font-weight: 600;
+        }
+
+        .positive {
+            color: #4ade80;
+        }
+
+        .negative {
+            color: #f87171;
+        }
+
+        .neutral {
+            color: #94a3b8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .spinner {
+            border: 3px solid #334155;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .alert-badge {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                🐋 Whale Detector
+            </div>
+            <nav class="nav-links">
+                <a href="/">Scanner</a>
+                <a href="/gainers">Top Gainers</a>
+                <a href="/volume">Volume Movers</a>
+                <a href="/whales" class="active">Whales</a>
+            </nav>
+            <div class="market-status">
+                <div class="status-indicator"></div>
+                <span id="market-status">Checking...</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="filters-header">🔍 Detection Filters</div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Min Dollar Volume</label>
+                    <input type="number" id="min-dollar-volume" class="filter-input" value="500000" step="100000">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Min Volume Spike</label>
+                    <select id="min-spike" class="filter-input">
+                        <option value="2">2x Average</option>
+                        <option value="3" selected>3x Average</option>
+                        <option value="5">5x Average</option>
+                        <option value="10">10x Average</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Price Range</label>
+                    <select id="price-range" class="filter-input">
+                        <option value="all" selected>All Prices</option>
+                        <option value="penny">Under $5</option>
+                        <option value="mid">$5 - $50</option>
+                        <option value="high">Over $50</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Time Frame</label>
+                    <select id="time-frame" class="filter-input">
+                        <option value="1" selected>Last 1 min</option>
+                        <option value="5">Last 5 min</option>
+                        <option value="15">Last 15 min</option>
+                        <option value="60">Last hour</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Active Whales</div>
+                <div class="stat-value" id="active-whales">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Volume ($)</div>
+                <div class="stat-value" id="total-volume">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Avg Spike</div>
+                <div class="stat-value" id="avg-spike">0x</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Extreme Alerts</div>
+                <div class="stat-value" id="extreme-alerts">0</div>
+            </div>
+        </div>
+
+        <!-- Whales Table -->
+        <div class="whales-table">
+            <div class="table-header">
+                <div class="table-title">🎯 Detected Whale Orders</div>
+                <div class="refresh-indicator">
+                    <span id="last-update">Updating...</span>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="symbol">Symbol</th>
+                        <th class="sortable" data-sort="price">Price</th>
+                        <th class="sortable" data-sort="change">% Change</th>
+                        <th class="sortable" data-sort="volume">Current Volume</th>
+                        <th class="sortable" data-sort="avgVolume">Avg Volume</th>
+                        <th class="sortable" data-sort="spike">Volume Spike</th>
+                        <th class="sortable" data-sort="dollarVolume">Dollar Volume</th>
+                        <th class="sortable" data-sort="time">Detected</th>
+                    </tr>
+                </thead>
+                <tbody id="whales-tbody">
+                    <tr>
+                        <td colspan="8" class="loading">
+                            <div class="spinner"></div>
+                            <p>Scanning for whale orders...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let whalesData = [];
+        let currentSort = { field: 'dollarVolume', direction: 'desc' };
+        let filters = {
+            minDollarVolume: 500000,
+            minSpike: 3,
+            priceRange: 'all',
+            timeFrame: 1
+        };
+        let lastUpdateTime = Date.now();
+
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:3051`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                requestWhalesData();
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'whales') {
+                        updateWhalesData(data.whales);
+                    } else if (data.type === 'marketStatus') {
+                        updateMarketStatus(data.status);
+                    }
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(initWebSocket, 3000);
+            };
+        }
+
+        // Request whale data
+        function requestWhalesData() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'getWhales',
+                    filters: filters
+                }));
+            }
+        }
+
+        // Update whales data
+        function updateWhalesData(whales) {
+            whalesData = whales || [];
+            lastUpdateTime = Date.now();
+
+            // Apply filters
+            const filtered = filterWhales(whalesData);
+
+            // Update stats
+            updateStats(filtered);
+
+            // Sort data
+            const sorted = sortWhales(filtered);
+
+            // Render table
+            renderWhalesTable(sorted);
+
+            // Update last update time
+            updateLastUpdateTime();
+        }
+
+        // Filter whales based on current filters
+        function filterWhales(whales) {
+            return whales.filter(whale => {
+                // Dollar volume filter
+                if (whale.dollarVolume < filters.minDollarVolume) return false;
+
+                // Volume spike filter
+                if (whale.volumeSpike < filters.minSpike) return false;
+
+                // Price range filter
+                if (filters.priceRange !== 'all') {
+                    const price = whale.price;
+                    if (filters.priceRange === 'penny' && price >= 5) return false;
+                    if (filters.priceRange === 'mid' && (price < 5 || price > 50)) return false;
+                    if (filters.priceRange === 'high' && price <= 50) return false;
+                }
+
+                // Time frame filter
+                const minutesAgo = (Date.now() - new Date(whale.detectedAt)) / 60000;
+                if (minutesAgo > filters.timeFrame) return false;
+
+                return true;
+            });
+        }
+
+        // Sort whales
+        function sortWhales(whales) {
+            return [...whales].sort((a, b) => {
+                const aVal = a[currentSort.field];
+                const bVal = b[currentSort.field];
+
+                if (currentSort.direction === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+        }
+
+        // Update statistics
+        function updateStats(whales) {
+            const activeCount = whales.length;
+            const totalVolume = whales.reduce((sum, w) => sum + w.dollarVolume, 0);
+            const avgSpike = whales.length > 0
+                ? whales.reduce((sum, w) => sum + w.volumeSpike, 0) / whales.length
+                : 0;
+            const extremeAlerts = whales.filter(w => w.volumeSpike > 10).length;
+
+            document.getElementById('active-whales').textContent = activeCount;
+            document.getElementById('total-volume').textContent = formatDollarVolume(totalVolume);
+            document.getElementById('avg-spike').textContent = avgSpike.toFixed(1) + 'x';
+            document.getElementById('extreme-alerts').textContent = extremeAlerts;
+        }
+
+        // Render whales table
+        function renderWhalesTable(whales) {
+            const tbody = document.getElementById('whales-tbody');
+
+            if (whales.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="no-data">
+                            No whale orders detected with current filters
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = whales.map(whale => {
+                const changeClass = whale.change > 0 ? 'positive' : whale.change < 0 ? 'negative' : 'neutral';
+                const spikeClass = whale.volumeSpike > 10 ? 'spike-extreme' :
+                                 whale.volumeSpike > 5 ? 'spike-high' : 'spike-moderate';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="ticker">${whale.symbol}</div>
+                            ${whale.volumeSpike > 10 ? '<span class="alert-badge">EXTREME</span>' : ''}
+                        </td>
+                        <td>$${whale.price.toFixed(2)}</td>
+                        <td class="${changeClass}">
+                            ${whale.change > 0 ? '+' : ''}${whale.change.toFixed(2)}%
+                        </td>
+                        <td>
+                            ${formatVolume(whale.currentVolume)}
+                            <div class="volume-bar">
+                                <div class="volume-fill" style="width: ${Math.min(100, whale.volumeSpike * 10)}%"></div>
+                            </div>
+                        </td>
+                        <td>${formatVolume(whale.avgVolume)}</td>
+                        <td>
+                            <span class="spike-indicator ${spikeClass}">
+                                ${whale.volumeSpike.toFixed(1)}x
+                            </span>
+                        </td>
+                        <td>${formatDollarVolume(whale.dollarVolume)}</td>
+                        <td>${formatTime(whale.detectedAt)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Format volume
+        function formatVolume(volume) {
+            if (volume >= 1000000) {
+                return (volume / 1000000).toFixed(1) + 'M';
+            } else if (volume >= 1000) {
+                return (volume / 1000).toFixed(1) + 'K';
+            }
+            return volume.toString();
+        }
+
+        // Format dollar volume
+        function formatDollarVolume(volume) {
+            if (volume >= 1000000) {
+                return '$' + (volume / 1000000).toFixed(1) + 'M';
+            } else if (volume >= 1000) {
+                return '$' + (volume / 1000).toFixed(0) + 'K';
+            }
+            return '$' + volume.toFixed(0);
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins === 1) return '1 min ago';
+            if (diffMins < 60) return diffMins + ' mins ago';
+
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Update last update time
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('last-update').textContent =
+                `Last update: ${now.toLocaleTimeString()}`;
+        }
+
+        // Update market status
+        function updateMarketStatus(status) {
+            const statusElement = document.getElementById('market-status');
+            const indicator = document.querySelector('.status-indicator');
+
+            statusElement.textContent = status;
+
+            if (status.includes('Open')) {
+                indicator.style.background = '#4ade80';
+            } else if (status.includes('Pre') || status.includes('After')) {
+                indicator.style.background = '#facc15';
+            } else {
+                indicator.style.background = '#ef4444';
+            }
+        }
+
+        // Initialize sorting
+        function initializeSorting() {
+            const headers = document.querySelectorAll('th.sortable');
+
+            headers.forEach(th => {
+                th.addEventListener('click', function() {
+                    const field = this.dataset.sort;
+
+                    // Remove previous sorting classes
+                    headers.forEach(h => {
+                        h.classList.remove('sorted-asc', 'sorted-desc');
+                    });
+
+                    // Update sort direction
+                    if (currentSort.field === field) {
+                        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.field = field;
+                        currentSort.direction = 'desc';
+                    }
+
+                    // Add sorting class
+                    this.classList.add(`sorted-${currentSort.direction}`);
+
+                    // Re-render table
+                    const filtered = filterWhales(whalesData);
+                    const sorted = sortWhales(filtered);
+                    renderWhalesTable(sorted);
+                });
+            });
+        }
+
+        // Initialize filters
+        function initializeFilters() {
+            document.getElementById('min-dollar-volume').addEventListener('change', function() {
+                filters.minDollarVolume = parseInt(this.value) || 500000;
+                requestWhalesData();
+            });
+
+            document.getElementById('min-spike').addEventListener('change', function() {
+                filters.minSpike = parseFloat(this.value) || 3;
+                requestWhalesData();
+            });
+
+            document.getElementById('price-range').addEventListener('change', function() {
+                filters.priceRange = this.value;
+                requestWhalesData();
+            });
+
+            document.getElementById('time-frame').addEventListener('change', function() {
+                filters.timeFrame = parseInt(this.value) || 1;
+                requestWhalesData();
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeSorting();
+            initializeFilters();
+            initWebSocket();
+
+            // Auto-refresh every second
+            setInterval(() => {
+                requestWhalesData();
+            }, 1000);
+
+            // Update time displays every second
+            setInterval(updateLastUpdateTime, 1000);
+        });
+
+        // Fallback to fetch if WebSocket fails
+        async function fetchWhalesData() {
+            try {
+                const response = await fetch('/api/whales');
+                if (response.ok) {
+                    const data = await response.json();
+                    updateWhalesData(data.whales);
+                }
+            } catch (error) {
+                console.error('Error fetching whales data:', error);
+            }
+        }
+
+        // Fallback if WebSocket doesn't connect
+        setTimeout(() => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.log('WebSocket not connected, using fetch fallback');
+                fetchWhalesData();
+                setInterval(fetchWhalesData, 1000);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
