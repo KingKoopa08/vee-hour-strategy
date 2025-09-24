@@ -608,8 +608,10 @@
                 statusEl.innerHTML = '🟢 Connected';
                 statusEl.className = 'connected';
 
-                // Request initial data
-                ws.send(JSON.stringify({ type: 'subscribe', channel: 'volumeMovers' }));
+                // Request initial data only when fully connected
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'subscribe', channel: 'volumeMovers' }));
+                }
             };
 
             ws.onmessage = (event) => {
