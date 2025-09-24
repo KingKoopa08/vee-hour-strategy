@@ -1170,22 +1170,42 @@ app.get('/api/spikes', (req, res) => {
     });
 });
 
-// Update data every second
-setInterval(async () => {
-    await getTopGainers();
-    await getVolumeMovers(); // Update volume movers data
+// Dynamic update interval based on market hours
+let updateInterval;
+const startUpdates = () => {
+    if (updateInterval) clearInterval(updateInterval);
 
     const marketSession = getMarketSession();
+    // Use 5 seconds during market hours, 60 seconds when closed
+    const interval = marketSession === 'Closed' ? 60000 : 5000;
 
-    // Broadcast volume movers to WebSocket clients
-    broadcast({
-        type: 'volumeMovers',
-        data: volumeMoversCache,
-        marketSession: marketSession
-    });
+    updateInterval = setInterval(async () => {
+        await getTopGainers();
+        await getVolumeMovers(); // Update volume movers data
 
-    console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers | Session: ${marketSession}`);
-}, 1000);
+        const currentSession = getMarketSession();
+
+        // Broadcast volume movers to WebSocket clients
+        broadcast({
+            type: 'volumeMovers',
+            data: volumeMoversCache,
+            marketSession: currentSession
+        });
+
+        console.log(`✅ Updated ${topGainersCache.length} gainers, ${volumeMoversCache.length} volume movers | Session: ${currentSession}`);
+
+        // Check if market session changed to adjust interval
+        if ((currentSession === 'Closed' && interval === 5000) ||
+            (currentSession !== 'Closed' && interval === 60000)) {
+            startUpdates(); // Restart with new interval
+        }
+    }, interval);
+
+    console.log(`📊 Update interval set to ${interval/1000} seconds (Market: ${marketSession})`);
+};
+
+// Start the updates
+startUpdates();
 
 // Update rising stocks every 10 seconds
 setInterval(async () => {
