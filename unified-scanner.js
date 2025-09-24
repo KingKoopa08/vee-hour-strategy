@@ -999,7 +999,11 @@ app.get('/gainers', (req, res) => {
         // Connect to WebSocket
         function connect() {
             const wsHost = window.location.hostname || 'localhost';
-            const wsUrl = 'ws://' + wsHost + ':3051';
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // For HTTPS, use /ws path (proxied by Nginx). For HTTP, use port 3051
+            const wsUrl = protocol === 'wss:'
+                ? protocol + '//' + wsHost + '/ws'
+                : protocol + '//' + wsHost + ':3051';
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
