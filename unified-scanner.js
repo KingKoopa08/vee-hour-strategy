@@ -77,6 +77,24 @@ wss.on('connection', (ws) => {
         marketSession: getMarketSession()
     }));
 
+    // Handle messages from client
+    ws.on('message', async (message) => {
+        try {
+            const data = JSON.parse(message);
+
+            if (data.type === 'getWhales') {
+                // Get whale orders with filters
+                const whales = await getWhaleOrders();
+                ws.send(JSON.stringify({
+                    type: 'whales',
+                    whales: whales
+                }));
+            }
+        } catch (error) {
+            console.error('Error handling WebSocket message:', error);
+        }
+    });
+
     ws.on('close', () => {
         clients.delete(ws);
         console.log(`👤 Client disconnected. Total: ${clients.size}`);
