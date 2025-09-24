@@ -475,25 +475,44 @@ async function getVolumeMovers() {
             volumeMoversCache = movers;
             console.log(`🎯 [${new Date().toISOString()}] Initialized volumeMoversCache with ${movers.length} stocks`);
         } else {
-            // Merge new stocks while preserving historical data
+            // Create map of existing data for O(1) lookup
             const existingMap = new Map(volumeMoversCache.map(s => [s.symbol, s]));
 
+            // Create merged array that preserves ALL existing stocks and adds new ones
+            const mergedStocks = [];
+            const processedSymbols = new Set();
+
+            // First, add all new stocks with preserved historical data
             movers.forEach(newStock => {
                 const existing = existingMap.get(newStock.symbol);
                 if (existing && existing.buyPressure !== undefined) {
-                    // Preserve buy pressure and historical data
+                    // Preserve historical tracking data
                     newStock.buyPressure = existing.buyPressure;
-                    newStock.volumeChanges = existing.volumeChanges;
-                    newStock.priceChanges = existing.priceChanges;
+                    // Don't overwrite volumeChanges and priceChanges if they exist
+                    if (existing.volumeChanges) newStock.volumeChanges = existing.volumeChanges;
+                    if (existing.priceChanges) newStock.priceChanges = existing.priceChanges;
+                }
+                mergedStocks.push(newStock);
+                processedSymbols.add(newStock.symbol);
+            });
+
+            // Add any existing stocks that weren't in the new data (to preserve their tracking)
+            volumeMoversCache.forEach(existingStock => {
+                if (!processedSymbols.has(existingStock.symbol)) {
+                    // Keep the stock with its historical data intact
+                    mergedStocks.push(existingStock);
                 }
             });
 
             // Update cache with merged data
-            volumeMoversCache = movers;
+            volumeMoversCache = mergedStocks;
 
             const seconds = new Date().getSeconds();
             if (seconds >= 40 || seconds <= 5) {
-                console.log(`✅ [${new Date().toISOString()}] Merged data at :${seconds}s, preserved buy pressure`);
+                console.log(`✅ [${new Date().toISOString()}] Merged ${movers.length} new + ${mergedStocks.length - movers.length} existing stocks at :${seconds}s`);
+                // Log sample to verify preservation
+                const samplesWithBP = mergedStocks.filter(s => s.buyPressure && s.buyPressure !== 50).length;
+                console.log(`   Stocks with non-default buy pressure: ${samplesWithBP}/${mergedStocks.length}`);
             }
         }
 
@@ -1354,6 +1373,12 @@ const trackHistoricalData = () => {
         return; // No data yet
     }
 
+    // Log Map sizes to debug potential clearing
+    if (seconds >= 40 || seconds <= 5) {
+        console.log(`   📊 volumeHistory Map size: ${volumeHistory.size} symbols`);
+        console.log(`   📊 priceHistory Map size: ${priceHistory.size} symbols`);
+    }
+
     // Process stocks from existing volumeMoversCache (preserving all data)
     const processedStocks = volumeMoversCache.map(stock => {
         const symbol = stock.symbol;
@@ -1408,6 +1433,11 @@ const trackHistoricalData = () => {
 
         // Update buy pressure calculation
         const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges);
+
+        // Debug log for first stock around problem time
+        if (seconds >= 40 || seconds <= 5 && processedStocks.length === 0) {
+            console.log(`   🎯 ${symbol}: volHistory=${volHistory.length}, prcHistory=${prcHistory.length}, BP=${updatedBuyPressure}`);
+        }
 
         // Return updated stock with new buy pressure
         return {
