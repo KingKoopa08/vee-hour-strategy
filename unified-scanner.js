@@ -1189,7 +1189,8 @@ app.get('/api/volume', async (req, res) => {
         stocks: stocks,
         sortBy: sortBy,
         sortOrder: sortOrder,
-        secondarySort: secondarySort
+        secondarySort: secondarySort,
+        marketSession: getMarketSession()
     });
 });
 
