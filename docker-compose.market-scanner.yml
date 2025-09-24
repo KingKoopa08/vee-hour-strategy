@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  market-scanner:
+    build: .
+    container_name: market-scanner
+    restart: unless-stopped
+    ports:
+      - "3050:3050"
+      - "3051:3051"
+    environment:
+      - NODE_ENV=production
+      - POLYGON_API_KEY=KxOoBWACGCGE5QN_0zQPRNMHVwIRdiTV
+      - PORT=3050
+      - WS_PORT=3051
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - market-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3050/api/gainers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    container_name: market-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - market-scanner
+    networks:
+      - market-network
+
+networks:
+  market-network:
+    driver: bridge
