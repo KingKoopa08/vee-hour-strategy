@@ -243,30 +243,9 @@ async function getTopGainers() {
                     displayPrice = stock.min?.c || stock.day?.c || stock.prevDay?.c || 0;
                 }
 
-                // Get session-specific volume
-                let sessionVolume = 0;
-                let volumeLabel = 'Volume';
+                // Get total daily volume - more reliable than trying to split sessions
+                const totalVolume = stock.day?.v || stock.prevDay?.v || 0;
                 const session = getMarketSession();
-
-                if (session === 'Pre-Market') {
-                    // During pre-market, show accumulated volume (includes pre-market)
-                    sessionVolume = stock.min?.av || 0;
-                    volumeLabel = 'Pre-Market Vol';
-                } else if (session === 'Regular' || session === 'Market Open') {
-                    // During regular hours, show today's volume
-                    sessionVolume = stock.day?.v || 0;
-                    volumeLabel = 'Market Vol';
-                } else if (session === 'After Hours') {
-                    // During after-hours, show accumulated volume minus regular volume
-                    const totalVolume = stock.min?.av || 0;
-                    const regularVolume = stock.day?.v || 0;
-                    sessionVolume = totalVolume > regularVolume ? totalVolume - regularVolume : 0;
-                    volumeLabel = 'After-Hours Vol';
-                } else {
-                    // Market closed - show today's total volume
-                    sessionVolume = stock.day?.v || stock.prevDay?.v || 0;
-                    volumeLabel = 'Day Vol';
-                }
 
                 return {
                     symbol: stock.ticker,
@@ -274,9 +253,9 @@ async function getTopGainers() {
                     dayChange: stock.validatedDayChange || stock.todaysChangePerc || 0,
                     sessionChange: stock.sessionChange || 0,
                     afterHoursChange: stock.afterHoursChange || 0,
-                    volume: sessionVolume,
-                    volumeLabel: volumeLabel,
-                    totalVolume: stock.day?.v || stock.min?.av || stock.prevDay?.v || 0,
+                    volume: totalVolume,
+                    volumeLabel: 'Total Volume',
+                    totalVolume: totalVolume,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
                     high: stock.day?.h || stock.prevDay?.h || 0,
                     low: stock.day?.l || stock.prevDay?.l || 0,
