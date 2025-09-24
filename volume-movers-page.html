@@ -627,7 +627,11 @@
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
+                console.log('Received WebSocket message:', data.type);
+
                 if (data.type === 'volumeMovers') {
+                    console.log('Updating volume movers, stock count:', data.data.length);
+
                     // Store the raw data
                     allStocks = data.data;
 
