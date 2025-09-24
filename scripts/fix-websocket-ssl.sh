@@ -21,6 +21,12 @@ echo -e "${YELLOW}Problem: Site uses HTTPS but WebSocket uses WS (insecure)${NC}
 echo -e "${YELLOW}Solution: Update to use WSS (secure WebSocket)${NC}"
 echo ""
 
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_DIR"
+
 # Step 1: Update unified-scanner.js to detect HTTPS
 echo -e "${YELLOW}📝 Updating unified-scanner.js WebSocket configuration...${NC}"
 
