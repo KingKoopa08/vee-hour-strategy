@@ -580,6 +580,10 @@
                 filters.volumeSortBy = e.target.value;
                 updateTable(allStocks);
             });
+
+            document.getElementById('priceFilter').addEventListener('change', (e) => {
+                updateTable(allStocks);
+            });
         }
 
         // Wait for DOM to be ready
