@@ -718,7 +718,6 @@
                 });
 
             // Apply complex multi-criteria sorting
-            console.log('Sorting by:', filters.primarySort, 'Price:', filters.priceSortBy, 'Vol:', filters.volumeSortBy);
             filteredStocks.sort((a, b) => {
                 let compareValue = 0;
 
@@ -729,7 +728,6 @@
                     const aPriceChange = a.priceChanges?.[timeframe] || 0;
                     const bPriceChange = b.priceChanges?.[timeframe] || 0;
                     compareValue = bPriceChange - aPriceChange;
-                    console.log(`Sorting by price ${timeframe}: ${a.symbol} (${aPriceChange}) vs ${b.symbol} (${bPriceChange})`);
                 } else if (filters.volumeSortBy !== 'none') {
                     // Volume sort takes precedence
                     const timeframe = filters.volumeSortBy.replace('volumeChange', '');
