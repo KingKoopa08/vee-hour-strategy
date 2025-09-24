@@ -1339,18 +1339,61 @@ app.get('/api/whales', async (req, res) => {
     });
 });
 
+// Track historical data independently from API updates
+const trackHistoricalData = () => {
+    const now = Date.now();
+
+    // Track data from the current cache every second
+    volumeMoversCache.forEach(stock => {
+        const symbol = stock.symbol;
+        const currentVolume = stock.volume || stock.currentVolume;
+        const currentPrice = stock.price || stock.currentPrice;
+
+        // Initialize history if needed
+        if (!volumeHistory.has(symbol)) {
+            volumeHistory.set(symbol, []);
+        }
+        if (!priceHistory.has(symbol)) {
+            priceHistory.set(symbol, []);
+        }
+
+        const volHistory = volumeHistory.get(symbol);
+        const prcHistory = priceHistory.get(symbol);
+
+        // Add current data point
+        volHistory.push({ time: now, volume: currentVolume });
+        prcHistory.push({ time: now, price: currentPrice });
+
+        // Keep only last 5 minutes of data
+        const fiveMinutesAgo = now - 300000;
+        while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
+            volHistory.shift();
+        }
+        while (prcHistory.length > 0 && prcHistory[0].time < fiveMinutesAgo) {
+            prcHistory.shift();
+        }
+    });
+};
+
 // Dynamic update interval based on market hours
 let updateInterval;
 let broadcastInterval;
+let historicalTrackingInterval;
 let isUpdating = false;
 
 const startUpdates = () => {
     if (updateInterval) clearInterval(updateInterval);
     if (broadcastInterval) clearInterval(broadcastInterval);
+    if (historicalTrackingInterval) clearInterval(historicalTrackingInterval);
 
     const marketSession = getMarketSession();
     // Use 1 second during market hours for real-time updates, 60 seconds when closed
     const interval = marketSession === 'Closed' ? 60000 : 1000;
+
+    // Track historical data every second during market hours
+    if (marketSession !== 'Closed') {
+        historicalTrackingInterval = setInterval(trackHistoricalData, 1000);
+    }
 
     updateInterval = setInterval(async () => {
         if (isUpdating) {
