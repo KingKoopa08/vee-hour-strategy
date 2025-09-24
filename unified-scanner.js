@@ -1405,6 +1405,16 @@ const trackHistoricalData = () => {
     // Update the volumeMoversCache with processed stocks
     volumeMoversCache = processedStocks;
 
+    // Log broadcast details around problem time
+    if (seconds >= 40 || seconds <= 5) {
+        console.log(`📡 [${new Date().toISOString()}] Broadcasting at :${seconds}s with ${volumeMoversCache.length} stocks`);
+        // Sample first stock to check data
+        if (volumeMoversCache.length > 0) {
+            const sample = volumeMoversCache[0];
+            console.log(`   Sample: ${sample.symbol} - Price changes: 30s=${sample.priceChanges?.['30s']?.toFixed(2) || 'N/A'}%, Buy Pressure: ${sample.buyPressure || 'N/A'}`);
+        }
+    }
+
     // Broadcast updated data with fresh buy pressure
     broadcast({
         type: 'volumeMovers',
