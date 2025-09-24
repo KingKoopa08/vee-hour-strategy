@@ -697,6 +697,33 @@
             `}).join('');
         }
 
+        // Add click handlers for sortable headers
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', function() {
+                const sortField = this.dataset.sort;
+
+                // If clicking the same field, toggle direction
+                if (filters.primarySort === sortField) {
+                    filters.primarySortDirection = filters.primarySortDirection === 'desc' ? 'asc' : 'desc';
+                } else {
+                    // New field, default to descending
+                    filters.primarySort = sortField;
+                    filters.primarySortDirection = 'desc';
+                }
+
+                // Update UI to show sort direction
+                document.querySelectorAll('th.sortable').forEach(header => {
+                    header.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                this.classList.add('sorted-' + filters.primarySortDirection);
+
+                // Update dropdown to match
+                document.getElementById('primarySort').value = sortField;
+
+                updateTable(allStocks);
+            });
+        });
+
         // Setup event listeners
         document.getElementById('stockLimit').addEventListener('change', (e) => {
             filters.stockLimit = parseInt(e.target.value);
