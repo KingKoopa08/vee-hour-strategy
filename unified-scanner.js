@@ -688,8 +688,6 @@ app.get('/', (req, res) => {
         <div class="api-endpoints">
             <h3>🔌 API Endpoints</h3>
             <div class="endpoint">GET /api/gainers - Get current top gainers</div>
-            <div class="endpoint">GET /api/rising - Get rising stocks</div>
-            <div class="endpoint">GET /api/spikes - Get spike detection data</div>
             <div class="endpoint">WS ws://localhost:${WS_PORT} - WebSocket for real-time updates</div>
         </div>
     </div>
