@@ -1341,8 +1341,12 @@ app.get('/api/whales', async (req, res) => {
 
 // Dynamic update interval based on market hours
 let updateInterval;
+let broadcastInterval;
+let isUpdating = false;
+
 const startUpdates = () => {
     if (updateInterval) clearInterval(updateInterval);
+    if (broadcastInterval) clearInterval(broadcastInterval);
 
     const marketSession = getMarketSession();
     // Use 1 second during market hours for real-time updates, 60 seconds when closed
