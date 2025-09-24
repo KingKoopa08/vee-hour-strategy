@@ -1103,20 +1103,6 @@ app.get('/api/gainers', async (req, res) => {
     });
 });
 
-app.get('/api/rising', async (req, res) => {
-    const stocks = await getRisingStocks();
-    res.json({
-        success: true,
-        count: stocks.length,
-        criteria: {
-            minDayChange: 1.2,
-            minVolume: 500000,
-            maxPrice: 500
-        },
-        stocks: stocks
-    });
-});
-
 app.get('/api/volume', async (req, res) => {
     let stocks = await getVolumeMovers();
 
