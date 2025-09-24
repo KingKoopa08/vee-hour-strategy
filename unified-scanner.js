@@ -104,11 +104,16 @@ wss.on('connection', (ws) => {
 // Broadcast to all WebSocket clients
 function broadcast(data) {
     const message = JSON.stringify(data);
+    let sentCount = 0;
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(message);
+            sentCount++;
         }
     });
+    if (sentCount > 0 && data.type === 'volumeMovers') {
+        console.log(`📡 Broadcasted volumeMovers to ${sentCount} clients`);
+    }
 }
 
 // Get top gainers
