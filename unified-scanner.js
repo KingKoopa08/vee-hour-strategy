@@ -1320,10 +1320,21 @@ const calculateBuyPressure = (priceChanges, volumeChanges) => {
 // Track historical data and update buy pressure independently from API updates
 const trackHistoricalData = () => {
     const now = Date.now();
+    const seconds = new Date().getSeconds();
+
+    // Log around the problem time
+    if (seconds >= 40 && seconds <= 5) {
+        console.log(`🔍 [${new Date().toISOString()}] trackHistoricalData called at :${seconds}s`);
+        console.log(`   - topGainersCache length: ${topGainersCache.length}`);
+        console.log(`   - volumeMoversCache length: ${volumeMoversCache.length}`);
+    }
 
     // Use topGainersCache as the source (it contains all stocks)
     // Only update volumeMoversCache if we have data
     if (topGainersCache.length === 0) {
+        if (seconds >= 40 || seconds <= 5) {
+            console.log(`⚠️ [${new Date().toISOString()}] No data in topGainersCache at :${seconds}s`);
+        }
         return; // No data yet
     }
 
