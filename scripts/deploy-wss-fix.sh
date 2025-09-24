@@ -20,13 +20,22 @@ echo ""
 # Check if we're in the right directory
 if [ ! -f "unified-scanner.js" ]; then
     echo -e "${RED}❌ Error: Not in the vee-hour-strategy directory${NC}"
-    echo "Please cd to ~/vee-hour-strategy first"
+    echo "Please cd to the project directory first"
     exit 1
 fi
 
-echo -e "${YELLOW}📥 Step 1: Pulling latest changes from GitHub...${NC}"
+echo -e "${YELLOW}📥 Step 1: Handling local changes and pulling from GitHub...${NC}"
+
+# Check for uncommitted changes
+if [ -n "$(git status --porcelain)" ]; then
+    echo -e "${YELLOW}⚠️ Found local changes. Stashing them...${NC}"
+    git stash push -m "Stashed before WSS deployment $(date)"
+    echo -e "${GREEN}✅ Local changes stashed${NC}"
+fi
+
+# Pull latest changes
 git pull origin main
-echo -e "${GREEN}✅ Code updated${NC}"
+echo -e "${GREEN}✅ Code updated from GitHub${NC}"
 
 echo ""
 echo -e "${YELLOW}⚙️ Step 2: Applying nginx configuration...${NC}"
@@ -89,3 +98,7 @@ echo -e "${CYAN}URLs to test:${NC}"
 echo "- https://daily3club.com/gainers (Top Gainers)"
 echo "- https://daily3club.com/volume (Volume Movers)"
 echo "- https://daily3club.com/api/gainers (API endpoint)"
+echo ""
+echo -e "${YELLOW}Note: Your local changes were stashed. To restore them:${NC}"
+echo "git stash list  # See stashed changes"
+echo "git stash pop   # Restore latest stash"
