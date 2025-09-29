@@ -114,6 +114,59 @@ let rankingHistory = new Map();
 let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
+// Cache for halt status checks to avoid excessive API calls
+const haltStatusCache = new Map();
+const HALT_CACHE_TTL = 60000; // 1 minute cache
+
+// Check official halt status from Polygon API using trade conditions
+async function checkOfficialHaltStatus(symbol) {
+    // Check cache first
+    const cached = haltStatusCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < HALT_CACHE_TTL) {
+        return cached.status;
+    }
+
+    try {
+        // Check latest trades for halt conditions
+        const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
+        const tradesResponse = await axios.get(tradesUrl, { timeout: 3000 });
+
+        let status = 'ACTIVE';
+
+        if (tradesResponse.data.results && tradesResponse.data.results.length > 0) {
+            const lastTrade = tradesResponse.data.results[0];
+            const conditions = lastTrade.conditions || [];
+
+            // Check for halt conditions:
+            // 4 = Halt Trade
+            // 37 = Halted Trade
+            // 41 = Trading Halted
+            if (conditions.includes(4) || conditions.includes(37) || conditions.includes(41)) {
+                status = 'HALTED';
+            }
+
+            // Check how recent the trade is
+            const tradeTime = lastTrade.participant_timestamp / 1000000; // Convert nanoseconds to ms
+            const minutesSinceLastTrade = (Date.now() - tradeTime) / 60000;
+
+            // During market hours, if halted and no recent trades, it's suspended
+            const marketSession = getMarketSession();
+            if (status === 'HALTED' && minutesSinceLastTrade > 60 && marketSession === 'Regular Hours') {
+                status = 'SUSPENDED';
+            }
+        }
+
+        // Cache the result
+        haltStatusCache.set(symbol, { status, timestamp: Date.now() });
+        return status;
+
+    } catch (error) {
+        // On error, return ACTIVE and don't cache
+        console.error(`Error checking halt status for ${symbol}:`, error.message);
+        return 'ACTIVE';
+    }
+}
+
 // WebSocket server for real-time updates
 const wss = new WebSocket.Server({ port: WS_PORT });
 const clients = new Set();
