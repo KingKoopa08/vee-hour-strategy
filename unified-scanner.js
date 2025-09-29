@@ -346,21 +346,21 @@ async function getTopGainers() {
                         }
                         // Check for zero volume (common suspension indicator)
                         else if (totalVolume === 0) {
-                        if (session === 'Regular Hours') {
-                            tradingStatus = 'SUSPENDED';
-                        } else if (stock.prevDay?.v > 100000) {
-                            // Had volume yesterday but none today
-                            tradingStatus = 'SUSPENDED';
+                            if (session === 'Regular Hours') {
+                                tradingStatus = 'SUSPENDED';
+                            } else if (stock.prevDay?.v > 100000) {
+                                // Had volume yesterday but none today
+                                tradingStatus = 'SUSPENDED';
+                            }
                         }
-                    }
-                    // Check for T12 halt pattern (all prices the same)
-                    else if (stock.day?.h && stock.day?.l && stock.day?.c) {
-                        if (stock.day.h === stock.day.l && stock.day.h === stock.day.c && totalVolume > 0) {
-                            tradingStatus = 'HALTED';
+                        // Check for T12 halt pattern (all prices the same)
+                        else if (stock.day?.h && stock.day?.l && stock.day?.c) {
+                            if (stock.day.h === stock.day.l && stock.day.h === stock.day.c && totalVolume > 0) {
+                                tradingStatus = 'HALTED';
+                            }
                         }
-                    }
-                    // Check for significant day change with no recent activity
-                    else if (Math.abs(stock.validatedDayChange) > 10) {
+                        // Check for significant day change with no recent activity
+                        else if (Math.abs(stock.validatedDayChange) > 10) {
                         const prcHistory = priceHistory.get(stock.ticker) || [];
                         const volHistory = volumeHistory.get(stock.ticker) || [];
 
