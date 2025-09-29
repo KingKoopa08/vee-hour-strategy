@@ -951,6 +951,11 @@ Note: Resets to 50 when no trades occur">?</span>
             // Apply filters - use totalVolume for filtering, not session-specific volume
             let filteredStocks = stocks
                 .filter(stock => {
+                    // Ticker search filter - if searching, only show matching ticker
+                    if (filters.tickerSearch) {
+                        return stock.symbol && stock.symbol.toUpperCase().includes(filters.tickerSearch);
+                    }
+
                     // Use totalVolume if available, otherwise fall back to volume
                     const volumeToCheck = stock.totalVolume || stock.volume || 0;
 
