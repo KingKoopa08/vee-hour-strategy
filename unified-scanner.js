@@ -338,22 +338,28 @@ async function getTopGainers() {
 
                     // Check for specific halt/suspension patterns
                     if (session !== 'Closed') {
-                        // For stocks with extreme movement, check for halt patterns
-                        if (Math.abs(stock.validatedDayChange) > 50) {
-                            // Check if it's a LULD halt (extreme move with no recent volume)
-                            const volHistory = volumeHistory.get(stock.ticker) || [];
-                            const hasRecentVolume = volHistory.length > 0 &&
-                                volHistory.some(v => (Date.now() - v.time) < 5 * 60 * 1000 && v.volume !== totalVolume);
-
-                            if (!hasRecentVolume && totalVolume > 0) {
-                                tradingStatus = 'HALTED';
-                                console.log(`⚠️ ${stock.ticker} detected as HALTED: ${stock.validatedDayChange.toFixed(1)}% change with no recent volume activity`);
-                            }
-                        }
-                        // Check for T1 halt (news pending)
-                        else if (stock.day?.h === stock.day?.l && stock.day?.h === stock.day?.c && stock.day?.h === lastPrice && totalVolume > 0) {
-                            // All prices identical = halted
+                        // Check for T1/T2 halt (all prices identical)
+                        if (stock.day?.h === stock.day?.l && stock.day?.h === stock.day?.c && totalVolume > 0) {
+                            // All prices identical = definitely halted
                             tradingStatus = 'HALTED';
+                            console.log(`⛔ ${stock.ticker} T12 HALT: All prices identical at $${stock.day.h}`);
+                        }
+                        // For extreme movers, check volume patterns more carefully
+                        else if (Math.abs(stock.validatedDayChange) > 100) {
+                            // For extreme moves, check if volume has been static
+                            const volHistory = volumeHistory.get(stock.ticker) || [];
+
+                            // Need at least 3 data points
+                            if (volHistory.length >= 3) {
+                                const recent3 = volHistory.slice(-3);
+                                const volumeStatic = recent3.every(v => v.volume === totalVolume);
+
+                                // If volume hasn't changed in 3 updates, likely halted
+                                if (volumeStatic && totalVolume > 0) {
+                                    tradingStatus = 'HALTED';
+                                    console.log(`⚠️ ${stock.ticker} likely HALTED: ${stock.validatedDayChange.toFixed(1)}% move with static volume`);
+                                }
+                            }
                         }
                         // Check for zero volume (common suspension indicator)
                         else if (totalVolume === 0) {
