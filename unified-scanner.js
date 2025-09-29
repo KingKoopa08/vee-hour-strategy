@@ -23,6 +23,8 @@ let whaleOrdersCache = [];
 let volumeHistory = new Map(); // Store volume history for timeframe analysis
 let priceHistory = new Map(); // Store price history for timeframe analysis
 let tradeHistory = new Map(); // Store recent trades for whale detection
+let volumeRateHistory = new Map(); // Store volume rate (volume/minute) calculations
+let lastVolumeSnapshot = new Map(); // Store last known volume for each symbol
 let lastUpdate = Date.now();
 
 // Volume tracking timeframes (in seconds)
@@ -1339,7 +1341,7 @@ app.get('/api/whales', async (req, res) => {
 });
 
 // Calculate buy pressure for a single stock
-const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, currentVolume = 0) => {
+const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, currentVolume = 0, volumeRate = 0) => {
     let buyPressure = 50; // Neutral baseline
 
     // Factor 1: Short-term price movement (25% weight)
@@ -1348,15 +1350,33 @@ const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, curren
         buyPressure += Math.min(12.5, Math.max(-12.5, price30s * 2.5));
     }
 
-    // Factor 2: Volume analysis (25% weight)
+    // Factor 2: Volume analysis (25% weight) - Enhanced with volume rate
     const vol30s = volumeChanges['30s'] || 0;
     const vol1m = volumeChanges['1m'] || 0;
 
-    // Volume increasing with price up = buying pressure
+    // Volume rate contribution (more important than static changes)
+    if (volumeRate > 0) {
+        // Scale volume rate: 10k/min = +3, 50k/min = +6, 100k+/min = +10
+        let rateBonus = 0;
+        if (volumeRate >= 100000) rateBonus = 10;
+        else if (volumeRate >= 50000) rateBonus = 6;
+        else if (volumeRate >= 10000) rateBonus = 3;
+        else if (volumeRate >= 1000) rateBonus = 1;
+
+        // Apply rate bonus with price direction
+        if (price30s >= 0) {
+            buyPressure += Math.min(12.5, rateBonus);
+        } else {
+            buyPressure -= Math.min(6, rateBonus * 0.5); // Less penalty when selling
+        }
+    }
+
+    // Traditional volume changes (reduced weight when rate is available)
+    const volWeight = volumeRate > 0 ? 10 : 20;
     if (vol30s > 0 && price30s > 0) {
-        buyPressure += Math.min(12.5, vol30s / 20);
+        buyPressure += Math.min(12.5 - (volumeRate > 0 ? 5 : 0), vol30s / volWeight);
     } else if (vol30s > 0 && price30s < 0) {
-        buyPressure -= Math.min(12.5, vol30s / 20);
+        buyPressure -= Math.min(12.5 - (volumeRate > 0 ? 5 : 0), vol30s / volWeight);
     }
 
     // Factor 3: Day performance bias (25% weight)
@@ -1439,8 +1459,45 @@ const trackHistoricalData = () => {
         const volHistory = volumeHistory.get(symbol);
         const prcHistory = priceHistory.get(symbol);
 
-        // Use actual volume data without simulation
-        // This provides stable, realistic data that won't jump around
+        // Track volume changes and calculate volume rate
+        const lastSnapshot = lastVolumeSnapshot.get(symbol) || { volume: currentVolume, time: now - 1000 };
+        const volumeDelta = currentVolume - lastSnapshot.volume;
+        const timeDelta = (now - lastSnapshot.time) / 1000; // in seconds
+
+        // Update last snapshot if volume changed
+        if (volumeDelta > 0) {
+            lastVolumeSnapshot.set(symbol, { volume: currentVolume, time: now });
+        }
+
+        // Calculate volume rate (volume per minute)
+        let volumeRate = 0;
+        if (timeDelta > 0 && volumeDelta > 0) {
+            volumeRate = (volumeDelta / timeDelta) * 60; // Convert to per minute
+        }
+
+        // Store volume rate history
+        if (!volumeRateHistory.has(symbol)) {
+            volumeRateHistory.set(symbol, []);
+        }
+        const rateHistory = volumeRateHistory.get(symbol);
+        if (volumeRate > 0) {
+            rateHistory.push({ time: now, rate: volumeRate });
+        }
+
+        // Keep only last 5 minutes of rate history
+        const fiveMinutesAgo = now - 300000;
+        while (rateHistory.length > 0 && rateHistory[0].time < fiveMinutesAgo) {
+            rateHistory.shift();
+        }
+
+        // Calculate average volume rate over last minute
+        const oneMinuteAgo = now - 60000;
+        const recentRates = rateHistory.filter(r => r.time >= oneMinuteAgo);
+        const avgVolumeRate = recentRates.length > 0
+            ? recentRates.reduce((sum, r) => sum + r.rate, 0) / recentRates.length
+            : volumeRate;
+
+        // Track actual volume and price data
         volHistory.push({ time: now, volume: currentVolume });
         prcHistory.push({ time: now, price: currentPrice });
 
@@ -1492,8 +1549,8 @@ const trackHistoricalData = () => {
             }
         }
 
-        // Update buy pressure calculation
-        const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, currentVolume);
+        // Update buy pressure calculation with volume rate as additional factor
+        const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, currentVolume, avgVolumeRate);
 
         // Debug log for first few stocks around problem time
         if ((seconds >= 40 || seconds <= 5) && volumeMoversCache.indexOf(stock) < 3) {
@@ -1502,12 +1559,22 @@ const trackHistoricalData = () => {
             console.log(`   🎯 ${symbol}: hist=${volHistory.length} entries, oldest=${ageInSeconds}s ago, 30s-change=${priceChanges['30s']?.toFixed(2)}%, BP=${updatedBuyPressure}`);
         }
 
-        // Return updated stock with new buy pressure
+        // Calculate trade activity indicator
+        const hasVolumeActivity = volumeDelta > 0;
+        const volumeAcceleration = volumeRate > avgVolumeRate ? 'increasing' : volumeRate > 0 ? 'steady' : 'none';
+
+        // Return updated stock with enhanced metrics
         return {
             ...stock,
             volumeChanges: volumeChanges,
             priceChanges: priceChanges,
-            buyPressure: updatedBuyPressure
+            buyPressure: updatedBuyPressure,
+            volumeRate: Math.round(volumeRate),
+            avgVolumeRate: Math.round(avgVolumeRate),
+            volumeDelta: Math.round(volumeDelta),
+            hasVolumeActivity,
+            volumeAcceleration,
+            lastVolumeUpdate: volumeDelta > 0 ? new Date(now).toISOString() : new Date(lastSnapshot.time).toISOString()
         };
     });
 
