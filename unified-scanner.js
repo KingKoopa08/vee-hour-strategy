@@ -114,10 +114,6 @@ let rankingHistory = new Map();
 let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
-// Cache for halt status checks to avoid excessive API calls
-const haltStatusCache = new Map();
-const HALT_CACHE_TTL = 60000; // 1 minute cache
-
 // Check official halt status from Polygon API using trade conditions
 async function checkOfficialHaltStatus(symbol) {
     // Check cache first
