@@ -328,8 +328,17 @@ async function getTopGainers() {
                 // Detect trading status (halted/suspended)
                 let tradingStatus = 'ACTIVE';
 
-                // Check real-time halt status based on data patterns
-                {
+                // Check for official halt indicators from Polygon API
+                // We need to make a separate call to check trade conditions
+                // This will be cached to avoid excessive API calls
+                const haltStatus = await checkOfficialHaltStatus(stock.ticker);
+                if (haltStatus !== 'ACTIVE') {
+                    tradingStatus = haltStatus;
+                    console.log(`📍 ${stock.ticker} Official Status: ${haltStatus}`);
+                }
+
+                // Fall back to pattern-based detection if no official status
+                if (tradingStatus === 'ACTIVE') {
                     // Get latest quote timestamp and price info
                     const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
                     const timeSinceLastQuote = Date.now() - lastQuoteTime;
