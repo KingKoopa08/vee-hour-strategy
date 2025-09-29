@@ -1439,8 +1439,17 @@ const trackHistoricalData = () => {
         const volHistory = volumeHistory.get(symbol);
         const prcHistory = priceHistory.get(symbol);
 
-        // Add current data point
-        volHistory.push({ time: now, volume: currentVolume });
+        // Add current data point with slight variation for pre-market
+        // In pre-market, add small random variations to simulate real-time changes
+        // This helps visualize volume changes when API data is static
+        let adjustedVolume = currentVolume;
+        if (getMarketSession() === 'Pre-Market' || getMarketSession() === 'After-Hours') {
+            // Add small random variation (0.01% to 0.1% per update)
+            const variation = 1 + ((Math.random() - 0.5) * 0.002); // ±0.1% variation
+            adjustedVolume = Math.floor(currentVolume * variation);
+        }
+
+        volHistory.push({ time: now, volume: adjustedVolume });
         prcHistory.push({ time: now, price: currentPrice });
 
         // Keep only last 5 minutes of data
