@@ -41,34 +41,49 @@ const VOLUME_TIMEFRAMES = {
     '5m': 300
 };
 
-// Check if a stock is halted/suspended
-async function checkHaltStatus(symbol) {
+// Check if a stock is halted via Polygon quote data
+async function checkHaltStatus(symbol, stockData) {
     try {
-        // Check Polygon trades endpoint for recent activity
-        const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?limit=10&apiKey=${POLYGON_API_KEY}`;
-        const response = await axios.get(tradesUrl, { timeout: 2000 });
+        // Check cache first
+        const cached = haltStatusCache.get(symbol);
+        if (cached && (Date.now() - cached.timestamp < HALT_CACHE_TTL)) {
+            return cached.status;
+        }
 
-        if (response.data && response.data.results) {
-            const trades = response.data.results;
-            if (trades.length === 0) {
-                return 'SUSPENDED'; // No trades at all
+        // Analyze the stock data we already have
+        const session = getMarketSession();
+        const dayChange = stockData.validatedDayChange || 0;
+        const volume = stockData.day?.v || 0;
+        const high = stockData.day?.h || 0;
+        const low = stockData.day?.l || 0;
+        const close = stockData.day?.c || 0;
+        const updated = stockData.updated || stockData.day?.t || 0;
+        const timeSinceUpdate = Date.now() - updated;
+
+        let status = 'ACTIVE';
+
+        // During market hours, check for halt patterns
+        if (session === 'Regular Hours') {
+            // No volume and extreme price change = likely halted
+            if (volume === 0 && Math.abs(dayChange) > 50) {
+                status = 'HALTED';
             }
-
-            // Check time of last trade
-            const lastTrade = trades[0];
-            const lastTradeTime = lastTrade.participant_timestamp || lastTrade.sip_timestamp;
-            const timeSinceLastTrade = Date.now() - (lastTradeTime / 1000000); // Convert nanoseconds
-
-            // If no trades in last 10 minutes during market hours
-            if (timeSinceLastTrade > 10 * 60 * 1000 && getMarketSession() === 'Regular Hours') {
-                return 'HALTED';
+            // All prices the same with volume = T1/T2 halt
+            else if (high === low && high === close && volume > 0) {
+                status = 'HALTED';
+            }
+            // No updates for 15+ minutes during regular hours
+            else if (timeSinceUpdate > 15 * 60 * 1000 && Math.abs(dayChange) > 20) {
+                status = 'HALTED';
             }
         }
 
-        return 'ACTIVE';
+        // Cache the result
+        haltStatusCache.set(symbol, { status, timestamp: Date.now() });
+        return status;
+
     } catch (error) {
-        // Fallback to cache if API fails
-        return haltedStocks.has(symbol) ? 'HALTED' : 'ACTIVE';
+        return 'ACTIVE'; // Default to active if we can't determine
     }
 }
 
