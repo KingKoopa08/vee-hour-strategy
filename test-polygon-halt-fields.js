@@ -30,8 +30,10 @@ async function checkAllHaltFields(symbol) {
 
         console.log('Symbol:', ticker.ticker);
         console.log('Market Status:', snapshot.data.status);
-        console.log('Updated (ms):', ticker.updated);
-        console.log('Last Update:', new Date(ticker.updated || 0).toISOString());
+        console.log('Updated (ns):', ticker.updated);
+        // Convert nanoseconds to milliseconds for date
+        const updatedMs = ticker.updated ? ticker.updated / 1000000 : 0;
+        console.log('Last Update:', new Date(updatedMs).toISOString());
 
         // Check for market status indicator
         if (ticker.marketStatus) {
