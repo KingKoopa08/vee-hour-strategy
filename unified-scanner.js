@@ -114,85 +114,55 @@ let rankingHistory = new Map();
 let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
-// Check official halt status from Polygon API using trade conditions
+// Check official halt status from Polygon API
+// We're being VERY conservative here - only marking as halted/suspended when we're SURE
 async function checkOfficialHaltStatus(symbol) {
+    // For now, disable this feature entirely since Polygon's halt indicators are unreliable
+    // Conditions 37 and 41 appear on normal trading stocks
+    // We need a better data source for real halt status
+    return 'ACTIVE';
+
+    /* DISABLED - needs better data source
     // Check cache first
     const cached = haltStatusCache.get(symbol);
     if (cached && Date.now() - cached.timestamp < HALT_CACHE_TTL) {
         return cached.status;
     }
 
-    const marketSession = getMarketSession();
-
-    // If market is closed, don't check halt status (all stocks show halt conditions when closed)
-    if (marketSession === 'Closed') {
-        return 'ACTIVE';
-    }
-
     try {
-        // For pre-market/after-hours, only check if there's recent activity
         let status = 'ACTIVE';
+        const marketSession = getMarketSession();
 
-        // First check if there's recent trading activity
-        const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=5&apiKey=${POLYGON_API_KEY}`;
-        const tradesResponse = await axios.get(tradesUrl, { timeout: 3000 });
+        // Only check during market hours
+        if (marketSession === 'Regular Hours' || marketSession === 'Pre-Market') {
+            // Check for REAL suspension - no trades for extended period
+            const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
+            const tradesResponse = await axios.get(tradesUrl, { timeout: 3000 });
 
-        if (tradesResponse.data.results && tradesResponse.data.results.length > 0) {
-            const trades = tradesResponse.data.results;
-            const lastTrade = trades[0];
-            const tradeTime = lastTrade.participant_timestamp / 1000000; // Convert nanoseconds to ms
-            const minutesSinceLastTrade = (Date.now() - tradeTime) / 60000;
+            if (tradesResponse.data.results && tradesResponse.data.results.length > 0) {
+                const lastTrade = tradesResponse.data.results[0];
+                const tradeTime = lastTrade.participant_timestamp / 1000000;
+                const minutesSinceLastTrade = (Date.now() - tradeTime) / 60000;
 
-            // During market hours, check for halt conditions
-            if (marketSession === 'Regular Hours') {
-                const conditions = lastTrade.conditions || [];
-
-                // Check for specific halt conditions that indicate REAL halts (not just end-of-day)
-                // 4 = Halt Trade (real halt)
-                // 12 = LULD pause
-                // We're IGNORING 37 and 41 as they appear on all stocks when market closes
-                if (conditions.includes(4) || conditions.includes(12)) {
-                    // But ONLY if the halt is recent (within last 60 minutes)
-                    if (minutesSinceLastTrade < 60) {
-                        status = 'HALTED';
-
-                        // Check if it's been halted for a long time (might be suspended)
-                        if (minutesSinceLastTrade > 30) {
-                            // Check if there's ANY trading in the last few trades
-                            const recentTrades = trades.slice(0, 3);
-                            const allOld = recentTrades.every(t => {
-                                const tTime = t.participant_timestamp / 1000000;
-                                return (Date.now() - tTime) / 60000 > 30;
-                            });
-
-                            if (allOld) {
-                                status = 'SUSPENDED';
-                            }
-                        }
-                    }
-                }
-
-                // If no trades for over 30 minutes during regular hours, check if suspended
-                if (minutesSinceLastTrade > 30) {
-                    // Get quote to see if there's a market
+                // Only mark as suspended if no trades for over 60 minutes during market hours
+                if (minutesSinceLastTrade > 60 && marketSession === 'Regular Hours') {
+                    // Double-check with quotes
                     const quoteUrl = `https://api.polygon.io/v3/quotes/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
                     const quoteResponse = await axios.get(quoteUrl, { timeout: 3000 });
 
                     if (quoteResponse.data.results && quoteResponse.data.results.length > 0) {
                         const lastQuote = quoteResponse.data.results[0];
-                        // Zero bid/ask means no market makers = suspended
+                        // Zero bid/ask = no market
                         if (lastQuote.bid_price === 0 || lastQuote.ask_price === 0) {
                             status = 'SUSPENDED';
                         }
                     }
                 }
-            } else if (marketSession === 'Pre-Market' || marketSession === 'After Hours') {
-                // For extended hours, only mark as halted if very recent and has halt conditions
-                if (minutesSinceLastTrade < 5) {
-                    const conditions = lastTrade.conditions || [];
-                    if (conditions.includes(4) || conditions.includes(12)) {
-                        status = 'HALTED';
-                    }
+
+                // Only use condition 4 (official halt) or 12 (LULD pause) - NOT 37 or 41
+                const conditions = lastTrade.conditions || [];
+                if ((conditions.includes(4) || conditions.includes(12)) && minutesSinceLastTrade < 10) {
+                    status = 'HALTED';
                 }
             }
         }
@@ -202,10 +172,10 @@ async function checkOfficialHaltStatus(symbol) {
         return status;
 
     } catch (error) {
-        // On error, return ACTIVE and don't cache
         console.error(`Error checking halt status for ${symbol}:`, error.message);
         return 'ACTIVE';
     }
+    */
 }
 
 // WebSocket server for real-time updates
