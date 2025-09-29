@@ -661,15 +661,6 @@ Note: Resets to 50 when no trades occur">?</span>
                 updateTable(allStocks);
             });
 
-            document.getElementById('priceSortBy').addEventListener('change', (e) => {
-                filters.priceSortBy = e.target.value;
-                updateTable(allStocks);
-            });
-
-            document.getElementById('volumeSortBy').addEventListener('change', (e) => {
-                filters.volumeSortBy = e.target.value;
-                updateTable(allStocks);
-            });
 
             document.getElementById('priceFilter').addEventListener('change', (e) => {
                 updateTable(allStocks);
