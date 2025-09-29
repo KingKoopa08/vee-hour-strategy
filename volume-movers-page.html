@@ -424,6 +424,12 @@
     </div>
 
     <div class="filters">
+        <div class="filter-group" style="flex: 0 0 auto; min-width: 200px;">
+            <label for="tickerSearch">🔍 Find Ticker:</label>
+            <input type="text" id="tickerSearch" placeholder="Enter symbol..."
+                   style="width: 120px; text-transform: uppercase; background: rgba(0, 0, 0, 0.5); color: #00ff41; border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 5px; padding: 8px 12px;">
+            <button id="clearSearch" style="background: rgba(255, 0, 0, 0.2); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); border-radius: 5px; padding: 8px 12px; margin-left: 5px; cursor: pointer; display: none;">Clear</button>
+        </div>
         <div class="filter-group">
             <label for="stockLimit">Show Top:</label>
             <select id="stockLimit">
