@@ -1478,8 +1478,8 @@ const trackHistoricalData = () => {
                 }
             }
 
-            if (oldVolEntry && adjustedVolume > 0 && oldVolEntry.volume > 0) {
-                const volChange = ((adjustedVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
+            if (oldVolEntry && currentVolume > 0 && oldVolEntry.volume > 0) {
+                const volChange = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
                 volumeChanges[label] = volChange;
             } else {
                 volumeChanges[label] = 0;
