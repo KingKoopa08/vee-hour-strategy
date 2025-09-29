@@ -420,7 +420,7 @@ async function getVolumeMovers() {
                 (currentVolume - volHistory[0].volume) / ((now - volHistory[0].time) / 60000) : 0;
 
             // Calculate Buy Pressure Indicator using shared function
-            const buyPressure = calculateBuyPressure(priceChanges, volumeChanges);
+            const buyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, stock.volume);
 
             return {
                 symbol: stock.symbol,
@@ -1491,7 +1491,7 @@ const trackHistoricalData = () => {
         }
 
         // Update buy pressure calculation
-        const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges);
+        const updatedBuyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, currentVolume);
 
         // Debug log for first few stocks around problem time
         if ((seconds >= 40 || seconds <= 5) && volumeMoversCache.indexOf(stock) < 3) {
