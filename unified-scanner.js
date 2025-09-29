@@ -1504,7 +1504,7 @@ const trackHistoricalData = () => {
                 if (label === '30s' && volumeMoversCache.indexOf(stock) === 0 && (seconds === 0 || seconds === 30)) {
                     console.log(`📊 Volume Debug for ${symbol} - Zero because:`);
                     console.log(`   oldVolEntry: ${oldVolEntry ? 'exists' : 'missing'}`);
-                    console.log(`   currentVolume: ${currentVolume}`);
+                    console.log(`   adjustedVolume: ${adjustedVolume}`);
                     console.log(`   oldVolEntry.volume: ${oldVolEntry?.volume}`);
                     console.log(`   volHistory length: ${volHistory.length}`);
                 }
