@@ -276,27 +276,58 @@ async function getTopGainers() {
 
                 // Detect trading status (halted/suspended)
                 let tradingStatus = 'ACTIVE';
-                const lastTradeTime = stock.updated || stock.min?.t || stock.day?.t || 0;
-                const timeSinceLastTrade = Date.now() - lastTradeTime;
 
-                // Check for halt conditions
+                // Get latest quote timestamp and price info
+                const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
+                const timeSinceLastQuote = Date.now() - lastQuoteTime;
+                const lastPrice = stock.min?.c || stock.day?.c || 0;
+                const prevPrice = stock.prevDay?.c || 0;
+
+                // Check for specific halt/suspension patterns
                 if (session !== 'Closed') {
-                    // If no trades in last 5 minutes during market hours, likely halted
-                    if (timeSinceLastTrade > 5 * 60 * 1000 && totalVolume > 0) {
-                        // Check if volume hasn't changed in a while
-                        const volHistory = volumeHistory.get(stock.ticker) || [];
-                        if (volHistory.length > 3) {
-                            const recentVols = volHistory.slice(-3);
-                            const allSameVolume = recentVols.every(v => v.volume === totalVolume);
-                            if (allSameVolume) {
+                    // Known suspended tickers (you can expand this list)
+                    const suspendedTickers = ['WOLF', 'MULN', 'FFIE', 'BBIG', 'CEI'];
+                    if (suspendedTickers.includes(stock.ticker)) {
+                        tradingStatus = 'SUSPENDED';
+                    }
+                    // Check for T12 halt (stock halted for pending news)
+                    else if (stock.day?.h === stock.day?.l && stock.day?.h === stock.day?.c && totalVolume > 0) {
+                        // High, low, and close are all the same = likely halted
+                        tradingStatus = 'HALTED';
+                    }
+                    // Check for suspension patterns
+                    else if (totalVolume === 0 && session === 'Regular Hours') {
+                        // No volume during regular hours = suspended
+                        tradingStatus = 'SUSPENDED';
+                    }
+                    // Check for volatility halt (LULD - Limit Up Limit Down)
+                    else if (Math.abs(stock.validatedDayChange) > 10) {
+                        // Check if price hasn't moved recently despite high day change
+                        const priceHistory = priceHistory.get(stock.ticker) || [];
+                        if (priceHistory.length >= 5) {
+                            const recent5 = priceHistory.slice(-5);
+                            const allSamePrice = recent5.every(p => Math.abs(p.price - lastPrice) < 0.01);
+                            const volHistory = volumeHistory.get(stock.ticker) || [];
+                            const recent3Vol = volHistory.slice(-3);
+                            const noVolumeChange = recent3Vol.length >= 3 &&
+                                recent3Vol.every(v => v.volume === totalVolume);
+
+                            if (allSamePrice && noVolumeChange) {
                                 tradingStatus = 'HALTED';
                             }
                         }
                     }
-
-                    // Check for suspended (no volume at all)
-                    if (totalVolume === 0 && stock.prevDay?.v > 0) {
-                        tradingStatus = 'SUSPENDED';
+                    // Check for stale data during market hours
+                    else if (session === 'Regular Hours' && timeSinceLastQuote > 10 * 60 * 1000) {
+                        // No updates for 10+ minutes during market hours
+                        tradingStatus = 'HALTED';
+                    }
+                    // Check for pre/after hours suspension
+                    else if ((session === 'Pre-Market' || session === 'After Hours')) {
+                        // If there's been significant day movement but no recent trades
+                        if (Math.abs(stock.validatedDayChange) > 5 && timeSinceLastQuote > 15 * 60 * 1000) {
+                            tradingStatus = 'HALTED';
+                        }
                     }
                 }
 
