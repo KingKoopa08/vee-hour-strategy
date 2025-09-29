@@ -812,7 +812,7 @@ Note: Resets to 50 when no trades occur">?</span>
             return `<span class="volume-change ${className}">${sign}${change.toFixed(1)}%</span>`;
         }
 
-        // Format volume rate/activity indicator - shows volume per minute instead of % change
+        // Format volume rate/activity indicator - shows volume per minute or % change
         function formatVolumeIndicator(stock) {
             // Check for volume rate (volume per minute)
             if (stock.volumeRate && stock.volumeRate > 0) {
@@ -848,29 +848,15 @@ Note: Resets to 50 when no trades occur">?</span>
                 return `<span class="volume-change ${className}" title="Volume Rate: ${rate.toLocaleString()} shares/min">${rateDisplay}${accelSymbol}</span>`;
             }
 
-            // Fall back to 30s volume change if no rate
+            // Always show 30s volume change - this is the primary indicator
             const change = stock.volumeChanges?.['30s'];
-            if (change && Math.abs(change) > 0.01) {
+            if (change !== undefined && change !== null) {
+                // Show the actual percentage change, even if 0%
                 return formatVolumeChange(change);
             }
 
-            // Show activity indicator
-            if (stock.hasVolumeActivity) {
-                return '<span class="volume-change volume-surge" style="color: #00ff41;">Active</span>';
-            }
-
-            // Show last update time if available
-            if (stock.lastVolumeUpdate) {
-                const lastUpdate = new Date(stock.lastVolumeUpdate);
-                const now = new Date();
-                const secAgo = Math.floor((now - lastUpdate) / 1000);
-                if (secAgo < 60) {
-                    return `<span class="volume-change volume-normal" style="color: #666;">${secAgo}s ago</span>`;
-                }
-            }
-
-            // Default to showing no activity
-            return '<span class="volume-change volume-normal" style="color: #666;">No Activity</span>';
+            // Default to 0% if no data
+            return '<span class="volume-change volume-normal">0%</span>';
         }
 
         function formatPriceChange(change) {
