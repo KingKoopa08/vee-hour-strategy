@@ -28,6 +28,20 @@ let lastVolumeSnapshot = new Map(); // Store last known volume for each symbol
 let haltedStocks = new Set(); // Track halted/suspended stocks
 let lastUpdate = Date.now();
 
+// Known suspended/delisted stocks (update this list periodically)
+const KNOWN_SUSPENDED_STOCKS = new Set([
+    'WOLF',  // Wolfspeed - suspended
+    'MULN',  // Mullen Automotive - often halted
+    'FFIE',  // Faraday Future - volatility halts common
+    'BBIG',  // Vinco Ventures - suspended
+    'CEI',   // Camber Energy - frequent halts
+    'XELA',  // Exela Technologies - delisted
+    'SNDL',  // Sundial Growers - frequent halts
+    'BBBY',  // Bed Bath & Beyond - delisted
+    'ATER',  // Aterian - volatility issues
+    'GNUS'   // Genius Brands - volatility halts
+]);
+
 // Volume tracking timeframes (in seconds)
 const VOLUME_TIMEFRAMES = {
     '30s': 30,
