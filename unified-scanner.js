@@ -338,13 +338,14 @@ async function getTopGainers() {
 
                     // Check for specific halt/suspension patterns
                     if (session !== 'Closed') {
-                        // Check for LULD halt pattern (Limit Up/Limit Down)
-                        // If day change is extreme and no recent trades
-                        if (Math.abs(stock.validatedDayChange) > 100 && timeSinceLastQuote > 10 * 60 * 1000) {
-                            tradingStatus = 'HALTED';
-
-                            // Log extreme movers with no recent activity
-                            console.log(`⚠️ Potential halt detected for ${stock.ticker}: ${stock.validatedDayChange.toFixed(1)}% change, last trade ${Math.round(timeSinceLastQuote/60000)} min ago`);
+                        // For stocks with extreme movement, check halt status
+                        if (Math.abs(stock.validatedDayChange) > 50) {
+                            // Use our halt checking function
+                            const haltCheck = await checkHaltStatus(stock.ticker, stock);
+                            if (haltCheck === 'HALTED') {
+                                tradingStatus = 'HALTED';
+                                console.log(`⚠️ ${stock.ticker} detected as HALTED: ${stock.validatedDayChange.toFixed(1)}% change`);
+                            }
                         }
                         // Check for T1 halt (news pending)
                         else if (stock.day?.h === stock.day?.l && stock.day?.h === stock.day?.c && stock.day?.h === lastPrice && totalVolume > 0) {
