@@ -1025,8 +1025,10 @@ Note: Resets to 50 when no trades occur">?</span>
                 return compareValue;
             });
 
-            // Limit
-            filteredStocks = filteredStocks.slice(0, filters.stockLimit);
+            // Limit - but don't limit if searching for specific ticker
+            if (!filters.tickerSearch) {
+                filteredStocks = filteredStocks.slice(0, filters.stockLimit);
+            }
 
             // Count surges
             const surgeCount = filteredStocks.filter(s =>
