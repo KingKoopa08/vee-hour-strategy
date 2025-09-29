@@ -1478,9 +1478,27 @@ const trackHistoricalData = () => {
             }
 
             if (oldVolEntry && currentVolume > 0 && oldVolEntry.volume > 0) {
-                volumeChanges[label] = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
+                const volChange = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
+                volumeChanges[label] = volChange;
+
+                // Debug logging for volume changes
+                if (label === '30s' && volumeMoversCache.indexOf(stock) === 0 && (seconds === 0 || seconds === 30)) {
+                    console.log(`📊 Volume Debug for ${symbol}:`);
+                    console.log(`   Current: ${currentVolume}, Old (${label}): ${oldVolEntry.volume}`);
+                    console.log(`   Difference: ${currentVolume - oldVolEntry.volume}`);
+                    console.log(`   Change %: ${volChange.toFixed(2)}%`);
+                }
             } else {
                 volumeChanges[label] = 0;
+
+                // Debug why we got 0
+                if (label === '30s' && volumeMoversCache.indexOf(stock) === 0 && (seconds === 0 || seconds === 30)) {
+                    console.log(`📊 Volume Debug for ${symbol} - Zero because:`);
+                    console.log(`   oldVolEntry: ${oldVolEntry ? 'exists' : 'missing'}`);
+                    console.log(`   currentVolume: ${currentVolume}`);
+                    console.log(`   oldVolEntry.volume: ${oldVolEntry?.volume}`);
+                    console.log(`   volHistory length: ${volHistory.length}`);
+                }
             }
 
             if (oldPrcEntry && currentPrice > 0 && oldPrcEntry.price > 0) {
