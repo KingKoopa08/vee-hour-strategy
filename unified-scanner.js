@@ -1439,14 +1439,24 @@ const trackHistoricalData = () => {
         const volHistory = volumeHistory.get(symbol);
         const prcHistory = priceHistory.get(symbol);
 
-        // Add current data point with slight variation for pre-market
-        // In pre-market, add small random variations to simulate real-time changes
-        // This helps visualize volume changes when API data is static
+        // Track actual volume changes or simulate gradual growth when static
         let adjustedVolume = currentVolume;
-        if (getMarketSession() === 'Pre-Market' || getMarketSession() === 'After-Hours') {
-            // Add small random variation (0.01% to 0.1% per update)
-            const variation = 1 + ((Math.random() - 0.5) * 0.002); // ±0.1% variation
-            adjustedVolume = Math.floor(currentVolume * variation);
+
+        // Check if volume actually changed from last entry
+        const lastVolEntry = volHistory[volHistory.length - 1];
+        const volumeChanged = !lastVolEntry || lastVolEntry.volume !== currentVolume;
+
+        if (!volumeChanged && (getMarketSession() === 'Pre-Market' || getMarketSession() === 'After-Hours')) {
+            // If volume hasn't changed in pre/after market, simulate very small gradual growth
+            // Use symbol hash for consistent but varied growth rates per stock
+            const symbolHash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+            const growthRate = 0.00001 + (symbolHash % 100) * 0.000001; // 0.001% to 0.011% per second
+
+            if (lastVolEntry) {
+                // Apply tiny consistent growth based on time elapsed
+                const timeElapsed = (now - lastVolEntry.time) / 1000; // seconds
+                adjustedVolume = Math.floor(lastVolEntry.volume * (1 + growthRate * timeElapsed));
+            }
         }
 
         volHistory.push({ time: now, volume: adjustedVolume });
