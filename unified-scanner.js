@@ -364,47 +364,36 @@ async function getTopGainers() {
                             const prcHistory = priceHistory.get(stock.ticker) || [];
                             const volHistory = volumeHistory.get(stock.ticker) || [];
 
-                        // Need at least 3 data points to determine
-                        if (prcHistory.length >= 3 && volHistory.length >= 3) {
-                            const recent3Price = prcHistory.slice(-3);
-                            const recent3Vol = volHistory.slice(-3);
+                            // Need at least 3 data points to determine
+                            if (prcHistory.length >= 3 && volHistory.length >= 3) {
+                                const recent3Price = prcHistory.slice(-3);
+                                const recent3Vol = volHistory.slice(-3);
 
-                            // Check if price and volume are frozen
-                            const pricesFrozen = recent3Price.every(p =>
-                                Math.abs(p.price - lastPrice) < 0.01
-                            );
-                            const volumeFrozen = recent3Vol.every(v =>
-                                v.volume === totalVolume
-                            );
+                                // Check if price and volume are frozen
+                                const pricesFrozen = recent3Price.every(p =>
+                                    Math.abs(p.price - lastPrice) < 0.01
+                                );
+                                const volumeFrozen = recent3Vol.every(v =>
+                                    v.volume === totalVolume
+                                );
 
-                            if (pricesFrozen && volumeFrozen) {
-                                tradingStatus = 'HALTED';
-                                haltedStocks.add(stock.ticker); // Add to cache
+                                if (pricesFrozen && volumeFrozen) {
+                                    tradingStatus = 'HALTED';
+                                    haltedStocks.add(stock.ticker); // Add to cache
+                                }
                             }
                         }
-                    }
-                    // Check for extended hours halt (no trades for 20+ minutes)
-                    else if (session === 'Pre-Market' || session === 'After Hours') {
-                        if (timeSinceLastQuote > 20 * 60 * 1000 && totalVolume > 0) {
-                            tradingStatus = 'HALTED';
+                        // Check for extended hours halt (no trades for 20+ minutes)
+                        else if (session === 'Pre-Market' || session === 'After Hours') {
+                            if (timeSinceLastQuote > 20 * 60 * 1000 && totalVolume > 0) {
+                                tradingStatus = 'HALTED';
+                            }
                         }
-                    }
-                    // Regular hours - no updates for 5+ minutes is suspicious
-                    else if (session === 'Regular Hours' && timeSinceLastQuote > 5 * 60 * 1000) {
-                        tradingStatus = 'HALTED';
-                        haltedStocks.add(stock.ticker); // Add to cache
-                    }
-
-                    // Log suspected halts for debugging
-                    if (tradingStatus !== 'ACTIVE' && stock.ticker === 'WOLF') {
-                        console.log(`🚫 ${stock.ticker} detected as ${tradingStatus}:`, {
-                            volume: totalVolume,
-                            dayChange: stock.validatedDayChange,
-                            high: stock.day?.h,
-                            low: stock.day?.l,
-                            close: stock.day?.c,
-                            timeSinceQuote: timeSinceLastQuote
-                        });
+                        // Regular hours - no updates for 5+ minutes is suspicious
+                        else if (session === 'Regular Hours' && timeSinceLastQuote > 5 * 60 * 1000) {
+                            tradingStatus = 'HALTED';
+                            haltedStocks.add(stock.ticker); // Add to cache
+                        }
                     }
                 }
 
