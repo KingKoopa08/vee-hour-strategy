@@ -494,7 +494,6 @@ async function getTopGainers() {
                             haltedStocks.add(stock.ticker); // Add to cache
                         }
                     }
-                    }
                 }
 
                 return {
