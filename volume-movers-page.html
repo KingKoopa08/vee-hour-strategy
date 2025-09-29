@@ -959,45 +959,44 @@ Note: Resets to 50 when no trades occur">?</span>
                            priceMatch;
                 });
 
-            // Apply complex multi-criteria sorting
+            // Apply sorting based on selected column
             filteredStocks.sort((a, b) => {
                 let compareValue = 0;
 
-                // Check if price or volume sort overrides primary sort
-                if (filters.priceSortBy !== 'none') {
-                    // Price sort takes precedence
-                    const timeframe = filters.priceSortBy.replace('priceChange', '');
+                // Handle all sort fields
+                if (filters.primarySort === 'rank') {
+                    compareValue = (a.currentRank || 0) - (b.currentRank || 0);
+                } else if (filters.primarySort === 'dayChange') {
+                    compareValue = b.dayChange - a.dayChange;
+                } else if (filters.primarySort === 'price') {
+                    compareValue = b.price - a.price;
+                } else if (filters.primarySort === 'volume') {
+                    compareValue = b.volume - a.volume;
+                } else if (filters.primarySort === 'buyPressure') {
+                    const aBuyPressure = parseFloat(a.buyPressure) || 50;
+                    const bBuyPressure = parseFloat(b.buyPressure) || 50;
+                    compareValue = bBuyPressure - aBuyPressure;
+                } else if (filters.primarySort === 'volumeRate') {
+                    compareValue = (b.avgVolumeRate || 0) - (a.avgVolumeRate || 0);
+                } else if (filters.primarySort.startsWith('priceChange')) {
+                    const timeframe = filters.primarySort.replace('priceChange', '');
                     const aPriceChange = a.priceChanges?.[timeframe] || 0;
                     const bPriceChange = b.priceChanges?.[timeframe] || 0;
                     compareValue = bPriceChange - aPriceChange;
-                } else if (filters.volumeSortBy !== 'none') {
-                    // Volume sort takes precedence
-                    const timeframe = filters.volumeSortBy.replace('volumeChange', '');
+                } else if (filters.primarySort.startsWith('volumeChange')) {
+                    const timeframe = filters.primarySort.replace('volumeChange', '');
                     const aVolChange = a.volumeChanges?.[timeframe] || 0;
                     const bVolChange = b.volumeChanges?.[timeframe] || 0;
                     compareValue = bVolChange - aVolChange;
-                } else {
-                    // Use primary sort
-                    if (filters.primarySort === 'dayChange') {
-                        compareValue = b.dayChange - a.dayChange;
-                    } else if (filters.primarySort === 'price') {
-                        compareValue = b.price - a.price;
-                    } else if (filters.primarySort === 'volume') {
-                        compareValue = b.volume - a.volume;
-                    } else if (filters.primarySort === 'buyPressure') {
-                        const aBuyPressure = parseFloat(a.buyPressure) || 50;
-                        const bBuyPressure = parseFloat(b.buyPressure) || 50;
-                        compareValue = bBuyPressure - aBuyPressure;
-                    }
+                }
 
-                    // Apply sort direction for primary sort
-                    if (filters.primarySortDirection === 'asc') {
-                        compareValue = -compareValue;
-                    }
+                // Apply sort direction
+                if (filters.primarySortDirection === 'asc' && filters.primarySort !== 'rank') {
+                    compareValue = -compareValue;
                 }
 
                 // If equal, fall back to day change
-                if (compareValue === 0) {
+                if (compareValue === 0 && filters.primarySort !== 'dayChange') {
                     compareValue = b.dayChange - a.dayChange;
                 }
 
