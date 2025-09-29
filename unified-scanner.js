@@ -466,7 +466,8 @@ async function getVolumeMovers() {
                 low: stock.low,
                 positionChange: stock.positionChange || 0,
                 currentRank: stock.currentRank || 0,
-                marketSession: stock.marketSession
+                marketSession: stock.marketSession,
+                tradingStatus: stock.tradingStatus || 'ACTIVE'
             };
         });
 
