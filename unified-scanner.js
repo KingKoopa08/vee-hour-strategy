@@ -1502,7 +1502,7 @@ const trackHistoricalData = () => {
         prcHistory.push({ time: now, price: currentPrice });
 
         // Keep only last 5 minutes of data
-        const fiveMinutesAgo = now - 300000;
+        // fiveMinutesAgo already declared above for rate history
         while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
             volHistory.shift();
         }
