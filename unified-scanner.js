@@ -25,6 +25,7 @@ let priceHistory = new Map(); // Store price history for timeframe analysis
 let tradeHistory = new Map(); // Store recent trades for whale detection
 let volumeRateHistory = new Map(); // Store volume rate (volume/minute) calculations
 let lastVolumeSnapshot = new Map(); // Store last known volume for each symbol
+let haltedStocks = new Set(); // Track halted/suspended stocks
 let lastUpdate = Date.now();
 
 // Volume tracking timeframes (in seconds)
