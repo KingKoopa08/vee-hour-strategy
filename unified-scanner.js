@@ -1339,30 +1339,57 @@ app.get('/api/whales', async (req, res) => {
 });
 
 // Calculate buy pressure for a single stock
-const calculateBuyPressure = (priceChanges, volumeChanges) => {
+const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, currentVolume = 0) => {
     let buyPressure = 50; // Neutral baseline
 
-    // Factor 1: Price movement (40% weight)
-    if (priceChanges['30s'] > 0) {
-        buyPressure += Math.min(20, priceChanges['30s'] * 4); // Max +20
-    } else {
-        buyPressure += Math.max(-20, priceChanges['30s'] * 4); // Max -20
+    // Factor 1: Short-term price movement (25% weight)
+    const price30s = priceChanges['30s'] || 0;
+    if (price30s !== 0) {
+        buyPressure += Math.min(12.5, Math.max(-12.5, price30s * 2.5));
     }
 
-    // Factor 2: Volume surge with price up (30% weight)
-    if (volumeChanges['30s'] > 0 && priceChanges['30s'] > 0) {
-        buyPressure += Math.min(15, volumeChanges['30s'] / 10); // Buying surge
-    } else if (volumeChanges['30s'] > 0 && priceChanges['30s'] < 0) {
-        buyPressure -= Math.min(15, volumeChanges['30s'] / 10); // Selling surge
+    // Factor 2: Volume analysis (25% weight)
+    const vol30s = volumeChanges['30s'] || 0;
+    const vol1m = volumeChanges['1m'] || 0;
+
+    // Volume increasing with price up = buying pressure
+    if (vol30s > 0 && price30s > 0) {
+        buyPressure += Math.min(12.5, vol30s / 20);
+    } else if (vol30s > 0 && price30s < 0) {
+        buyPressure -= Math.min(12.5, vol30s / 20);
     }
 
-    // Factor 3: Sustained trend (30% weight)
+    // Factor 3: Day performance bias (25% weight)
+    // Use day change as a baseline when short-term data is flat
+    if (dayChange > 0) {
+        buyPressure += Math.min(12.5, dayChange / 4); // Positive day = bullish bias
+    } else if (dayChange < 0) {
+        buyPressure += Math.max(-12.5, dayChange / 4); // Negative day = bearish bias
+    }
+
+    // Factor 4: Trend consistency (25% weight)
     const trend1m = priceChanges['1m'] || 0;
-    const trend30s = priceChanges['30s'] || 0;
-    if (trend1m > 0 && trend30s > 0) {
-        buyPressure += 15; // Sustained buying
-    } else if (trend1m < 0 && trend30s < 0) {
-        buyPressure -= 15; // Sustained selling
+    const trend2m = priceChanges['2m'] || 0;
+
+    // All trends aligned in same direction = stronger signal
+    if (price30s > 0 && trend1m > 0) {
+        buyPressure += 6.25; // Consistent buying
+    } else if (price30s < 0 && trend1m < 0) {
+        buyPressure -= 6.25; // Consistent selling
+    }
+
+    // Longer trend alignment
+    if (trend1m > 0 && trend2m > 0) {
+        buyPressure += 6.25; // Sustained momentum
+    } else if (trend1m < 0 && trend2m < 0) {
+        buyPressure -= 6.25; // Sustained decline
+    }
+
+    // Volume strength modifier
+    if (currentVolume > 1000000) {
+        // High volume makes the signal more reliable
+        const volumeFactor = Math.min(1.2, 1 + (currentVolume / 10000000));
+        buyPressure = 50 + (buyPressure - 50) * volumeFactor;
     }
 
     // Clamp to 0-100 range
