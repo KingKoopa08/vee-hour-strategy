@@ -323,20 +323,29 @@ async function getTopGainers() {
                 // Detect trading status (halted/suspended)
                 let tradingStatus = 'ACTIVE';
 
-                // Get latest quote timestamp and price info
-                const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
-                const timeSinceLastQuote = Date.now() - lastQuoteTime;
-                const lastPrice = stock.min?.c || stock.day?.c || 0;
-                const prevPrice = stock.prevDay?.c || 0;
+                // FIRST - Check known suspended stocks list
+                if (KNOWN_SUSPENDED_STOCKS.has(stock.ticker)) {
+                    tradingStatus = 'SUSPENDED';
 
-                // Check for specific halt/suspension patterns
-                if (session !== 'Closed') {
-                    // First check our halt cache
-                    if (haltedStocks.has(stock.ticker)) {
-                        tradingStatus = 'HALTED';
+                    // Debug log for WOLF
+                    if (stock.ticker === 'WOLF') {
+                        console.log(`🚫 WOLF detected as SUSPENDED (in known list)`);
                     }
-                    // Check for zero volume (common suspension indicator)
-                    else if (totalVolume === 0) {
+                } else {
+                    // Get latest quote timestamp and price info
+                    const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
+                    const timeSinceLastQuote = Date.now() - lastQuoteTime;
+                    const lastPrice = stock.min?.c || stock.day?.c || 0;
+                    const prevPrice = stock.prevDay?.c || 0;
+
+                    // Check for specific halt/suspension patterns
+                    if (session !== 'Closed') {
+                        // Check our halt cache
+                        if (haltedStocks.has(stock.ticker)) {
+                            tradingStatus = 'HALTED';
+                        }
+                        // Check for zero volume (common suspension indicator)
+                        else if (totalVolume === 0) {
                         if (session === 'Regular Hours') {
                             tradingStatus = 'SUSPENDED';
                         } else if (stock.prevDay?.v > 100000) {
