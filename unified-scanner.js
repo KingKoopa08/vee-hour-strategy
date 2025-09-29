@@ -274,6 +274,32 @@ async function getTopGainers() {
                 const totalVolume = stock.day?.v || stock.prevDay?.v || 0;
                 const session = getMarketSession();
 
+                // Detect trading status (halted/suspended)
+                let tradingStatus = 'ACTIVE';
+                const lastTradeTime = stock.updated || stock.min?.t || stock.day?.t || 0;
+                const timeSinceLastTrade = Date.now() - lastTradeTime;
+
+                // Check for halt conditions
+                if (session !== 'Closed') {
+                    // If no trades in last 5 minutes during market hours, likely halted
+                    if (timeSinceLastTrade > 5 * 60 * 1000 && totalVolume > 0) {
+                        // Check if volume hasn't changed in a while
+                        const volHistory = volumeHistory.get(stock.ticker) || [];
+                        if (volHistory.length > 3) {
+                            const recentVols = volHistory.slice(-3);
+                            const allSameVolume = recentVols.every(v => v.volume === totalVolume);
+                            if (allSameVolume) {
+                                tradingStatus = 'HALTED';
+                            }
+                        }
+                    }
+
+                    // Check for suspended (no volume at all)
+                    if (totalVolume === 0 && stock.prevDay?.v > 0) {
+                        tradingStatus = 'SUSPENDED';
+                    }
+                }
+
                 return {
                     symbol: stock.ticker,
                     price: displayPrice,
@@ -288,7 +314,8 @@ async function getTopGainers() {
                     low: stock.day?.l || stock.prevDay?.l || 0,
                     positionChange,
                     currentRank,
-                    marketSession: session
+                    marketSession: session,
+                    tradingStatus: tradingStatus
                 };
             });
 
