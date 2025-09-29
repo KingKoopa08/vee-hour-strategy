@@ -313,15 +313,8 @@ async function getTopGainers() {
                 // Detect trading status (halted/suspended)
                 let tradingStatus = 'ACTIVE';
 
-                // FIRST - Check known suspended stocks list
-                if (KNOWN_SUSPENDED_STOCKS.has(stock.ticker)) {
-                    tradingStatus = 'SUSPENDED';
-
-                    // Debug log for WOLF
-                    if (stock.ticker === 'WOLF') {
-                        console.log(`🚫 WOLF detected as SUSPENDED (in known list)`);
-                    }
-                } else {
+                // Check real-time halt status based on data patterns
+                {
                     // Get latest quote timestamp and price info
                     const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
                     const timeSinceLastQuote = Date.now() - lastQuoteTime;
