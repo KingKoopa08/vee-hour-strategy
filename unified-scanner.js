@@ -122,56 +122,77 @@ async function checkOfficialHaltStatus(symbol) {
         return cached.status;
     }
 
+    const marketSession = getMarketSession();
+
+    // If market is closed, don't check halt status (all stocks show halt conditions when closed)
+    if (marketSession === 'Closed') {
+        return 'ACTIVE';
+    }
+
     try {
-        // Make parallel requests for trades and quotes
-        const [tradesResponse, quotesResponse] = await Promise.all([
-            axios.get(`https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`, { timeout: 3000 }),
-            axios.get(`https://api.polygon.io/v3/quotes/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`, { timeout: 3000 })
-        ]);
-
+        // For pre-market/after-hours, only check if there's recent activity
         let status = 'ACTIVE';
-        const marketSession = getMarketSession();
 
-        // Check trade conditions
+        // First check if there's recent trading activity
+        const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=5&apiKey=${POLYGON_API_KEY}`;
+        const tradesResponse = await axios.get(tradesUrl, { timeout: 3000 });
+
         if (tradesResponse.data.results && tradesResponse.data.results.length > 0) {
-            const lastTrade = tradesResponse.data.results[0];
-            const conditions = lastTrade.conditions || [];
-
-            // Check for halt conditions:
-            // 4 = Halt Trade
-            // 37 = Halted Trade
-            // 41 = Trading Halted
-            if (conditions.includes(4) || conditions.includes(37) || conditions.includes(41)) {
-                status = 'HALTED';
-            }
-
-            // Check how recent the trade is
+            const trades = tradesResponse.data.results;
+            const lastTrade = trades[0];
             const tradeTime = lastTrade.participant_timestamp / 1000000; // Convert nanoseconds to ms
             const minutesSinceLastTrade = (Date.now() - tradeTime) / 60000;
 
-            // If no recent trades during market hours, likely suspended
-            if (minutesSinceLastTrade > 30 && marketSession === 'Regular Hours') {
-                status = status === 'HALTED' ? 'SUSPENDED' : 'INACTIVE';
-            }
-        }
+            // During market hours, check for halt conditions
+            if (marketSession === 'Regular Hours') {
+                const conditions = lastTrade.conditions || [];
 
-        // Also check quote indicators for halt status
-        if (quotesResponse.data.results && quotesResponse.data.results.length > 0) {
-            const lastQuote = quotesResponse.data.results[0];
-            const indicators = lastQuote.indicators || [];
+                // Check for specific halt conditions that indicate REAL halts (not just end-of-day)
+                // 4 = Halt Trade (real halt)
+                // 12 = LULD pause
+                // We're IGNORING 37 and 41 as they appear on all stocks when market closes
+                if (conditions.includes(4) || conditions.includes(12)) {
+                    // But ONLY if the halt is recent (within last 60 minutes)
+                    if (minutesSinceLastTrade < 60) {
+                        status = 'HALTED';
 
-            // Check for halt indicators in quotes:
-            // 4 = Trading Halt
-            // 12 = LULD Trading Pause
-            if (indicators.includes(4) || indicators.includes(12)) {
-                status = 'HALTED';
-            }
+                        // Check if it's been halted for a long time (might be suspended)
+                        if (minutesSinceLastTrade > 30) {
+                            // Check if there's ANY trading in the last few trades
+                            const recentTrades = trades.slice(0, 3);
+                            const allOld = recentTrades.every(t => {
+                                const tTime = t.participant_timestamp / 1000000;
+                                return (Date.now() - tTime) / 60000 > 30;
+                            });
 
-            // Check for zero bid/ask (suspension indicator)
-            if (lastQuote.bid_price === 0 || lastQuote.ask_price === 0) {
-                // Zero bid/ask during market hours = likely suspended
-                if (marketSession === 'Regular Hours' || marketSession === 'Pre-Market') {
-                    status = 'SUSPENDED';
+                            if (allOld) {
+                                status = 'SUSPENDED';
+                            }
+                        }
+                    }
+                }
+
+                // If no trades for over 30 minutes during regular hours, check if suspended
+                if (minutesSinceLastTrade > 30) {
+                    // Get quote to see if there's a market
+                    const quoteUrl = `https://api.polygon.io/v3/quotes/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
+                    const quoteResponse = await axios.get(quoteUrl, { timeout: 3000 });
+
+                    if (quoteResponse.data.results && quoteResponse.data.results.length > 0) {
+                        const lastQuote = quoteResponse.data.results[0];
+                        // Zero bid/ask means no market makers = suspended
+                        if (lastQuote.bid_price === 0 || lastQuote.ask_price === 0) {
+                            status = 'SUSPENDED';
+                        }
+                    }
+                }
+            } else if (marketSession === 'Pre-Market' || marketSession === 'After Hours') {
+                // For extended hours, only mark as halted if very recent and has halt conditions
+                if (minutesSinceLastTrade < 5) {
+                    const conditions = lastTrade.conditions || [];
+                    if (conditions.includes(4) || conditions.includes(12)) {
+                        status = 'HALTED';
+                    }
                 }
             }
         }
