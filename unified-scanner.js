@@ -317,49 +317,71 @@ async function getTopGainers() {
 
                 // Check for specific halt/suspension patterns
                 if (session !== 'Closed') {
-                    // Known suspended tickers (you can expand this list)
-                    const suspendedTickers = ['WOLF', 'MULN', 'FFIE', 'BBIG', 'CEI'];
-                    if (suspendedTickers.includes(stock.ticker)) {
-                        tradingStatus = 'SUSPENDED';
-                    }
-                    // Check for T12 halt (stock halted for pending news)
-                    else if (stock.day?.h === stock.day?.l && stock.day?.h === stock.day?.c && totalVolume > 0) {
-                        // High, low, and close are all the same = likely halted
+                    // First check our halt cache
+                    if (haltedStocks.has(stock.ticker)) {
                         tradingStatus = 'HALTED';
                     }
-                    // Check for suspension patterns
-                    else if (totalVolume === 0 && session === 'Regular Hours') {
-                        // No volume during regular hours = suspended
-                        tradingStatus = 'SUSPENDED';
+                    // Check for zero volume (common suspension indicator)
+                    else if (totalVolume === 0) {
+                        if (session === 'Regular Hours') {
+                            tradingStatus = 'SUSPENDED';
+                        } else if (stock.prevDay?.v > 100000) {
+                            // Had volume yesterday but none today
+                            tradingStatus = 'SUSPENDED';
+                        }
                     }
-                    // Check for volatility halt (LULD - Limit Up Limit Down)
+                    // Check for T12 halt pattern (all prices the same)
+                    else if (stock.day?.h && stock.day?.l && stock.day?.c) {
+                        if (stock.day.h === stock.day.l && stock.day.h === stock.day.c && totalVolume > 0) {
+                            tradingStatus = 'HALTED';
+                        }
+                    }
+                    // Check for significant day change with no recent activity
                     else if (Math.abs(stock.validatedDayChange) > 10) {
-                        // Check if price hasn't moved recently despite high day change
-                        const priceHistory = priceHistory.get(stock.ticker) || [];
-                        if (priceHistory.length >= 5) {
-                            const recent5 = priceHistory.slice(-5);
-                            const allSamePrice = recent5.every(p => Math.abs(p.price - lastPrice) < 0.01);
-                            const volHistory = volumeHistory.get(stock.ticker) || [];
-                            const recent3Vol = volHistory.slice(-3);
-                            const noVolumeChange = recent3Vol.length >= 3 &&
-                                recent3Vol.every(v => v.volume === totalVolume);
+                        const prcHistory = priceHistory.get(stock.ticker) || [];
+                        const volHistory = volumeHistory.get(stock.ticker) || [];
 
-                            if (allSamePrice && noVolumeChange) {
+                        // Need at least 3 data points to determine
+                        if (prcHistory.length >= 3 && volHistory.length >= 3) {
+                            const recent3Price = prcHistory.slice(-3);
+                            const recent3Vol = volHistory.slice(-3);
+
+                            // Check if price and volume are frozen
+                            const pricesFrozen = recent3Price.every(p =>
+                                Math.abs(p.price - lastPrice) < 0.01
+                            );
+                            const volumeFrozen = recent3Vol.every(v =>
+                                v.volume === totalVolume
+                            );
+
+                            if (pricesFrozen && volumeFrozen) {
                                 tradingStatus = 'HALTED';
+                                haltedStocks.add(stock.ticker); // Add to cache
                             }
                         }
                     }
-                    // Check for stale data during market hours
-                    else if (session === 'Regular Hours' && timeSinceLastQuote > 10 * 60 * 1000) {
-                        // No updates for 10+ minutes during market hours
-                        tradingStatus = 'HALTED';
-                    }
-                    // Check for pre/after hours suspension
-                    else if ((session === 'Pre-Market' || session === 'After Hours')) {
-                        // If there's been significant day movement but no recent trades
-                        if (Math.abs(stock.validatedDayChange) > 5 && timeSinceLastQuote > 15 * 60 * 1000) {
+                    // Check for extended hours halt (no trades for 20+ minutes)
+                    else if (session === 'Pre-Market' || session === 'After Hours') {
+                        if (timeSinceLastQuote > 20 * 60 * 1000 && totalVolume > 0) {
                             tradingStatus = 'HALTED';
                         }
+                    }
+                    // Regular hours - no updates for 5+ minutes is suspicious
+                    else if (session === 'Regular Hours' && timeSinceLastQuote > 5 * 60 * 1000) {
+                        tradingStatus = 'HALTED';
+                        haltedStocks.add(stock.ticker); // Add to cache
+                    }
+
+                    // Log suspected halts for debugging
+                    if (tradingStatus !== 'ACTIVE' && stock.ticker === 'WOLF') {
+                        console.log(`🚫 ${stock.ticker} detected as ${tradingStatus}:`, {
+                            volume: totalVolume,
+                            dayChange: stock.validatedDayChange,
+                            high: stock.day?.h,
+                            low: stock.day?.l,
+                            close: stock.day?.c,
+                            timeSinceQuote: timeSinceLastQuote
+                        });
                     }
                 }
 
