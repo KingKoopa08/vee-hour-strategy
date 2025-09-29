@@ -514,7 +514,7 @@ async function getTopGainers() {
                     marketSession: session,
                     tradingStatus: tradingStatus
                 };
-            });
+            }));
 
             topGainersCache = gainers;
             lastUpdate = Date.now();
