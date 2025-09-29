@@ -338,13 +338,16 @@ async function getTopGainers() {
 
                     // Check for specific halt/suspension patterns
                     if (session !== 'Closed') {
-                        // For stocks with extreme movement, check halt status
+                        // For stocks with extreme movement, check for halt patterns
                         if (Math.abs(stock.validatedDayChange) > 50) {
-                            // Use our halt checking function
-                            const haltCheck = await checkHaltStatus(stock.ticker, stock);
-                            if (haltCheck === 'HALTED') {
+                            // Check if it's a LULD halt (extreme move with no recent volume)
+                            const volHistory = volumeHistory.get(stock.ticker) || [];
+                            const hasRecentVolume = volHistory.length > 0 &&
+                                volHistory.some(v => (Date.now() - v.time) < 5 * 60 * 1000 && v.volume !== totalVolume);
+
+                            if (!hasRecentVolume && totalVolume > 0) {
                                 tradingStatus = 'HALTED';
-                                console.log(`⚠️ ${stock.ticker} detected as HALTED: ${stock.validatedDayChange.toFixed(1)}% change`);
+                                console.log(`⚠️ ${stock.ticker} detected as HALTED: ${stock.validatedDayChange.toFixed(1)}% change with no recent volume activity`);
                             }
                         }
                         // Check for T1 halt (news pending)
