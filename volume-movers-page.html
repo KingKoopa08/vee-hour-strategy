@@ -632,6 +632,24 @@ Note: Resets to 50 when no trades occur">?</span>
 
         // Initialize filter event listeners
         function initializeFilters() {
+            // Ticker search functionality
+            const tickerSearch = document.getElementById('tickerSearch');
+            const clearSearch = document.getElementById('clearSearch');
+
+            tickerSearch.addEventListener('input', (e) => {
+                const searchValue = e.target.value.toUpperCase().trim();
+                filters.tickerSearch = searchValue;
+                clearSearch.style.display = searchValue ? 'inline-block' : 'none';
+                updateTable(allStocks);
+            });
+
+            clearSearch.addEventListener('click', () => {
+                tickerSearch.value = '';
+                filters.tickerSearch = '';
+                clearSearch.style.display = 'none';
+                updateTable(allStocks);
+            });
+
             document.getElementById('stockLimit').addEventListener('change', (e) => {
                 filters.stockLimit = parseInt(e.target.value);
                 updateTable(allStocks);
