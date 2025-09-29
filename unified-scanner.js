@@ -361,8 +361,8 @@ async function getTopGainers() {
                         }
                         // Check for significant day change with no recent activity
                         else if (Math.abs(stock.validatedDayChange) > 10) {
-                        const prcHistory = priceHistory.get(stock.ticker) || [];
-                        const volHistory = volumeHistory.get(stock.ticker) || [];
+                            const prcHistory = priceHistory.get(stock.ticker) || [];
+                            const volHistory = volumeHistory.get(stock.ticker) || [];
 
                         // Need at least 3 data points to determine
                         if (prcHistory.length >= 3 && volHistory.length >= 3) {
