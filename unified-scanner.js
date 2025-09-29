@@ -1439,44 +1439,9 @@ const trackHistoricalData = () => {
         const volHistory = volumeHistory.get(symbol);
         const prcHistory = priceHistory.get(symbol);
 
-        // For volume tracking, use actual volume or simulate realistic changes
-        let adjustedVolume = currentVolume;
-
-        // Check if volume actually changed from the last entry
-        const lastVolEntry = volHistory[volHistory.length - 1];
-        const volumeChanged = !lastVolEntry || Math.abs(lastVolEntry.volume - currentVolume) > 0;
-
-        if (!volumeChanged && (getMarketSession() === 'Pre-Market' || getMarketSession() === 'After-Hours')) {
-            // Simulate realistic volume accumulation for static periods
-            // Use a combination of time-based growth and periodic jumps to simulate real trading
-            if (lastVolEntry) {
-                const timeElapsed = (now - lastVolEntry.time) / 1000; // seconds
-
-                // Create a hash for consistent behavior per symbol
-                const symbolHash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-
-                // Base accumulation rate: 0.05% to 0.15% per 30 seconds
-                const baseRate = 0.0005 + (symbolHash % 10) * 0.00003;
-
-                // Simulate periodic volume spikes (trades) every 10-20 seconds
-                const spikeInterval = 10 + (symbolHash % 11);
-                const shouldSpike = Math.floor(timeElapsed / spikeInterval) > Math.floor((timeElapsed - 1) / spikeInterval);
-
-                if (shouldSpike) {
-                    // Add a volume spike (0.5% to 2% jump)
-                    const spikeSize = 0.005 + (symbolHash % 20) * 0.00075;
-                    adjustedVolume = Math.floor(lastVolEntry.volume * (1 + spikeSize));
-                } else {
-                    // Normal accumulation
-                    adjustedVolume = Math.floor(lastVolEntry.volume * (1 + baseRate * timeElapsed / 30));
-                }
-
-                // Ensure volume is always increasing (never decreases in simulation)
-                adjustedVolume = Math.max(adjustedVolume, lastVolEntry.volume);
-            }
-        }
-
-        volHistory.push({ time: now, volume: adjustedVolume });
+        // Use actual volume data without simulation
+        // This provides stable, realistic data that won't jump around
+        volHistory.push({ time: now, volume: currentVolume });
         prcHistory.push({ time: now, price: currentPrice });
 
         // Keep only last 5 minutes of data
