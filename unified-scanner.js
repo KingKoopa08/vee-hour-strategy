@@ -369,7 +369,7 @@ async function getTopGainers() {
             });
 
             // Calculate position changes
-            gainers = gainers.map((stock, index) => {
+            gainers = await Promise.all(gainers.map(async (stock, index) => {
                 const currentRank = index + 1;
                 const history = rankingHistory.get(stock.ticker) || [];
 
