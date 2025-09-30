@@ -115,6 +115,43 @@ function getMarketSession() {
         return 'Closed';
     }
 }
+
+// Update session volumes when market session changes
+function updateSessionVolumes(stocks) {
+    const newSession = getMarketSession();
+
+    // Check if session has changed
+    if (currentMarketSession !== newSession) {
+        console.log(`📊 Market session changed: ${currentMarketSession} → ${newSession}`);
+
+        // Clear session volumes at start of new session
+        sessionStartVolumes.clear();
+
+        // Store current volumes as session start volumes
+        stocks.forEach(stock => {
+            const totalVolume = stock.day?.v || stock.totalVolume || stock.volume || 0;
+            sessionStartVolumes.set(stock.symbol, totalVolume);
+        });
+
+        currentMarketSession = newSession;
+        console.log(`📊 Stored session start volumes for ${sessionStartVolumes.size} stocks`);
+    }
+
+    // Calculate session-specific volumes
+    return stocks.map(stock => {
+        const totalVolume = stock.day?.v || stock.totalVolume || stock.volume || 0;
+        const sessionStartVol = sessionStartVolumes.get(stock.symbol) || 0;
+        const sessionVolume = totalVolume - sessionStartVol;
+
+        // Use session volume if available, otherwise use total volume
+        return {
+            ...stock,
+            sessionVolume: sessionVolume > 0 ? sessionVolume : totalVolume,
+            volume: sessionVolume > 0 ? sessionVolume : totalVolume, // Override volume with session-specific
+            totalVolume: totalVolume // Keep total volume separately
+        };
+    });
+}
 let rankingHistory = new Map();
 let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
