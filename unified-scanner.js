@@ -765,9 +765,10 @@ async function getVolumeMovers() {
                 if (existing && existing.buyPressure !== undefined) {
                     // Preserve historical tracking data
                     newStock.buyPressure = existing.buyPressure;
-                    // Don't overwrite volumeChanges and priceChanges if they exist
-                    if (existing.volumeChanges) newStock.volumeChanges = existing.volumeChanges;
-                    if (existing.priceChanges) newStock.priceChanges = existing.priceChanges;
+                    // IMPORTANT: Don't overwrite volumeChanges and priceChanges - they're calculated fresh
+                    // The calculation happens in the map() function above using volumeHistory
+                    // if (existing.volumeChanges) newStock.volumeChanges = existing.volumeChanges;
+                    // if (existing.priceChanges) newStock.priceChanges = existing.priceChanges;
                 }
                 mergedStocks.push(newStock);
                 processedSymbols.add(newStock.symbol);
