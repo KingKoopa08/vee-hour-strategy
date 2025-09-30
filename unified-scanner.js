@@ -114,15 +114,40 @@ let rankingHistory = new Map();
 let volumeRankingHistory = new Map();
 const POSITION_TRACKING_WINDOW = 5 * 60 * 1000;
 
-// Check official halt status from Polygon API
-// We're being VERY conservative here - only marking as halted/suspended when we're SURE
-async function checkOfficialHaltStatus(symbol) {
-    // For now, disable this feature entirely since Polygon's halt indicators are unreliable
-    // Conditions 37 and 41 appear on normal trading stocks
-    // We need a better data source for real halt status
-    return 'ACTIVE';
+// Cache for market halt status
+let marketHaltedTickers = new Set();
+let lastMarketStatusCheck = 0;
+const MARKET_STATUS_CHECK_INTERVAL = 30000; // Check every 30 seconds
 
-    /* DISABLED - needs better data source
+// Check market-wide halt status
+async function checkMarketHaltStatus() {
+    try {
+        const now = Date.now();
+        if (now - lastMarketStatusCheck < MARKET_STATUS_CHECK_INTERVAL) {
+            return marketHaltedTickers;
+        }
+
+        const url = `https://api.polygon.io/v1/marketstatus/now?apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(url, { timeout: 3000 });
+
+        // Check if there's a halted securities list
+        if (response.data.securities && response.data.securities.halted) {
+            marketHaltedTickers = new Set(response.data.securities.halted);
+            console.log(`📍 Market Status: ${marketHaltedTickers.size} stocks halted`);
+        } else {
+            marketHaltedTickers.clear();
+        }
+
+        lastMarketStatusCheck = now;
+        return marketHaltedTickers;
+    } catch (error) {
+        console.error('Error checking market halt status:', error.message);
+        return marketHaltedTickers;
+    }
+}
+
+// Check official halt status from Polygon API using multiple sources
+async function checkOfficialHaltStatus(symbol) {
     // Check cache first
     const cached = haltStatusCache.get(symbol);
     if (cached && Date.now() - cached.timestamp < HALT_CACHE_TTL) {
@@ -131,38 +156,72 @@ async function checkOfficialHaltStatus(symbol) {
 
     try {
         let status = 'ACTIVE';
+
+        // 1. First check market-wide halt list
+        const haltedList = await checkMarketHaltStatus();
+        if (haltedList.has(symbol)) {
+            status = 'HALTED';
+            haltStatusCache.set(symbol, { status, timestamp: Date.now() });
+            return status;
+        }
+
+        // 2. Check ticker details for active status
+        try {
+            const tickerUrl = `https://api.polygon.io/v3/reference/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+            const tickerResponse = await axios.get(tickerUrl, { timeout: 3000 });
+
+            if (tickerResponse.data.results) {
+                const ticker = tickerResponse.data.results;
+
+                // Check if stock is inactive (delisted/suspended)
+                if (ticker.active === false) {
+                    status = 'SUSPENDED';
+                    console.log(`⚠️ ${symbol} marked as inactive in ticker details`);
+                    haltStatusCache.set(symbol, { status, timestamp: Date.now() });
+                    return status;
+                }
+
+                // Check for delisted date
+                if (ticker.delisted_utc) {
+                    status = 'DELISTED';
+                    console.log(`❌ ${symbol} is delisted as of ${ticker.delisted_utc}`);
+                    haltStatusCache.set(symbol, { status, timestamp: Date.now() });
+                    return status;
+                }
+            }
+        } catch (tickerError) {
+            // If ticker details fail, continue with other checks
+            console.error(`Ticker details error for ${symbol}:`, tickerError.message);
+        }
+
+        // 3. Check recent trading activity as a fallback
         const marketSession = getMarketSession();
 
-        // Only check during market hours
+        // Only check trading activity during market hours
         if (marketSession === 'Regular Hours' || marketSession === 'Pre-Market') {
-            // Check for REAL suspension - no trades for extended period
             const tradesUrl = `https://api.polygon.io/v3/trades/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
             const tradesResponse = await axios.get(tradesUrl, { timeout: 3000 });
 
             if (tradesResponse.data.results && tradesResponse.data.results.length > 0) {
                 const lastTrade = tradesResponse.data.results[0];
-                const tradeTime = lastTrade.participant_timestamp / 1000000;
+                const tradeTime = lastTrade.participant_timestamp / 1000000; // nanoseconds to ms
                 const minutesSinceLastTrade = (Date.now() - tradeTime) / 60000;
 
-                // Only mark as suspended if no trades for over 60 minutes during market hours
-                if (minutesSinceLastTrade > 60 && marketSession === 'Regular Hours') {
-                    // Double-check with quotes
-                    const quoteUrl = `https://api.polygon.io/v3/quotes/${symbol}?order=desc&limit=1&apiKey=${POLYGON_API_KEY}`;
-                    const quoteResponse = await axios.get(quoteUrl, { timeout: 3000 });
+                // If no trades for extended period during regular hours, might be halted
+                if (minutesSinceLastTrade > 15 && marketSession === 'Regular Hours') {
+                    // Check volume to see if it's a real halt
+                    const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${POLYGON_API_KEY}`;
+                    const snapshotResponse = await axios.get(snapshotUrl, { timeout: 3000 });
 
-                    if (quoteResponse.data.results && quoteResponse.data.results.length > 0) {
-                        const lastQuote = quoteResponse.data.results[0];
-                        // Zero bid/ask = no market
-                        if (lastQuote.bid_price === 0 || lastQuote.ask_price === 0) {
-                            status = 'SUSPENDED';
+                    if (snapshotResponse.data.ticker) {
+                        const dayVolume = snapshotResponse.data.ticker.day?.v || 0;
+
+                        // If there's volume but no recent trades, likely halted
+                        if (dayVolume > 0 && minutesSinceLastTrade > 15) {
+                            status = 'HALTED';
+                            console.log(`🛑 ${symbol} likely halted - no trades for ${minutesSinceLastTrade.toFixed(0)} minutes`);
                         }
                     }
-                }
-
-                // Only use condition 4 (official halt) or 12 (LULD pause) - NOT 37 or 41
-                const conditions = lastTrade.conditions || [];
-                if ((conditions.includes(4) || conditions.includes(12)) && minutesSinceLastTrade < 10) {
-                    status = 'HALTED';
                 }
             }
         }
@@ -175,7 +234,6 @@ async function checkOfficialHaltStatus(symbol) {
         console.error(`Error checking halt status for ${symbol}:`, error.message);
         return 'ACTIVE';
     }
-    */
 }
 
 // WebSocket server for real-time updates
