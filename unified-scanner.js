@@ -457,8 +457,12 @@ async function getTopGainers() {
                 //     console.log(`📍 ${stock.ticker} Official Status: ${haltStatus}`);
                 // }
 
-                // Fall back to pattern-based detection if no official status
-                if (tradingStatus === 'ACTIVE') {
+                // DISABLE ALL HALT DETECTION - causing false positives
+                // Everything will show as ACTIVE for now
+                tradingStatus = 'ACTIVE';
+
+                // DISABLED PATTERN DETECTION
+                if (false) {
                     // Get latest quote timestamp and price info
                     const lastQuoteTime = stock.min?.t || stock.day?.t || stock.updated || 0;
                     const timeSinceLastQuote = Date.now() - lastQuoteTime;
