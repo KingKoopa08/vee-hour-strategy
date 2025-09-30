@@ -596,7 +596,7 @@ async function getTopGainers() {
                     sessionChange: stock.sessionChange || 0,
                     afterHoursChange: stock.afterHoursChange || 0,
                     volume: totalVolume,
-                    volumeLabel: 'Total Volume',
+                    volumeLabel: session + ' Volume',
                     totalVolume: totalVolume,
                     dollarVolume: ((stock.day?.c || 0) * (stock.day?.v || 0)).toFixed(0),
                     high: stock.day?.h || stock.prevDay?.h || 0,
