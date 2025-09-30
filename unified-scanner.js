@@ -608,6 +608,9 @@ async function getTopGainers() {
                 };
             }));
 
+            // Apply session-specific volume calculations
+            gainers = updateSessionVolumes(gainers);
+
             topGainersCache = gainers;
             lastUpdate = Date.now();
 
