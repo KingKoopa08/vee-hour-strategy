@@ -450,14 +450,12 @@ async function getTopGainers() {
                 // Detect trading status (halted/suspended)
                 let tradingStatus = 'ACTIVE';
 
-                // Check for official halt indicators from Polygon API
-                // We need to make a separate call to check trade conditions
-                // This will be cached to avoid excessive API calls
-                const haltStatus = await checkOfficialHaltStatus(stock.ticker);
-                if (haltStatus !== 'ACTIVE') {
-                    tradingStatus = haltStatus;
-                    console.log(`📍 ${stock.ticker} Official Status: ${haltStatus}`);
-                }
+                // DISABLED - Causing too many API calls and timeouts
+                // const haltStatus = await checkOfficialHaltStatus(stock.ticker);
+                // if (haltStatus !== 'ACTIVE') {
+                //     tradingStatus = haltStatus;
+                //     console.log(`📍 ${stock.ticker} Official Status: ${haltStatus}`);
+                // }
 
                 // Fall back to pattern-based detection if no official status
                 if (tradingStatus === 'ACTIVE') {
