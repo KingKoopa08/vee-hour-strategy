@@ -26,6 +26,11 @@ let tradeHistory = new Map(); // Store recent trades for whale detection
 let volumeRateHistory = new Map(); // Store volume rate (volume/minute) calculations
 let lastVolumeSnapshot = new Map(); // Store last known volume for each symbol
 let haltedStocks = new Set(); // Track halted/suspended stocks
+
+// Track session start volumes for session-specific volume calculation
+let sessionStartVolumes = new Map(); // Symbol -> volume at session start
+let currentMarketSession = null;
+let lastSessionCheckTime = null;
 let lastUpdate = Date.now();
 
 // Cache for recently checked halt statuses (to avoid too many API calls)
