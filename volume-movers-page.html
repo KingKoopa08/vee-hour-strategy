@@ -456,14 +456,16 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="priceFilter">Price Range:</label>
-            <select id="priceFilter">
-                <option value="all" selected>All Prices</option>
-                <option value="penny">Under $5</option>
-                <option value="low">$5 - $20</option>
-                <option value="mid">$20 - $100</option>
-                <option value="high">Over $100</option>
-            </select>
+            <label>Price Range:</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #00ffff;">$</span>
+                <input type="number" id="minPrice" placeholder="Min" value="0.5" min="0" step="0.1"
+                       style="width: 80px; background: rgba(0, 0, 0, 0.5); color: #e0e0e0; border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 5px; padding: 8px;">
+                <span style="color: #888;">to</span>
+                <span style="color: #00ffff;">$</span>
+                <input type="number" id="maxPrice" placeholder="Max" value="100" min="0" step="0.1"
+                       style="width: 80px; background: rgba(0, 0, 0, 0.5); color: #e0e0e0; border: 1px solid rgba(0, 255, 65, 0.3); border-radius: 5px; padding: 8px;">
+            </div>
         </div>
         <div class="filter-group">
             <label for="primarySort">Primary Sort:</label>
@@ -661,7 +663,11 @@ Note: Resets to 50 when no trades occur">?</span>
             });
 
 
-            document.getElementById('priceFilter').addEventListener('change', (e) => {
+            // Price range filters
+            document.getElementById('minPrice').addEventListener('input', (e) => {
+                updateTable(allStocks);
+            });
+            document.getElementById('maxPrice').addEventListener('input', (e) => {
                 updateTable(allStocks);
             });
         }
@@ -930,19 +936,10 @@ Note: Resets to 50 when no trades occur">?</span>
 
                     // Apply price filter
                     let priceMatch = true;
-                    const priceFilter = document.getElementById('priceFilter').value;
-                    if (priceFilter !== 'all') {
-                        const price = stock.price || 0;
-                        if (priceFilter === 'penny') {
-                            priceMatch = price < 5;
-                        } else if (priceFilter === 'low') {
-                            priceMatch = price >= 5 && price <= 20;
-                        } else if (priceFilter === 'mid') {
-                            priceMatch = price > 20 && price <= 100;
-                        } else if (priceFilter === 'high') {
-                            priceMatch = price > 100;
-                        }
-                    }
+                    const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+                    const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+                    const price = stock.price || 0;
+                    priceMatch = price >= minPrice && price <= maxPrice;
 
                     return volumeToCheck >= filters.minVolume &&
                            stock.dayChange >= filters.minGain &&
