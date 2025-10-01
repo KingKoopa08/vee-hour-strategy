@@ -706,7 +706,8 @@ async function getVolumeMovers() {
         // Add volume and price change calculations to each stock from topGainersCache
         let movers = topGainersCache.map(stock => {
             const symbol = stock.symbol;
-            const currentVolume = stock.volume;
+            // Use totalVolume for tracking changes (not session-specific)
+            const currentVolume = stock.totalVolume || stock.volume;
             const currentPrice = stock.price;
             const volHistory = volumeHistory.get(symbol) || [];
             const prcHistory = priceHistory.get(symbol) || [];
