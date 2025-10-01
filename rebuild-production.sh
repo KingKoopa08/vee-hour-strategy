@@ -39,33 +39,33 @@ echo ""
 
 # Step 3: Stop PM2 service
 echo -e "${YELLOW}📋 Step 3/6: Stopping PM2 service...${NC}"
-ssh ${PRODUCTION_SERVER} "pm2 stop ${SERVICE_NAME} 2>/dev/null || true"
-ssh ${PRODUCTION_SERVER} "pm2 delete ${SERVICE_NAME} 2>/dev/null || true"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 stop ${SERVICE_NAME} 2>/dev/null || true"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 delete ${SERVICE_NAME} 2>/dev/null || true"
 echo -e "${GREEN}✅ Service stopped${NC}"
 echo ""
 
 # Step 4: Clear any cached/running processes
 echo -e "${YELLOW}📋 Step 4/6: Clearing ports and processes...${NC}"
-ssh ${PRODUCTION_SERVER} "sudo fuser -k 3050/tcp 2>/dev/null || true"
-ssh ${PRODUCTION_SERVER} "sudo fuser -k 3051/tcp 2>/dev/null || true"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "sudo fuser -k 3050/tcp 2>/dev/null || true"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "sudo fuser -k 3051/tcp 2>/dev/null || true"
 echo -e "${GREEN}✅ Ports cleared${NC}"
 echo ""
 
 # Step 5: Reinstall dependencies (clears node_modules cache)
 echo -e "${YELLOW}📋 Step 5/6: Reinstalling dependencies (clearing cache)...${NC}"
-ssh ${PRODUCTION_SERVER} "cd ${APP_DIR} && rm -rf node_modules package-lock.json && npm install --production"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "cd ${APP_DIR} && rm -rf node_modules package-lock.json && npm install --production"
 echo -e "${GREEN}✅ Dependencies reinstalled${NC}"
 echo ""
 
 # Step 6: Start fresh PM2 service
 echo -e "${YELLOW}📋 Step 6/6: Starting fresh PM2 service...${NC}"
-ssh ${PRODUCTION_SERVER} "cd ${APP_DIR} && pm2 start unified-scanner.js --name ${SERVICE_NAME} \
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "cd ${APP_DIR} && pm2 start unified-scanner.js --name ${SERVICE_NAME} \
     --max-memory-restart 1G \
     --log-date-format='YYYY-MM-DD HH:mm:ss' \
     --merge-logs \
     --time"
 
-ssh ${PRODUCTION_SERVER} "pm2 save"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 save"
 echo -e "${GREEN}✅ Service started${NC}"
 echo ""
 
