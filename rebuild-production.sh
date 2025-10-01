@@ -27,13 +27,13 @@ echo ""
 
 # Step 1: Backup current file on production
 echo -e "${YELLOW}📋 Step 1/6: Backing up current production file...${NC}"
-ssh ${PRODUCTION_SERVER} "cd ${APP_DIR} && cp unified-scanner.js unified-scanner.js.backup.\$(date +%Y%m%d-%H%M%S)" || true
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "cd ${APP_DIR} && cp unified-scanner.js unified-scanner.js.backup.\$(date +%Y%m%d-%H%M%S)" || true
 echo -e "${GREEN}✅ Backup complete${NC}"
 echo ""
 
 # Step 2: Upload fixed file
 echo -e "${YELLOW}📋 Step 2/6: Uploading fixed unified-scanner.js...${NC}"
-scp unified-scanner.js ${PRODUCTION_SERVER}:${APP_DIR}/unified-scanner.js
+scp ${SSH_OPTS} unified-scanner.js ${PRODUCTION_SERVER}:${APP_DIR}/unified-scanner.js
 echo -e "${GREEN}✅ File uploaded${NC}"
 echo ""
 
