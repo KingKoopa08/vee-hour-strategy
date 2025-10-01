@@ -729,6 +729,10 @@ async function getVolumeMovers() {
                     // Debug log significant volume changes
                     if (label === '30s' && Math.abs(change) > 0.1 && movers.indexOf(stock) < 5) {
                         console.log(`📈 ${stock.symbol} 30s vol change: ${change.toFixed(2)}% (${oldVolEntry.volume} → ${currentVolume})`);
+                    }
+                } else {
+                    volumeChanges[label] = 0;
+                }
 
                 if (oldPrcEntry && oldPrcEntry.price > 0) {
                     const change = ((currentPrice - oldPrcEntry.price) / oldPrcEntry.price) * 100;
