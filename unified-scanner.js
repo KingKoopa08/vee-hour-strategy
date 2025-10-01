@@ -723,12 +723,12 @@ async function getVolumeMovers() {
                 const oldVolEntry = volHistory.find(h => Math.abs(h.time - targetTime) < 10000); // 10s tolerance
                 const oldPrcEntry = prcHistory.find(h => Math.abs(h.time - targetTime) < 10000);
 
-                if (oldVolEntry && oldVolEntry.volume > 0) {
+                if (oldVolEntry && oldVolEntry.volume > 0 && currentVolume > 0) {
                     const change = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
                     volumeChanges[label] = change;
-                } else {
-                    volumeChanges[label] = 0;
-                }
+                    // Debug log significant volume changes
+                    if (label === '30s' && Math.abs(change) > 0.1 && movers.indexOf(stock) < 5) {
+                        console.log(`📈 ${stock.symbol} 30s vol change: ${change.toFixed(2)}% (${oldVolEntry.volume} → ${currentVolume})`);
 
                 if (oldPrcEntry && oldPrcEntry.price > 0) {
                     const change = ((currentPrice - oldPrcEntry.price) / oldPrcEntry.price) * 100;
