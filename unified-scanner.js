@@ -279,6 +279,7 @@ async function checkOfficialHaltStatus(symbol) {
 }
 
 // WebSocket server for real-time updates
+console.log(`🔄 Attempting to create WebSocket server on port ${WS_PORT}...`);
 let wss;
 let clients = new Set();
 
@@ -286,6 +287,7 @@ try {
     wss = new WebSocket.Server({ port: WS_PORT }, () => {
         console.log(`✅ WebSocket server listening on port ${WS_PORT}`);
     });
+    console.log(`🔄 WebSocket.Server created, waiting for listen callback...`);
 
     // Add error handler for WebSocket server
     wss.on('error', (error) => {
