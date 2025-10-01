@@ -2090,7 +2090,7 @@ setInterval(async () => {
 }, 10000);
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n🚀 UNIFIED MARKET SCANNER HUB`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
     console.log(`📡 Main Hub: http://localhost:${PORT}`);
@@ -2099,4 +2099,13 @@ app.listen(PORT, () => {
     console.log(`📡 Whale Detector: http://localhost:${PORT}/whales`);
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+});
+
+// Add error handler for HTTP server
+server.on('error', (error) => {
+    console.error(`❌ HTTP server error:`, error.message);
+    if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Please free the port or change PORT environment variable.`);
+        process.exit(1);
+    }
 });
