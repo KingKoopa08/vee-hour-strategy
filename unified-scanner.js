@@ -279,8 +279,18 @@ async function checkOfficialHaltStatus(symbol) {
 }
 
 // WebSocket server for real-time updates
-const wss = new WebSocket.Server({ port: WS_PORT });
+const wss = new WebSocket.Server({ port: WS_PORT }, () => {
+    console.log(`✅ WebSocket server listening on port ${WS_PORT}`);
+});
 const clients = new Set();
+
+// Add error handler for WebSocket server
+wss.on('error', (error) => {
+    console.error(`❌ WebSocket server error:`, error.message);
+    if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${WS_PORT} is already in use. Please free the port or change WS_PORT environment variable.`);
+    }
+});
 
 wss.on('connection', (ws) => {
     clients.add(ws);
