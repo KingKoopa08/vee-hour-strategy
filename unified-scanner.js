@@ -614,6 +614,14 @@ async function getTopGainers() {
             topGainersCache = gainers;
             lastUpdate = Date.now();
 
+            // Debug log first few stocks' totalVolume values
+            if (gainers.length > 0) {
+                console.log(`🔄 API Update - First 3 stocks totalVolume:`);
+                gainers.slice(0, 3).forEach(stock => {
+                    console.log(`  ${stock.symbol}: totalVol=${stock.totalVolume}, sessionVol=${stock.volume}`);
+                });
+            }
+
             // Broadcast to WebSocket clients
             broadcast({
                 type: 'gainers',
