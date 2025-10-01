@@ -1869,6 +1869,10 @@ const trackHistoricalData = () => {
             if (oldVolEntry && currentVolume > 0 && oldVolEntry.volume > 0) {
                 const volChange = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
                 volumeChanges[label] = volChange;
+                // Debug log significant volume changes
+                if (label === '30s' && Math.abs(volChange) > 0.1 && volumeMoversCache.indexOf(stock) < 3) {
+                    console.log(`📊 TRACK ${symbol} 30s vol: ${volChange.toFixed(2)}% (${oldVolEntry.volume} → ${currentVolume})`);
+                }
             } else {
                 volumeChanges[label] = 0;
             }
