@@ -743,7 +743,8 @@ async function getVolumeMovers() {
                 (currentVolume - volHistory[0].volume) / ((now - volHistory[0].time) / 60000) : 0;
 
             // Calculate Buy Pressure Indicator using shared function
-            const buyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, stock.volume);
+            // Use totalVolume, not session volume for buy pressure calculation
+            const buyPressure = calculateBuyPressure(priceChanges, volumeChanges, stock.dayChange, stock.totalVolume || 0);
 
             return {
                 symbol: stock.symbol,
