@@ -1865,12 +1865,14 @@ const trackHistoricalData = () => {
             ? recentRates.reduce((sum, r) => sum + r.rate, 0) / recentRates.length
             : volumeRate;
 
-        // Track actual volume and price data
-        volHistory.push({ time: now, volume: currentVolume });
-        prcHistory.push({ time: now, price: currentPrice });
+        // IMPORTANT: DO NOT update priceHistory or volumeHistory here!
+        // This function runs during broadcast intervals and uses cached data.
+        // History should ONLY be updated when fresh API data arrives.
+        // The old code was pushing the same cached price/volume repeatedly,
+        // causing priceHistory to fill with duplicates resulting in 0% changes.
 
-        // Keep only last 5 minutes of data
-        // fiveMinutesAgo already declared above for rate history
+        // Clean old entries from existing history (maintenance only)
+        const fiveMinutesAgo = now - 300000;
         while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
             volHistory.shift();
         }
