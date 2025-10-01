@@ -17,6 +17,7 @@ NC='\033[0m'
 PRODUCTION_SERVER="${PRODUCTION_SERVER:-root@daily3club.com}"
 APP_DIR="/opt/premarket-scanner"
 SERVICE_NAME="market-scanner"
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
 echo -e "${CYAN}============================================${NC}"
 echo -e "${CYAN}🚀 REBUILDING PRODUCTION (NO CACHE)${NC}"
