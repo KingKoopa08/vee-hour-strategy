@@ -74,20 +74,20 @@ echo -e "${YELLOW}📋 Verifying deployment...${NC}"
 sleep 8
 
 echo -e "${YELLOW}Checking PM2 status...${NC}"
-ssh ${PRODUCTION_SERVER} "pm2 list | grep ${SERVICE_NAME}"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 list | grep ${SERVICE_NAME}"
 
 echo ""
 echo -e "${YELLOW}Checking recent logs for errors...${NC}"
-ssh ${PRODUCTION_SERVER} "pm2 logs ${SERVICE_NAME} --lines 30 --nostream | grep -E 'Error|error|Cannot access|EADDRINUSE' || echo 'No errors found in recent logs'"
+ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 logs ${SERVICE_NAME} --lines 30 --nostream | grep -E 'Error|error|Cannot access|EADDRINUSE' || echo 'No errors found in recent logs'"
 
 echo ""
 echo -e "${YELLOW}Testing HTTP endpoint...${NC}"
 sleep 2
-TEST_RESULT=$(ssh ${PRODUCTION_SERVER} "curl -s http://localhost:3050/api/gainers | head -c 100" || echo "FAILED")
+TEST_RESULT=$(ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "curl -s http://localhost:3050/api/gainers | head -c 100" || echo "FAILED")
 if [[ "$TEST_RESULT" == "FAILED" ]] || [[ -z "$TEST_RESULT" ]]; then
     echo -e "${RED}❌ HTTP endpoint not responding${NC}"
     echo -e "${YELLOW}Showing last 50 lines of logs:${NC}"
-    ssh ${PRODUCTION_SERVER} "pm2 logs ${SERVICE_NAME} --lines 50 --nostream"
+    ssh ${SSH_OPTS} ${PRODUCTION_SERVER} "pm2 logs ${SERVICE_NAME} --lines 50 --nostream"
     exit 1
 else
     echo -e "${GREEN}✅ HTTP endpoint responding${NC}"
