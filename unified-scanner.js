@@ -737,8 +737,9 @@ async function getVolumeMovers() {
         // Use the same data as Top Gainers to ensure consistency
         const now = Date.now();
 
-        // Historical tracking is now done independently by trackHistoricalData()
-        // This ensures we don't lose data during API delays at :42 mark
+        // IMPORTANT: This function updates priceHistory and volumeHistory with FRESH API data.
+        // trackHistoricalData() only READS this history for broadcasting - it does NOT update it.
+        // This ensures we don't store stale cached data causing 0% changes.
 
         // Add volume and price change calculations to each stock from topGainersCache
         let movers = topGainersCache.map((stock, index) => {
