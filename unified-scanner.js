@@ -1,3 +1,8 @@
+console.log(`========================================`);
+console.log(`🚀 STARTING UNIFIED SCANNER`);
+console.log(`🕐 Timestamp: ${new Date().toISOString()}`);
+console.log(`========================================`);
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
