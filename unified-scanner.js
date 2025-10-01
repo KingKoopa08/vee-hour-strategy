@@ -712,7 +712,7 @@ async function getVolumeMovers() {
         // This ensures we don't lose data during API delays at :42 mark
 
         // Add volume and price change calculations to each stock from topGainersCache
-        let movers = topGainersCache.map(stock => {
+        let movers = topGainersCache.map((stock, index) => {
             const symbol = stock.symbol;
             // IMPORTANT: Always use totalVolume for tracking changes
             // stock.volume is session-specific and will reset, causing 0% changes
@@ -735,7 +735,7 @@ async function getVolumeMovers() {
                     const change = ((currentVolume - oldVolEntry.volume) / oldVolEntry.volume) * 100;
                     volumeChanges[label] = change;
                     // Debug log significant volume changes
-                    if (label === '30s' && Math.abs(change) > 0.1 && movers.indexOf(stock) < 5) {
+                    if (label === '30s' && Math.abs(change) > 0.1 && index < 5) {
                         console.log(`📈 ${stock.symbol} 30s vol change: ${change.toFixed(2)}% (${oldVolEntry.volume} → ${currentVolume})`);
                     }
                 } else {
