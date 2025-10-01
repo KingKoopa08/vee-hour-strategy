@@ -747,8 +747,30 @@ async function getVolumeMovers() {
             // stock.volume is session-specific and will reset, causing 0% changes
             const currentVolume = stock.totalVolume || 0;
             const currentPrice = stock.price;
-            const volHistory = volumeHistory.get(symbol) || [];
-            const prcHistory = priceHistory.get(symbol) || [];
+
+            // Initialize history if needed
+            if (!volumeHistory.has(symbol)) {
+                volumeHistory.set(symbol, []);
+            }
+            if (!priceHistory.has(symbol)) {
+                priceHistory.set(symbol, []);
+            }
+
+            const volHistory = volumeHistory.get(symbol);
+            const prcHistory = priceHistory.get(symbol);
+
+            // Update history with FRESH API data
+            volHistory.push({ time: now, volume: currentVolume });
+            prcHistory.push({ time: now, price: currentPrice });
+
+            // Keep only last 5 minutes of data
+            const fiveMinutesAgo = now - 300000;
+            while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
+                volHistory.shift();
+            }
+            while (prcHistory.length > 0 && prcHistory[0].time < fiveMinutesAgo) {
+                prcHistory.shift();
+            }
 
             // Calculate volume and price changes for each timeframe
             const volumeChanges = {};
