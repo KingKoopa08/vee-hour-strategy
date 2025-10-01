@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: #fff; }
+        .stock { padding: 10px; background: #2a2a2a; margin: 5px 0; border-radius: 5px; }
+        .loading { color: yellow; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Trading API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="output"></div>
+
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p class="loading">Testing API...</p>';
+
+            try {
+                // Test 1: Direct API call
+                console.log('Testing: http://localhost:3050/api/gainers');
+                const response = await fetch('http://localhost:3050/api/gainers');
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Data received:', data);
+
+                output.innerHTML = `
+                    <h2>✅ API Connection Successful!</h2>
+                    <p>Total stocks: ${data.count}</p>
+                    <h3>Top 10 Gainers:</h3>
+                `;
+
+                data.stocks.slice(0, 10).forEach(stock => {
+                    output.innerHTML += `
+                        <div class="stock">
+                            <strong>${stock.symbol}</strong> -
+                            $${stock.price}
+                            (${stock.dayChange.toFixed(2)}%)
+                            Vol: ${(stock.volume / 1000000).toFixed(2)}M
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                output.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-test on load
+        window.onload = testAPI;
+    </script>
+</body>
+</html>
