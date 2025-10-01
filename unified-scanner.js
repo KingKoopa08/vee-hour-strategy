@@ -859,7 +859,8 @@ async function getWhaleOrders() {
         // Analyze top gainers for unusual volume patterns
         for (const stock of topGainersCache.slice(0, 50)) {
             const symbol = stock.symbol;
-            const currentVolume = stock.volume || 0;
+            // Use totalVolume for accurate tracking
+            const currentVolume = stock.totalVolume || stock.volume || 0;
             const price = stock.price || 0;
 
             // Calculate dollar volume
