@@ -1767,7 +1767,8 @@ const trackHistoricalData = () => {
     // Process stocks from existing volumeMoversCache (preserving all data)
     const processedStocks = volumeMoversCache.map(stock => {
         const symbol = stock.symbol;
-        const currentVolume = stock.volume || stock.currentVolume;
+        // Use totalVolume for tracking (not session-specific)
+        const currentVolume = stock.totalVolume || stock.volume || stock.currentVolume;
         const currentPrice = stock.price || stock.currentPrice;
 
         // Initialize history if needed
