@@ -2102,6 +2102,7 @@ setInterval(async () => {
 }, 10000);
 
 // Start server
+console.log(`🔄 Attempting to start HTTP server on port ${PORT}...`);
 const server = app.listen(PORT, () => {
     console.log(`\n🚀 UNIFIED MARKET SCANNER HUB`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
@@ -2112,6 +2113,7 @@ const server = app.listen(PORT, () => {
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
+console.log(`🔄 app.listen() called, waiting for server to start...`);
 
 // Add error handler for HTTP server
 server.on('error', (error) => {
