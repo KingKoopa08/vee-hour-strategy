@@ -1895,7 +1895,7 @@ const trackHistoricalData = () => {
         // causing priceHistory to fill with duplicates resulting in 0% changes.
 
         // Clean old entries from existing history (maintenance only)
-        const fiveMinutesAgo = now - 300000;
+        // Note: fiveMinutesAgo already declared above for rateHistory
         while (volHistory.length > 0 && volHistory[0].time < fiveMinutesAgo) {
             volHistory.shift();
         }
