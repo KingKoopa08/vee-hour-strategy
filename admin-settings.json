@@ -2,7 +2,8 @@
   "webhooks": {
     "rocket": "https://discord.com/api/webhooks/1417511409662689290/UEMJa4f1zC8tY7Pc5SG70WNJQOdBxGqjSs1pTJ1zQxqFnj3ltqOLX_Sehg0_H3L6NyBt",
     "news": "https://discord.com/api/webhooks/1417511351114534972/h8wvA5RX30ypFsKQ8hE42dJP1JnpTJmUZFnrYvL3Xr4eKF5l7GuWtNcFW-fkGYjzpAts",
-    "urgent": ""
+    "urgent": "",
+    "whale": ""
   },
   "thresholds": {
     "l1": {
