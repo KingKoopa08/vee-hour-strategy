@@ -1954,6 +1954,100 @@ app.post('/api/admin/test-webhook', async (req, res) => {
 // END ADMIN API ENDPOINTS
 // ============================================
 
+// News detection cache
+let newsCache = new Map(); // symbol -> array of news items
+let lastNewsCheck = 0;
+
+// Fetch and check news for current gainers
+async function checkNewsAlerts() {
+    try {
+        if (!adminSettings.newsAlerts?.enabled) {
+            return;
+        }
+
+        const now = Date.now();
+        const checkInterval = adminSettings.newsAlerts.checkInterval || 60000;
+
+        // Only check news every interval (default 60s)
+        if (now - lastNewsCheck < checkInterval) {
+            return;
+        }
+        lastNewsCheck = now;
+
+        // Get top gainers to check for news
+        const topStocks = topGainersCache.slice(0, 20); // Check top 20
+
+        for (const stock of topStocks) {
+            const symbol = stock.symbol;
+
+            // Skip if doesn't meet minimum criteria
+            if (stock.dayChange < adminSettings.newsAlerts.minPriceChange) continue;
+            if (stock.volume < adminSettings.newsAlerts.minVolume) continue;
+
+            try {
+                // Fetch news from Polygon
+                const newsUrl = `https://api.polygon.io/v2/reference/news?ticker=${symbol}&limit=5&apiKey=${POLYGON_API_KEY}`;
+                const response = await axios.get(newsUrl, { timeout: 5000 });
+
+                if (response.data && response.data.results) {
+                    const recentNews = response.data.results.filter(item => {
+                        // Only news from last 24 hours
+                        const newsAge = now - new Date(item.published_utc).getTime();
+                        return newsAge < 24 * 60 * 60 * 1000;
+                    });
+
+                    for (const newsItem of recentNews) {
+                        // Check if news matches keywords
+                        const headline = newsItem.title.toLowerCase();
+                        const hasKeyword = adminSettings.newsAlerts.keywords.some(keyword =>
+                            headline.includes(keyword.toLowerCase())
+                        );
+
+                        if (hasKeyword) {
+                            // Check if we already sent this news
+                            const newsKey = `${symbol}-${newsItem.id || newsItem.title}`;
+                            if (!newsCache.has(newsKey)) {
+                                newsCache.set(newsKey, Date.now());
+
+                                // Send Discord alert
+                                await sendDiscordAlert('news', {
+                                    symbol: symbol,
+                                    headline: newsItem.title,
+                                    price: stock.price,
+                                    changePercent: stock.dayChange,
+                                    volume: stock.volume,
+                                    source: newsItem.publisher?.name || 'Unknown',
+                                    url: newsItem.article_url,
+                                    timestamp: new Date(newsItem.published_utc).getTime()
+                                });
+
+                                console.log(`📰 News alert triggered for ${symbol}: ${newsItem.title}`);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                // Silently continue on error for individual stocks
+                if (!error.message.includes('timeout')) {
+                    console.error(`Error checking news for ${symbol}:`, error.message);
+                }
+            }
+
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Clean old news cache (keep last 24 hours)
+        for (const [key, timestamp] of newsCache.entries()) {
+            if (now - timestamp > 24 * 60 * 60 * 1000) {
+                newsCache.delete(key);
+            }
+        }
+    } catch (error) {
+        console.error('Error in news checking:', error.message);
+    }
+}
+
 // Calculate buy pressure for a single stock
 const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, currentVolume = 0, volumeRate = 0) => {
     let buyPressure = 50; // Neutral baseline
