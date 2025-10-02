@@ -1007,14 +1007,15 @@ Note: Resets to 50 when no trades occur">?</span>
             document.getElementById('surgeCount').textContent = surgeCount;
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
 
-            // Build table HTML
+            // Build table HTML - use faster method
             const tbody = document.getElementById('tableBody');
             if (filteredStocks.length === 0) {
                 tbody.innerHTML = '<tr class="loading"><td colspan="16">No stocks match current filters</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = filteredStocks.map((stock, index) => {
+            // Use innerHTML for now (faster than createElement in this case)
+            const htmlString = filteredStocks.map((stock, index) => {
                 const volumeClass = stock.volume > 10000000 ? 'high-volume' : '';
                 const priceClass = stock.dayChange >= 0 ? 'positive' : 'negative';
 
