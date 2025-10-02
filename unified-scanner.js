@@ -1729,6 +1729,231 @@ app.get('/api/whales', async (req, res) => {
     });
 });
 
+// ============================================
+// ADMIN API ENDPOINTS
+// ============================================
+
+// Load admin settings
+let adminSettings = {};
+const SETTINGS_FILE = path.join(__dirname, 'admin-settings.json');
+
+function loadAdminSettings() {
+    try {
+        if (fs.existsSync(SETTINGS_FILE)) {
+            const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+            adminSettings = JSON.parse(data);
+            console.log('✅ Admin settings loaded');
+        } else {
+            console.log('⚠️  Admin settings file not found, using defaults');
+            adminSettings = {
+                webhooks: { news: '', whale: '', rocket: '', urgent: '' },
+                newsAlerts: { enabled: false, keywords: [], minPriceChange: 10, minVolume: 1000000 },
+                whaleAlerts: { enabled: false, dollarVolumeThreshold: 1000000, volumeSpikeMultiplier: 5 },
+                masterEnabled: true
+            };
+        }
+    } catch (error) {
+        console.error('❌ Error loading admin settings:', error.message);
+    }
+}
+
+function saveAdminSettings() {
+    try {
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(adminSettings, null, 2));
+        console.log('✅ Admin settings saved');
+    } catch (error) {
+        console.error('❌ Error saving admin settings:', error.message);
+    }
+}
+
+// Initialize settings on startup
+loadAdminSettings();
+
+// Track sent alerts to prevent duplicates
+const sentAlerts = new Map(); // key: `${type}-${symbol}-${date}`, value: timestamp
+
+// Clean old alerts every hour
+setInterval(() => {
+    const now = Date.now();
+    const window = adminSettings.duplicatePreventionWindow || 3600000; // 1 hour default
+    for (const [key, timestamp] of sentAlerts.entries()) {
+        if (now - timestamp > window) {
+            sentAlerts.delete(key);
+        }
+    }
+    if (sentAlerts.size > 250) {
+        // Keep only the 250 most recent
+        const entries = Array.from(sentAlerts.entries()).sort((a, b) => b[1] - a[1]);
+        sentAlerts.clear();
+        entries.slice(0, 250).forEach(([k, v]) => sentAlerts.set(k, v));
+    }
+}, 60000);
+
+// Discord alert sender
+async function sendDiscordAlert(type, data) {
+    try {
+        if (!adminSettings.masterEnabled) {
+            console.log('⚠️  Master alerts disabled, skipping');
+            return false;
+        }
+
+        // Check type-specific enabled status
+        if (type === 'news' && !adminSettings.newsAlerts?.enabled) {
+            console.log('⚠️  News alerts disabled');
+            return false;
+        }
+        if (type === 'whale' && !adminSettings.whaleAlerts?.enabled) {
+            console.log('⚠️  Whale alerts disabled');
+            return false;
+        }
+
+        // Get webhook URL
+        const webhookUrl = adminSettings.webhooks?.[type];
+        if (!webhookUrl) {
+            console.log(`⚠️  No webhook configured for ${type}`);
+            return false;
+        }
+
+        // Check for duplicate
+        const alertKey = `${type}-${data.symbol}-${new Date().toDateString()}`;
+        if (sentAlerts.has(alertKey)) {
+            console.log(`⏭️  Skipping duplicate alert: ${alertKey}`);
+            return false;
+        }
+
+        // Build Discord embed based on type
+        let embed = {};
+
+        if (type === 'news') {
+            embed = {
+                title: `📰 BREAKING NEWS: ${data.symbol}`,
+                description: data.headline,
+                color: 0x5865F2, // Discord blue
+                fields: [
+                    { name: 'Price', value: `$${data.price?.toFixed(2) || 'N/A'}`, inline: true },
+                    { name: 'Change', value: `${data.changePercent >= 0 ? '+' : ''}${data.changePercent?.toFixed(1) || '0'}%`, inline: true },
+                    { name: 'Volume', value: formatVolume(data.volume), inline: true },
+                    { name: 'Source', value: data.source || 'Unknown', inline: true },
+                    { name: 'Time', value: new Date(data.timestamp).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }) + ' ET', inline: true }
+                ],
+                footer: { text: 'Market Scanner - News Alert' },
+                timestamp: new Date().toISOString()
+            };
+            if (data.url) {
+                embed.url = data.url;
+            }
+        } else if (type === 'whale') {
+            const alertLevel = data.dollarVolume >= adminSettings.whaleAlerts.levels.extreme ? '🚨 EXTREME' :
+                              data.dollarVolume >= adminSettings.whaleAlerts.levels.high ? '⚠️ HIGH' : 'ℹ️ MODERATE';
+
+            embed = {
+                title: `🐋 WHALE ALERT: ${data.symbol}`,
+                description: `Large order detected - ${alertLevel}`,
+                color: data.dollarVolume >= 5000000 ? 0xFF0000 : // Red for extreme
+                       data.dollarVolume >= 1000000 ? 0xFF6600 : // Orange for high
+                       0xFFCC00, // Yellow for moderate
+                fields: [
+                    { name: 'Dollar Volume', value: `$${(data.dollarVolume / 1000000).toFixed(2)}M`, inline: true },
+                    { name: 'Price', value: `$${data.price?.toFixed(2)}`, inline: true },
+                    { name: 'Change', value: `${data.dayChange >= 0 ? '+' : ''}${data.dayChange?.toFixed(1)}%`, inline: true },
+                    { name: 'Volume Spike', value: `${data.volumeSpike?.toFixed(1)}x avg`, inline: true },
+                    { name: 'Rate', value: `${formatVolume(data.volumeRate)}/min`, inline: true },
+                    { name: 'Alert Level', value: alertLevel, inline: true }
+                ],
+                footer: { text: 'Market Scanner - Whale Alert' },
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        // Send to Discord
+        await axios.post(webhookUrl, { embeds: [embed] });
+
+        // Mark as sent
+        sentAlerts.set(alertKey, Date.now());
+        console.log(`✅ ${type.toUpperCase()} alert sent: ${data.symbol}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Error sending ${type} alert:`, error.message);
+        return false;
+    }
+}
+
+// Helper function to format volume
+function formatVolume(vol) {
+    if (!vol) return '0';
+    if (vol >= 1000000000) return (vol / 1000000000).toFixed(2) + 'B';
+    if (vol >= 1000000) return (vol / 1000000).toFixed(2) + 'M';
+    if (vol >= 1000) return (vol / 1000).toFixed(2) + 'K';
+    return vol.toString();
+}
+
+// GET admin settings
+app.get('/api/admin/settings', (req, res) => {
+    res.json({
+        success: true,
+        settings: adminSettings
+    });
+});
+
+// POST update admin settings
+app.post('/api/admin/settings', (req, res) => {
+    try {
+        adminSettings = { ...adminSettings, ...req.body };
+        saveAdminSettings();
+        res.json({
+            success: true,
+            message: 'Settings updated successfully',
+            settings: adminSettings
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// POST test webhook
+app.post('/api/admin/test-webhook', async (req, res) => {
+    try {
+        const { type } = req.body;
+
+        const testData = {
+            symbol: 'TEST',
+            price: 10.50,
+            changePercent: 25.5,
+            volume: 5200000,
+            timestamp: Date.now()
+        };
+
+        if (type === 'news') {
+            testData.headline = 'Test news alert from Market Scanner';
+            testData.source = 'Test';
+        } else if (type === 'whale') {
+            testData.dollarVolume = 2500000;
+            testData.dayChange = 15.5;
+            testData.volumeSpike = 6.2;
+            testData.volumeRate = 125000;
+        }
+
+        const sent = await sendDiscordAlert(type, testData);
+
+        res.json({
+            success: sent,
+            message: sent ? 'Test alert sent successfully' : 'Failed to send test alert'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ============================================
+// END ADMIN API ENDPOINTS
+// ============================================
+
 // Calculate buy pressure for a single stock
 const calculateBuyPressure = (priceChanges, volumeChanges, dayChange = 0, currentVolume = 0, volumeRate = 0) => {
     let buyPressure = 50; // Neutral baseline
