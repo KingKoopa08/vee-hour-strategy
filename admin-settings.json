@@ -37,5 +37,23 @@
     "excludeDowntrending": true,
     "orbMinGain": 10,
     "gapMinPercent": 10
-  }
+  },
+  "newsAlerts": {
+    "enabled": false,
+    "keywords": ["merger", "acquisition", "FDA", "earnings", "guidance", "buyout", "approval", "partnership", "contract", "deal", "offer"],
+    "minPriceChange": 10,
+    "minVolume": 1000000,
+    "checkInterval": 60000
+  },
+  "whaleAlerts": {
+    "enabled": false,
+    "dollarVolumeThreshold": 1000000,
+    "volumeSpikeMultiplier": 5,
+    "levels": {
+      "moderate": 500000,
+      "high": 1000000,
+      "extreme": 5000000
+    }
+  },
+  "duplicatePreventionWindow": 3600000
 }
