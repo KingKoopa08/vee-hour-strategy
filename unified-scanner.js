@@ -2414,6 +2414,10 @@ const startUpdates = () => {
             }
 
             console.log(`✅ [${new Date().toISOString()}] Updates completed in ${updateTime}ms at :${endSeconds}s`);
+
+            // Check for news alerts (non-blocking)
+            checkNewsAlerts().catch(err => console.error('News check error:', err.message));
+
         } finally {
             isUpdating = false;
         }
