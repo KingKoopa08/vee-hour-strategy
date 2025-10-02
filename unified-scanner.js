@@ -1650,6 +1650,16 @@ app.get('/whales', (req, res) => {
     res.send(htmlContent);
 });
 
+// Admin alerts page
+app.get('/admin', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    const htmlContent = fs.readFileSync(path.join(__dirname, 'admin-alerts.html'), 'utf8');
+    res.send(htmlContent);
+});
+
 // API endpoints
 app.get('/api/gainers', async (req, res) => {
     const gainers = await getTopGainers();
