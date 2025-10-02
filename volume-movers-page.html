@@ -1059,6 +1059,9 @@ Note: Resets to 50 when no trades occur">?</span>
                     <td class="${volumeClass}" title="${stock.volumeLabel || 'Volume'}">${(stock.volume / 1000000).toFixed(2)}M</td>
                 </tr>
             `}).join('');
+
+            // Single DOM update - faster than multiple updates
+            tbody.innerHTML = htmlString;
         }
 
         // Fetch initial data
