@@ -942,9 +942,14 @@ async function getWhaleOrders() {
                 avgVolume = recentVolumes.reduce((sum, h) => sum + h.volume, 0) / recentVolumes.length;
             }
 
-            // Detect volume spikes (3x average or $1M+ in dollar volume)
+            // Use admin settings for whale detection thresholds
+            const dollarVolumeThreshold = adminSettings.whaleAlerts?.dollarVolumeThreshold || 1000000;
+            const spikeMultiplier = adminSettings.whaleAlerts?.volumeSpikeMultiplier || 5;
+
+            // Detect volume spikes with configurable thresholds
             const volumeSpike = avgVolume > 0 ? currentVolume / avgVolume : 1;
-            const isWhale = (volumeSpike > 3 && dollarVolume > 500000) || dollarVolume > 1000000;
+            const isWhale = (volumeSpike > spikeMultiplier && dollarVolume > dollarVolumeThreshold * 0.5) ||
+                           dollarVolume > dollarVolumeThreshold;
 
             if (isWhale) {
                 // Calculate volume rate (volume per minute)
@@ -957,7 +962,7 @@ async function getWhaleOrders() {
                     }
                 }
 
-                whales.push({
+                const whaleData = {
                     symbol: symbol,
                     price: price,
                     dayChange: stock.dayChange || 0,
@@ -968,7 +973,17 @@ async function getWhaleOrders() {
                     avgVolume: avgVolume,
                     timestamp: now,
                     alert: volumeSpike > 5 ? 'EXTREME' : volumeSpike > 3 ? 'HIGH' : 'MODERATE'
-                });
+                };
+
+                whales.push(whaleData);
+
+                // Trigger Discord alert if enabled and meets threshold
+                if (adminSettings.whaleAlerts?.enabled && dollarVolume >= dollarVolumeThreshold) {
+                    // Send alert asynchronously (don't wait)
+                    sendDiscordAlert('whale', whaleData).catch(err =>
+                        console.error(`Failed to send whale alert for ${symbol}:`, err.message)
+                    );
+                }
             }
         }
 
