@@ -756,8 +756,10 @@ Note: Resets to 50 when no trades occur">?</span>
                     // Store the raw data
                     allStocks = data.data;
 
-                    // Apply current filters and sorting
-                    updateTable(allStocks);
+                    // Use requestAnimationFrame for smoother updates
+                    requestAnimationFrame(() => {
+                        updateTable(allStocks);
+                    });
 
                     // Update last update time with milliseconds to show real-time updates
                     document.getElementById('lastUpdate').innerHTML = `${timeString} <span style="color: #00ff41;">●</span>`;
