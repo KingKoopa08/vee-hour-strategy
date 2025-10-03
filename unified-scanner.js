@@ -1842,9 +1842,9 @@ async function sendDiscordAlert(type, data, forceTest = false) {
             return false;
         }
 
-        // Check for duplicate
+        // Check for duplicate (skip for tests)
         const alertKey = `${type}-${data.symbol}-${new Date().toDateString()}`;
-        if (sentAlerts.has(alertKey)) {
+        if (!forceTest && sentAlerts.has(alertKey)) {
             console.log(`⏭️  Skipping duplicate alert: ${alertKey}`);
             return false;
         }
