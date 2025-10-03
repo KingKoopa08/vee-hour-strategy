@@ -1957,6 +1957,7 @@ app.post('/api/admin/test-webhook', async (req, res) => {
         if (type === 'news') {
             testData.headline = 'Test news alert from Market Scanner';
             testData.source = 'Test';
+            testData.url = 'https://daily3club.com';
         } else if (type === 'whale') {
             testData.dollarVolume = 2500000;
             testData.dayChange = 15.5;
@@ -1964,11 +1965,12 @@ app.post('/api/admin/test-webhook', async (req, res) => {
             testData.volumeRate = 125000;
         }
 
-        const sent = await sendDiscordAlert(type, testData);
+        // Force test to bypass enabled checks
+        const sent = await sendDiscordAlert(type, testData, true);
 
         res.json({
             success: sent,
-            message: sent ? 'Test alert sent successfully' : 'Failed to send test alert'
+            message: sent ? 'Test alert sent successfully! Check your Discord channel.' : 'Failed to send test alert. Check webhook URL.'
         });
     } catch (error) {
         res.status(500).json({
