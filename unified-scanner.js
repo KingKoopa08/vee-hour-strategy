@@ -1815,21 +1815,24 @@ setInterval(() => {
 }, 60000);
 
 // Discord alert sender
-async function sendDiscordAlert(type, data) {
+async function sendDiscordAlert(type, data, forceTest = false) {
     try {
-        if (!adminSettings.masterEnabled) {
-            console.log('⚠️  Master alerts disabled, skipping');
-            return false;
-        }
+        // Skip enabled checks if this is a test
+        if (!forceTest) {
+            if (adminSettings.masterEnabled === false) {
+                console.log('⚠️  Master alerts disabled, skipping');
+                return false;
+            }
 
-        // Check type-specific enabled status
-        if (type === 'news' && !adminSettings.newsAlerts?.enabled) {
-            console.log('⚠️  News alerts disabled');
-            return false;
-        }
-        if (type === 'whale' && !adminSettings.whaleAlerts?.enabled) {
-            console.log('⚠️  Whale alerts disabled');
-            return false;
+            // Check type-specific enabled status
+            if (type === 'news' && !adminSettings.newsAlerts?.enabled) {
+                console.log('⚠️  News alerts disabled');
+                return false;
+            }
+            if (type === 'whale' && !adminSettings.whaleAlerts?.enabled) {
+                console.log('⚠️  Whale alerts disabled');
+                return false;
+            }
         }
 
         // Get webhook URL
