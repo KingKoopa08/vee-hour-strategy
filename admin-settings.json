@@ -43,7 +43,7 @@
     "keywords": ["merger", "acquisition", "FDA", "earnings", "guidance", "buyout", "approval", "partnership", "contract", "deal", "offer"],
     "minPriceChange": 10,
     "minVolume": 1000000,
-    "checkInterval": 60000
+    "checkInterval": 10000
   },
   "whaleAlerts": {
     "enabled": false,
