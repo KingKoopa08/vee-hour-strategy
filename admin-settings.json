@@ -1,9 +1,6 @@
 {
   "webhooks": {
-    "rocket": "https://discord.com/api/webhooks/1417511409662689290/UEMJa4f1zC8tY7Pc5SG70WNJQOdBxGqjSs1pTJ1zQxqFnj3ltqOLX_Sehg0_H3L6NyBt",
-    "news": "https://discord.com/api/webhooks/1417511351114534972/h8wvA5RX30ypFsKQ8hE42dJP1JnpTJmUZFnrYvL3Xr4eKF5l7GuWtNcFW-fkGYjzpAts",
-    "urgent": "",
-    "whale": ""
+    "news": "https://discord.com/api/webhooks/1417511351114534972/h8wvA5RX30ypFsKQ8hE42dJP1JnpTJmUZFnrYvL3Xr4eKF5l7GuWtNcFW-fkGYjzpAts"
   },
   "thresholds": {
     "l1": {
@@ -39,11 +36,34 @@
     "gapMinPercent": 10
   },
   "newsAlerts": {
-    "enabled": false,
-    "keywords": ["merger", "acquisition", "FDA", "earnings", "guidance", "buyout", "approval", "partnership", "contract", "deal", "offer"],
-    "minPriceChange": 10,
-    "minVolume": 1000000,
-    "checkInterval": 10000
+    "enabled": true,
+    "keywords": [
+      "merger",
+      "acquisition",
+      "FDA",
+      "earnings",
+      "guidance",
+      "buyout",
+      "approval",
+      "partnership",
+      "contract",
+      "deal",
+      "offer",
+      "jumps",
+      "popped",
+      "surges",
+      "rallies",
+      "soars",
+      "spikes",
+      "announces",
+      "secures",
+      "funding",
+      "upgrade",
+      "breakthrough",
+      "wins"
+    ],
+    "minPriceChange": 1,
+    "minVolume": 100000
   },
   "whaleAlerts": {
     "enabled": false,
