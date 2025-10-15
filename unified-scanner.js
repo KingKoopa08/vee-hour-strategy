@@ -31,6 +31,8 @@ let tradeHistory = new Map(); // Store recent trades for whale detection
 let volumeRateHistory = new Map(); // Store volume rate (volume/minute) calculations
 let lastVolumeSnapshot = new Map(); // Store last known volume for each symbol
 let haltedStocks = new Set(); // Track halted/suspended stocks
+let daily3Cache = []; // Cache for Daily3 dip pattern stocks
+let daily3LastUpdate = null; // Track when Daily3 data was last updated
 
 // Track session start volumes for session-specific volume calculation
 let sessionStartVolumes = new Map(); // Symbol -> volume at session start
