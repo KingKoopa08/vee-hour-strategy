@@ -1662,6 +1662,16 @@ app.get('/admin', (req, res) => {
     res.send(htmlContent);
 });
 
+// Daily3 dip pattern page
+app.get('/daily3', (req, res) => {
+    // Prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    const htmlContent = fs.readFileSync(path.join(__dirname, 'daily3-page.html'), 'utf8');
+    res.send(htmlContent);
+});
+
 // API endpoints
 app.get('/api/gainers', async (req, res) => {
     const gainers = await getTopGainers();
