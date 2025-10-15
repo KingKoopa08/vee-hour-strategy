@@ -933,9 +933,18 @@ async function getDaily3DipPatterns(minPrice, maxPrice, minDipPercent) {
         console.log(`📊 Analyzing ${stocksToAnalyze.length} stocks for dip patterns...`);
 
         const results = [];
+        let processedCount = 0;
+        const totalStocks = stocksToAnalyze.length;
 
         for (const symbol of stocksToAnalyze) {
             try {
+                processedCount++;
+
+                // Log progress every 100 stocks
+                if (processedCount % 100 === 0) {
+                    console.log(`📊 Progress: ${processedCount}/${totalStocks} stocks analyzed (${((processedCount/totalStocks)*100).toFixed(1)}%) - Found ${results.length} matches so far`);
+                }
+
                 // Get current price (from cache)
                 const stockData = topGainersCache.find(s => s.symbol === symbol) ||
                                 volumeMoversCache.find(s => s.symbol === symbol);
