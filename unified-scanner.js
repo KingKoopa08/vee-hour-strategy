@@ -733,6 +733,223 @@ async function getRisingStocks() {
     return risingStocksCache;
 }
 
+// ============================================
+// DAILY3 DIP PATTERN DETECTION
+// ============================================
+
+// Helper function to get last 5 trading days
+function getLastFiveTradingDays() {
+    const days = [];
+    const today = new Date();
+    let daysAdded = 0;
+    let currentDay = new Date(today);
+
+    // Go back up to 10 calendar days to find 5 trading days
+    for (let i = 1; i <= 10 && daysAdded < 5; i++) {
+        currentDay.setDate(today.getDate() - i);
+        const dayOfWeek = currentDay.getDay();
+
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            days.push(new Date(currentDay));
+            daysAdded++;
+        }
+    }
+
+    return days;
+}
+
+// Analyze dip pattern for a single day
+async function analyzeDipForDay(symbol, date, minDipPercent) {
+    try {
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Get 1-minute aggregates for the trading day (9:30 AM - 11:00 AM ET)
+        // We need data from 9:30 to 10:00 AM ET to analyze the dip window
+        const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/1/minute/${dateStr}/${dateStr}?adjusted=true&sort=asc&apiKey=${POLYGON_API_KEY}`;
+
+        const response = await axios.get(url, { timeout: 10000 });
+
+        if (!response.data || !response.data.results || response.data.results.length === 0) {
+            return null;
+        }
+
+        const bars = response.data.results;
+
+        // Convert timestamps to ET and filter for 9:30-10:30 AM ET window
+        const etBars = bars.map(bar => {
+            const barTime = new Date(bar.t);
+            // Convert to ET (adjust based on DST, using -5 hours for EST)
+            const etOffset = -5 * 60 * 60 * 1000;
+            const etTime = new Date(barTime.getTime() + etOffset);
+            return {
+                ...bar,
+                etTime: etTime,
+                etHour: etTime.getHours(),
+                etMinute: etTime.getMinutes()
+            };
+        });
+
+        // Find 9:30 AM bar (market open)
+        const openBar = etBars.find(b => b.etHour === 9 && b.etMinute === 30);
+        if (!openBar) return null;
+
+        const openPrice = openBar.c;
+
+        // Find all bars between 9:35 and 10:00 AM ET
+        const dipWindowBars = etBars.filter(b =>
+            (b.etHour === 9 && b.etMinute >= 35) ||
+            (b.etHour === 10 && b.etMinute === 0)
+        );
+
+        if (dipWindowBars.length === 0) return null;
+
+        // Find the lowest price in the 9:35-10:00 window
+        const lowestBar = dipWindowBars.reduce((min, bar) =>
+            bar.l < min.l ? bar : min
+        , dipWindowBars[0]);
+
+        const lowestPrice = lowestBar.l;
+        const dipPercent = ((lowestPrice - openPrice) / openPrice) * 100;
+        const dipTime = new Date(lowestBar.etTime).toTimeString().slice(0, 5);
+
+        // Only return if it meets the minimum dip threshold (negative %)
+        if (dipPercent <= -minDipPercent) {
+            return {
+                date: dateStr,
+                dipPercent: parseFloat(dipPercent.toFixed(2)),
+                dipTime: dipTime,
+                openPrice: openPrice,
+                lowestPrice: lowestPrice
+            };
+        }
+
+        return null;
+    } catch (error) {
+        // Silently handle errors for individual stocks/days
+        if (!error.message.includes('timeout') && !error.message.includes('404')) {
+            console.error(`Error analyzing ${symbol} on ${date.toISOString().split('T')[0]}:`, error.message);
+        }
+        return null;
+    }
+}
+
+// Get news for a stock
+async function getStockNews(symbol) {
+    try {
+        const newsUrl = `https://api.polygon.io/v2/reference/news?ticker=${symbol}&limit=5&apiKey=${POLYGON_API_KEY}`;
+        const response = await axios.get(newsUrl, { timeout: 5000 });
+
+        if (response.data && response.data.results) {
+            const now = Date.now();
+            const recentNews = response.data.results.filter(item => {
+                // Only news from last 48 hours
+                const newsAge = now - new Date(item.published_utc).getTime();
+                return newsAge < 48 * 60 * 60 * 1000;
+            });
+
+            return {
+                hasNews: recentNews.length > 0,
+                count: recentNews.length,
+                headlines: recentNews.map(item => ({
+                    title: item.title,
+                    published: item.published_utc,
+                    source: item.publisher?.name || 'Unknown',
+                    url: item.article_url
+                }))
+            };
+        }
+    } catch (error) {
+        // Silently handle news errors
+    }
+
+    return { hasNews: false, count: 0, headlines: [] };
+}
+
+// Main function to get Daily3 dip pattern stocks
+async function getDaily3DipPatterns(minPrice, maxPrice, minDipPercent) {
+    console.log(`🔍 Daily3: Analyzing dip patterns (Price: $${minPrice}-$${maxPrice}, Min Dip: ${minDipPercent}%)`);
+
+    try {
+        const lastFiveDays = getLastFiveTradingDays();
+        console.log(`📅 Analyzing last 5 trading days: ${lastFiveDays.map(d => d.toISOString().split('T')[0]).join(', ')}`);
+
+        // Get initial stock list from current top gainers/volume movers
+        // We'll analyze stocks that are currently active
+        const stocksToAnalyze = [...new Set([
+            ...topGainersCache.slice(0, 100).map(s => s.symbol),
+            ...volumeMoversCache.slice(0, 100).map(s => s.symbol)
+        ])];
+
+        console.log(`📊 Analyzing ${stocksToAnalyze.length} stocks for dip patterns...`);
+
+        const results = [];
+
+        for (const symbol of stocksToAnalyze) {
+            try {
+                // Get current price (from cache)
+                const stockData = topGainersCache.find(s => s.symbol === symbol) ||
+                                volumeMoversCache.find(s => s.symbol === symbol);
+
+                if (!stockData) continue;
+
+                const currentPrice = stockData.price;
+
+                // Skip if price doesn't meet criteria
+                if (currentPrice < minPrice || currentPrice > maxPrice) continue;
+
+                // Analyze dip pattern for each of the last 5 trading days
+                const dipAnalysis = await Promise.all(
+                    lastFiveDays.map(day => analyzeDipForDay(symbol, day, minDipPercent))
+                );
+
+                // Filter out null results (days without dips)
+                const validDips = dipAnalysis.filter(d => d !== null);
+
+                // Check if stock meets the criteria (3+ days with dip pattern)
+                if (validDips.length >= 3) {
+                    // Calculate average dip percentage
+                    const avgDipPercent = validDips.reduce((sum, d) => sum + d.dipPercent, 0) / validDips.length;
+
+                    // Get news for this stock
+                    const news = await getStockNews(symbol);
+
+                    results.push({
+                        symbol: symbol,
+                        name: stockData.symbol, // We don't have company name in cache, use symbol
+                        currentPrice: currentPrice,
+                        dipPattern: {
+                            successDays: validDips.length,
+                            totalDays: 5,
+                            avgDipPercent: parseFloat(avgDipPercent.toFixed(2)),
+                            lastFiveDays: dipAnalysis.map((dip, idx) => ({
+                                date: lastFiveDays[idx].toISOString().split('T')[0],
+                                ...dip
+                            }))
+                        },
+                        news: news
+                    });
+
+                    console.log(`✅ ${symbol}: ${validDips.length}/5 days with dip pattern (avg: ${avgDipPercent.toFixed(2)}%)`);
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+            } catch (error) {
+                console.error(`Error analyzing ${symbol}:`, error.message);
+            }
+        }
+
+        console.log(`✅ Daily3: Found ${results.length} stocks with consistent dip patterns`);
+        return results.sort((a, b) => b.dipPattern.successDays - a.dipPattern.successDays);
+
+    } catch (error) {
+        console.error('❌ Error in getDaily3DipPatterns:', error);
+        return [];
+    }
+}
+
 // Get volume movers with multiple timeframe analysis
 async function getVolumeMovers() {
     try {
