@@ -2767,6 +2767,7 @@ const server = app.listen(PORT, () => {
     console.log(`📡 Top Gainers: http://localhost:${PORT}/gainers`);
     console.log(`📡 Volume Movers: http://localhost:${PORT}/volume`);
     console.log(`📡 Whale Detector: http://localhost:${PORT}/whales`);
+    console.log(`📡 Daily3 Dip Scanner: http://localhost:${PORT}/daily3`);
     console.log(`📡 WebSocket: ws://localhost:${WS_PORT}`);
     console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
