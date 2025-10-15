@@ -742,13 +742,12 @@ function getLastFiveTradingDays() {
     const days = [];
     let daysAdded = 0;
 
-    // IMPORTANT: Use a fixed recent date instead of system date
-    // System date may be wrong or in the future. Use January 10, 2025 as a safe known date.
-    // In production, you would fetch the actual current date from Polygon's API
-    const knownGoodDate = new Date('2025-01-10T12:00:00Z');
+    // Use actual current date
+    const now = new Date();
 
-    // Start from this known date (treat as "yesterday")
-    let currentDay = new Date(knownGoodDate);
+    // Start from yesterday (most recent complete trading day)
+    let currentDay = new Date(now);
+    currentDay.setDate(currentDay.getDate() - 1);
 
     // Go back up to 14 calendar days to find 5 trading days
     for (let i = 0; i < 14 && daysAdded < 5; i++) {
