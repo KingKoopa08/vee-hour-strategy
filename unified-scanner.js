@@ -982,8 +982,9 @@ async function getDaily3DipPatterns(minPrice, maxPrice, minDipPercent) {
                     console.log(`✅ ${symbol}: ${validDips.length}/5 days with dip pattern (avg: ${avgDipPercent.toFixed(2)}%)`);
                 }
 
-                // Small delay to avoid rate limiting
-                await new Promise(resolve => setTimeout(resolve, 150));
+                // Small delay to avoid rate limiting (12ms = ~83 requests/second)
+                // With 1500 stocks × 5 days = 7500 API calls, this will take ~90 seconds
+                await new Promise(resolve => setTimeout(resolve, 12));
 
             } catch (error) {
                 console.error(`Error analyzing ${symbol}:`, error.message);
