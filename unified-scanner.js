@@ -880,12 +880,47 @@ async function getDaily3DipPatterns(minPrice, maxPrice, minDipPercent) {
         const lastFiveDays = getLastFiveTradingDays();
         console.log(`📅 Analyzing last 5 trading days: ${lastFiveDays.map(d => d.toISOString().split('T')[0]).join(', ')}`);
 
-        // Get initial stock list from current top gainers/volume movers
-        // We'll analyze stocks that are currently active
-        const stocksToAnalyze = [...new Set([
-            ...topGainersCache.slice(0, 100).map(s => s.symbol),
-            ...volumeMoversCache.slice(0, 100).map(s => s.symbol)
-        ])];
+        // Build a comprehensive stock list from multiple sources
+        const stockSets = [];
+
+        // Source 1: Current top gainers and volume movers (if available)
+        if (topGainersCache.length > 0) {
+            stockSets.push(...topGainersCache.slice(0, 75).map(s => s.symbol));
+        }
+        if (volumeMoversCache.length > 0) {
+            stockSets.push(...volumeMoversCache.slice(0, 75).map(s => s.symbol));
+        }
+
+        // Source 2: Get additional stocks from Polygon snapshot if we don't have enough
+        if (stockSets.length < 50) {
+            try {
+                console.log(`📊 Fetching additional stocks from Polygon snapshot...`);
+                const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
+                const response = await axios.get(snapshotUrl, { timeout: 10000 });
+
+                if (response.data && response.data.tickers) {
+                    const activeStocks = response.data.tickers
+                        .filter(t => {
+                            const price = t.day?.c || t.min?.c || 0;
+                            const volume = t.day?.v || 0;
+                            const dayChange = t.todaysChangePerc || 0;
+                            return price >= minPrice &&
+                                   price <= maxPrice &&
+                                   volume > 100000 &&
+                                   Math.abs(dayChange) > 1; // Some movement
+                        })
+                        .slice(0, 150)
+                        .map(t => t.ticker);
+                    stockSets.push(...activeStocks);
+                    console.log(`✅ Added ${activeStocks.length} stocks from snapshot`);
+                }
+            } catch (error) {
+                console.log(`⚠️ Could not fetch snapshot data: ${error.message}`);
+            }
+        }
+
+        // Remove duplicates
+        const stocksToAnalyze = [...new Set(stockSets)];
 
         console.log(`📊 Analyzing ${stocksToAnalyze.length} stocks for dip patterns...`);
 
