@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daily3 Dip Pattern Scanner - daily3club.com</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #00ff41;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .nav-links a.active {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid rgba(0, 255, 65, 0.5);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #00ff41, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #00ffff;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(0, 100, 200, 0.1) 0%, rgba(0, 50, 150, 0.05) 100%);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #00aaff;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .filters {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            color: #00ffff;
+            font-weight: 500;
+        }
+
+        .filter-group input {
+            background: rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            width: 100px;
+        }
+
+        .apply-button {
+            background: linear-gradient(135deg, #00ff41, #00ffff);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .apply-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
+        }
+
+        .apply-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            color: #00ffff;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #00ff41;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        table {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 65, 0.2);
+        }
+
+        th {
+            background: rgba(0, 255, 65, 0.1);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #00ff41;
+            border-bottom: 2px solid rgba(0, 255, 65, 0.3);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        .symbol {
+            font-weight: bold;
+            color: #00ffff;
+            font-size: 1.1em;
+        }
+
+        .positive {
+            color: #00ff41;
+            font-weight: 500;
+        }
+
+        .negative {
+            color: #ff4444;
+        }
+
+        .success-rate {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .success-high {
+            background: rgba(0, 255, 65, 0.2);
+            color: #00ff41;
+            border: 1px solid rgba(0, 255, 65, 0.4);
+        }
+
+        .success-med {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+        }
+
+        .news-icon {
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .news-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #00ff41;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0a 100%);
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            color: #e0e0e0;
+        }
+
+        .close {
+            color: #ff4444;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #ff0000;
+        }
+
+        .news-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid rgba(0, 255, 65, 0.5);
+        }
+
+        .news-item h4 {
+            color: #00ffff;
+            margin-bottom: 5px;
+        }
+
+        .news-item p {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .news-item a {
+            color: #00ff41;
+            text-decoration: none;
+        }
+
+        .news-item a:hover {
+            text-decoration: underline;
+        }
+
+        .dip-history {
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .dip-day {
+            display: inline-block;
+            margin: 2px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff8888;
+        }
+
+        .dip-day.no-dip {
+            background: rgba(255, 255, 255, 0.05);
+            color: #444;
+        }
+
+        .expandable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expandable:hover {
+            background: rgba(0, 255, 65, 0.08);
+        }
+
+        .expanded-content {
+            display: none;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .expanded-content.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-links">
+            <a href="/">🏠 Home</a>
+            <a href="/gainers">🔥 Top Gainers</a>
+            <a href="/volume">📊 Volume Movers</a>
+            <a href="/whales">🐋 Whale Detector</a>
+            <a href="/daily3" class="active">📉 Daily3 Scanner</a>
+        </div>
+        <div id="lastUpdate" style="color: #888; font-size: 0.9em;">Data refreshes daily</div>
+    </div>
+
+    <h1>📉 Daily3 Dip Pattern Scanner</h1>
+    <div class="subtitle">Find stocks with consistent 9:35-10 AM ET dip patterns • Target 3% gains</div>
+
+    <div class="info-box">
+        <h3>🎯 How It Works</h3>
+        <p>
+            This scanner identifies stocks that consistently dip between <strong style="color: #00ff41;">9:35-10:00 AM ET</strong> at least
+            <strong style="color: #00ff41;">3 out of the last 5 trading days</strong>. The strategy is to:
+        </p>
+        <ol style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+            <li>Identify stocks with reliable morning dip patterns</li>
+            <li>Enter positions during the dip window (9:35-10 AM ET)</li>
+            <li>Target <strong style="color: #00ff41;">3% profit</strong> as the stock recovers</li>
+            <li>Use news indicators (📰) to assess catalysts</li>
+        </ol>
+        <p style="margin-top: 10px; color: #ff8888; font-style: italic;">
+            ⚠️ <strong>Educational purposes only.</strong> Not financial advice. Always do your own research.
+        </p>
+    </div>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label for="minPrice">Min Price:</label>
+            <span style="color: #00ffff;">$</span>
+            <input type="number" id="minPrice" value="5" min="0" step="0.5">
+        </div>
+        <div class="filter-group">
+            <label for="maxPrice">Max Price:</label>
+            <span style="color: #00ffff;">$</span>
+            <input type="number" id="maxPrice" value="500" min="0" step="1">
+        </div>
+        <div class="filter-group">
+            <label for="minDipPercent">Min Dip %:</label>
+            <input type="number" id="minDipPercent" value="1.5" min="0" step="0.1">
+            <span>%</span>
+        </div>
+        <button class="apply-button" id="applyFilters">🔍 Scan for Patterns</button>
+    </div>
+
+    <div class="status">
+        <div class="stats-container">
+            <div class="stat-item">Stocks Found:<span class="stat-value" id="stockCount">0</span></div>
+            <div class="stat-item">Avg Success Rate:<span class="stat-value" id="avgSuccess">0/5</span></div>
+            <div class="stat-item">Last Updated:<span class="stat-value" id="lastUpdateTime">Never</span></div>
+        </div>
+    </div>
+
+    <table id="daily3Table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Symbol</th>
+                <th>Current Price</th>
+                <th>Success Rate</th>
+                <th>Avg Dip %</th>
+                <th>News</th>
+                <th>Last 5 Days Pattern</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr class="loading">
+                <td colspan="7">Click "Scan for Patterns" to load data...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- News Modal -->
+    <div id="newsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 style="color: #00ff41; margin-bottom: 20px;">📰 <span id="modalSymbol"></span> News</h2>
+            <div id="newsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let allStocks = [];
+        let filters = {
+            minPrice: 5,
+            maxPrice: 500,
+            minDipPercent: 1.5
+        };
+
+        // Apply filters and fetch data
+        document.getElementById('applyFilters').addEventListener('click', async () => {
+            filters.minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+            filters.maxPrice = parseFloat(document.getElementById('maxPrice').value) || 1000;
+            filters.minDipPercent = parseFloat(document.getElementById('minDipPercent').value) || 0;
+
+            await fetchDaily3Data();
+        });
+
+        // Fetch Daily3 data from API
+        async function fetchDaily3Data() {
+            const button = document.getElementById('applyFilters');
+            button.disabled = true;
+            button.textContent = '⏳ Scanning...';
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '<tr class="loading"><td colspan="7">Analyzing last 5 trading days... This may take a minute.</td></tr>';
+
+            try {
+                const url = `/api/daily3?minPrice=${filters.minPrice}&maxPrice=${filters.maxPrice}&minDipPercent=${filters.minDipPercent}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    allStocks = data.stocks;
+                    updateTable(allStocks);
+
+                    // Update last update time
+                    const updateTime = new Date(data.lastUpdated);
+                    document.getElementById('lastUpdateTime').textContent = updateTime.toLocaleString();
+                } else {
+                    tbody.innerHTML = `<tr class="loading"><td colspan="7">Error: ${data.error}</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error fetching Daily3 data:', error);
+                tbody.innerHTML = '<tr class="loading"><td colspan="7">Error loading data. Please try again.</td></tr>';
+            } finally {
+                button.disabled = false;
+                button.textContent = '🔍 Scan for Patterns';
+            }
+        }
+
+        // Update table with stocks
+        function updateTable(stocks) {
+            const tbody = document.getElementById('tableBody');
+
+            if (stocks.length === 0) {
+                tbody.innerHTML = '<tr class="loading"><td colspan="7">No stocks found matching criteria. Try adjusting filters.</td></tr>';
+                document.getElementById('stockCount').textContent = '0';
+                document.getElementById('avgSuccess').textContent = '0/5';
+                return;
+            }
+
+            // Calculate average success rate
+            const avgSuccessDays = stocks.reduce((sum, s) => sum + s.dipPattern.successDays, 0) / stocks.length;
+            document.getElementById('avgSuccess').textContent = avgSuccessDays.toFixed(1) + '/5';
+            document.getElementById('stockCount').textContent = stocks.length;
+
+            // Build table HTML
+            const htmlString = stocks.map((stock, index) => {
+                const successRate = stock.dipPattern.successDays;
+                const successClass = successRate >= 4 ? 'success-high' : 'success-med';
+                const avgDipClass = stock.dipPattern.avgDipPercent <= -2 ? 'negative' : '';
+
+                // Create dip history display
+                const dipHistory = stock.dipPattern.lastFiveDays.map(day => {
+                    if (day.dipPercent !== null && day.dipPercent !== undefined) {
+                        return `<span class="dip-day" title="${day.date}: ${day.dipPercent}% at ${day.dipTime}">${day.dipPercent}%</span>`;
+                    } else {
+                        return `<span class="dip-day no-dip" title="${day.date}: No dip">-</span>`;
+                    }
+                }).join(' ');
+
+                // News icon
+                const newsIcon = stock.news.hasNews
+                    ? `<span class="news-icon" onclick="showNews('${stock.symbol}', ${JSON.stringify(stock.news.headlines).replace(/"/g, '&quot;')})">📰 (${stock.news.count})</span>`
+                    : '<span style="color: #444;">-</span>';
+
+                return `
+                <tr class="expandable" data-index="${index}">
+                    <td style="text-align: center; color: #00ffff; font-weight: bold;">${index + 1}</td>
+                    <td class="symbol">${stock.symbol}</td>
+                    <td style="color: #00ff41;">$${stock.currentPrice.toFixed(2)}</td>
+                    <td><span class="success-rate ${successClass}">${successRate}/5 days</span></td>
+                    <td class="${avgDipClass}">${stock.dipPattern.avgDipPercent.toFixed(2)}%</td>
+                    <td>${newsIcon}</td>
+                    <td class="dip-history">${dipHistory}</td>
+                </tr>
+                `;
+            }).join('');
+
+            tbody.innerHTML = htmlString;
+        }
+
+        // Show news modal
+        function showNews(symbol, headlines) {
+            const modal = document.getElementById('newsModal');
+            const modalSymbol = document.getElementById('modalSymbol');
+            const newsContent = document.getElementById('newsContent');
+
+            modalSymbol.textContent = symbol;
+
+            if (headlines.length === 0) {
+                newsContent.innerHTML = '<p style="color: #888;">No recent news found.</p>';
+            } else {
+                const newsHtml = headlines.map(news => {
+                    const date = new Date(news.published).toLocaleString();
+                    return `
+                    <div class="news-item">
+                        <h4>${news.title}</h4>
+                        <p>${date} • ${news.source}</p>
+                        ${news.url ? `<a href="${news.url}" target="_blank">Read more →</a>` : ''}
+                    </div>
+                    `;
+                }).join('');
+                newsContent.innerHTML = newsHtml;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        // Close modal
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('newsModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('newsModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            // Don't auto-load, wait for user to click
+            console.log('Daily3 Scanner ready. Click "Scan for Patterns" to begin.');
+        });
+    </script>
+</body>
+</html>
