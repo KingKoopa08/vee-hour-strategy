@@ -1766,6 +1766,49 @@ app.get('/api/whales', async (req, res) => {
     });
 });
 
+// Daily3 dip pattern API
+app.get('/api/daily3', async (req, res) => {
+    try {
+        // Get filter parameters from query string
+        const minPrice = parseFloat(req.query.minPrice) || 5;
+        const maxPrice = parseFloat(req.query.maxPrice) || 500;
+        const minDipPercent = parseFloat(req.query.minDipPercent) || 1.5;
+
+        // Check if we need to refresh the data (refresh once per day before market open)
+        const now = new Date();
+        const shouldRefresh = !daily3LastUpdate ||
+                             (now - daily3LastUpdate > 24 * 60 * 60 * 1000) ||
+                             (now.getHours() < 9 && daily3LastUpdate.getDate() !== now.getDate());
+
+        if (shouldRefresh) {
+            console.log('🔄 Refreshing Daily3 dip pattern data...');
+            daily3Cache = await getDaily3DipPatterns(minPrice, maxPrice, minDipPercent);
+            daily3LastUpdate = now;
+        }
+
+        // Filter cached results based on current parameters
+        const filtered = daily3Cache.filter(stock =>
+            stock.currentPrice >= minPrice &&
+            stock.currentPrice <= maxPrice &&
+            stock.dipPattern.avgDipPercent <= -minDipPercent
+        );
+
+        res.json({
+            success: true,
+            lastUpdated: daily3LastUpdate,
+            count: filtered.length,
+            filters: { minPrice, maxPrice, minDipPercent },
+            stocks: filtered
+        });
+    } catch (error) {
+        console.error('❌ Error in Daily3 API:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // ============================================
 // ADMIN API ENDPOINTS
 // ============================================
