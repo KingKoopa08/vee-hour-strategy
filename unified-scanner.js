@@ -740,13 +740,16 @@ async function getRisingStocks() {
 // Helper function to get last 5 trading days
 function getLastFiveTradingDays() {
     const days = [];
-    const today = new Date();
     let daysAdded = 0;
-    let currentDay = new Date(today);
 
-    // Go back up to 10 calendar days to find 5 trading days
-    for (let i = 1; i <= 10 && daysAdded < 5; i++) {
-        currentDay.setDate(today.getDate() - i);
+    // Start from yesterday (not today, since today's data may not be complete)
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 1); // Start from yesterday
+
+    let currentDay = new Date(startDate);
+
+    // Go back up to 14 calendar days to find 5 trading days
+    for (let i = 0; i < 14 && daysAdded < 5; i++) {
         const dayOfWeek = currentDay.getDay();
 
         // Skip weekends (0 = Sunday, 6 = Saturday)
@@ -754,6 +757,9 @@ function getLastFiveTradingDays() {
             days.push(new Date(currentDay));
             daysAdded++;
         }
+
+        // Move to previous day
+        currentDay.setDate(currentDay.getDate() - 1);
     }
 
     return days;
