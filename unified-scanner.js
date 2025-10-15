@@ -882,42 +882,48 @@ async function getDaily3DipPatterns(minPrice, maxPrice, minDipPercent) {
         const lastFiveDays = getLastFiveTradingDays();
         console.log(`📅 Analyzing last 5 trading days: ${lastFiveDays.map(d => d.toISOString().split('T')[0]).join(', ')}`);
 
-        // Build a comprehensive stock list from multiple sources
+        // Build a large stock universe from Polygon snapshot
         const stockSets = [];
 
-        // Source 1: Current top gainers and volume movers (if available)
-        if (topGainersCache.length > 0) {
-            stockSets.push(...topGainersCache.slice(0, 75).map(s => s.symbol));
-        }
-        if (volumeMoversCache.length > 0) {
-            stockSets.push(...volumeMoversCache.slice(0, 75).map(s => s.symbol));
+        console.log(`📊 Fetching large stock universe from Polygon snapshot...`);
+
+        try {
+            const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
+            const response = await axios.get(snapshotUrl, { timeout: 15000 });
+
+            if (response.data && response.data.tickers) {
+                // Filter for actively traded stocks
+                const activeStocks = response.data.tickers
+                    .filter(t => {
+                        const price = t.day?.c || t.min?.c || t.lastTrade?.p || 0;
+                        const volume = t.day?.v || 0;
+
+                        // Include stocks that:
+                        // 1. Are in our price range
+                        // 2. Have decent volume (shows liquidity)
+                        // 3. Are not penny stocks or super expensive
+                        return price >= minPrice &&
+                               price <= maxPrice &&
+                               volume > 50000; // Lower threshold to get more stocks
+                    })
+                    .slice(0, 1500) // Analyze up to 1500 stocks
+                    .map(t => t.ticker);
+
+                stockSets.push(...activeStocks);
+                console.log(`✅ Fetched ${activeStocks.length} actively traded stocks from snapshot`);
+            }
+        } catch (error) {
+            console.log(`⚠️ Could not fetch snapshot data: ${error.message}`);
         }
 
-        // Source 2: Get additional stocks from Polygon snapshot if we don't have enough
-        if (stockSets.length < 50) {
-            try {
-                console.log(`📊 Fetching additional stocks from Polygon snapshot...`);
-                const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?apiKey=${POLYGON_API_KEY}`;
-                const response = await axios.get(snapshotUrl, { timeout: 10000 });
-
-                if (response.data && response.data.tickers) {
-                    const activeStocks = response.data.tickers
-                        .filter(t => {
-                            const price = t.day?.c || t.min?.c || 0;
-                            const volume = t.day?.v || 0;
-                            const dayChange = t.todaysChangePerc || 0;
-                            return price >= minPrice &&
-                                   price <= maxPrice &&
-                                   volume > 100000 &&
-                                   Math.abs(dayChange) > 1; // Some movement
-                        })
-                        .slice(0, 150)
-                        .map(t => t.ticker);
-                    stockSets.push(...activeStocks);
-                    console.log(`✅ Added ${activeStocks.length} stocks from snapshot`);
-                }
-            } catch (error) {
-                console.log(`⚠️ Could not fetch snapshot data: ${error.message}`);
+        // Fallback: Add current gainers/volume movers if snapshot failed
+        if (stockSets.length < 100) {
+            console.log(`⚠️ Low stock count, adding from cache...`);
+            if (topGainersCache.length > 0) {
+                stockSets.push(...topGainersCache.map(s => s.symbol));
+            }
+            if (volumeMoversCache.length > 0) {
+                stockSets.push(...volumeMoversCache.map(s => s.symbol));
             }
         }
 
