@@ -435,11 +435,61 @@
 
     <script>
         let allStocks = [];
+        let dipPatternStocks = []; // Stocks with dip patterns
+        let ws = null;
         let filters = {
             minPrice: 5,
             maxPrice: 500,
             minDipPercent: 1.5
         };
+
+        // WebSocket connection for live price updates
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:3051');
+
+            ws.onopen = () => {
+                console.log('WebSocket connected - receiving live price updates');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'volumeMovers' && data.stocks) {
+                        // Update live prices for stocks in our dip pattern list
+                        updateLivePrices(data.stocks);
+                    }
+                } catch (error) {
+                    console.error('WebSocket message error:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting in 5s...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // Update live prices from WebSocket data
+        function updateLivePrices(liveStocks) {
+            if (dipPatternStocks.length === 0) return;
+
+            let updated = false;
+            dipPatternStocks.forEach(dipStock => {
+                const liveStock = liveStocks.find(s => s.symbol === dipStock.symbol);
+                if (liveStock && liveStock.price) {
+                    dipStock.currentPrice = liveStock.price;
+                    updated = true;
+                }
+            });
+
+            if (updated) {
+                updateTable(dipPatternStocks);
+            }
+        }
 
         // Apply filters and fetch data
         document.getElementById('applyFilters').addEventListener('click', async () => {
