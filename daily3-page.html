@@ -584,6 +584,12 @@
                 const successClass = successRate >= 4 ? 'success-high' : 'success-med';
                 const avgDipClass = stock.dipPattern.avgDipPercent <= -2 ? 'negative' : '';
 
+                // Price change indicator
+                const priceChangeClass = stock.priceChange === 'up' ? 'price-up' :
+                                       stock.priceChange === 'down' ? 'price-down' : '';
+                const priceArrow = stock.priceChange === 'up' ? ' ▲' :
+                                  stock.priceChange === 'down' ? ' ▼' : '';
+
                 // Create dip history display
                 const dipHistory = stock.dipPattern.lastFiveDays.map(day => {
                     if (day.dipPercent !== null && day.dipPercent !== undefined) {
@@ -599,10 +605,10 @@
                     : '<span style="color: #444;">-</span>';
 
                 return `
-                <tr class="expandable" data-index="${index}">
+                <tr class="expandable ${priceChangeClass}" data-index="${index}">
                     <td style="text-align: center; color: #00ffff; font-weight: bold;">${index + 1}</td>
                     <td class="symbol">${stock.symbol}</td>
-                    <td style="color: #00ff41;">$${stock.currentPrice.toFixed(2)}</td>
+                    <td style="color: #00ff41;">$${stock.currentPrice.toFixed(2)}${priceArrow}</td>
                     <td><span class="success-rate ${successClass}">${successRate}/5 days</span></td>
                     <td class="${avgDipClass}">${stock.dipPattern.avgDipPercent.toFixed(2)}%</td>
                     <td>${newsIcon}</td>
