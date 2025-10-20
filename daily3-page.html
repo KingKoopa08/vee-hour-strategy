@@ -481,13 +481,23 @@
             dipPatternStocks.forEach(dipStock => {
                 const liveStock = liveStocks.find(s => s.symbol === dipStock.symbol);
                 if (liveStock && liveStock.price) {
+                    const oldPrice = dipStock.currentPrice;
                     dipStock.currentPrice = liveStock.price;
-                    updated = true;
+
+                    // Track price change for visual feedback
+                    if (oldPrice !== liveStock.price) {
+                        dipStock.priceChange = liveStock.price > oldPrice ? 'up' : 'down';
+                        updated = true;
+                    }
                 }
             });
 
             if (updated) {
                 updateTable(dipPatternStocks);
+                // Update last update indicator
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent =
+                    `Live prices • Last update: ${now.toLocaleTimeString()}`;
             }
         }
 
