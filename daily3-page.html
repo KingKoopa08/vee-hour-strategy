@@ -628,11 +628,17 @@
         // Auto-load on page load
         window.addEventListener('load', () => {
             console.log('Daily3 Scanner loading...');
-            fetchDaily3Data(); // Auto-load data on page load
 
-            // Auto-refresh every 5 minutes (300000ms)
+            // Connect to WebSocket for live price updates
+            connectWebSocket();
+
+            // Load initial dip pattern data
+            fetchDaily3Data();
+
+            // Refresh dip pattern analysis every 5 minutes (historical pattern doesn't change fast)
+            // But prices update live via WebSocket
             setInterval(() => {
-                console.log('Auto-refreshing Daily3 data...');
+                console.log('Refreshing dip pattern analysis...');
                 fetchDaily3Data();
             }, 300000);
         });
