@@ -344,6 +344,24 @@
         .expanded-content.show {
             display: block;
         }
+
+        .price-up {
+            animation: flashGreen 0.5s;
+        }
+
+        .price-down {
+            animation: flashRed 0.5s;
+        }
+
+        @keyframes flashGreen {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(0, 255, 65, 0.3); }
+        }
+
+        @keyframes flashRed {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(255, 68, 68, 0.3); }
+        }
     </style>
 </head>
 <body>
