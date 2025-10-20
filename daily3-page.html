@@ -516,6 +516,7 @@
 
                 if (data.success) {
                     allStocks = data.stocks;
+                    dipPatternStocks = data.stocks; // Store for live updates
                     updateTable(allStocks);
 
                     // Update last update time
