@@ -576,8 +576,14 @@
 
         // Auto-load on page load
         window.addEventListener('load', () => {
-            // Don't auto-load, wait for user to click
-            console.log('Daily3 Scanner ready. Click "Scan for Patterns" to begin.');
+            console.log('Daily3 Scanner loading...');
+            fetchDaily3Data(); // Auto-load data on page load
+
+            // Auto-refresh every 5 minutes (300000ms)
+            setInterval(() => {
+                console.log('Auto-refreshing Daily3 data...');
+                fetchDaily3Data();
+            }, 300000);
         });
     </script>
 </body>
